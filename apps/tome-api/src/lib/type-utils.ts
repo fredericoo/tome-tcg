@@ -17,7 +17,7 @@ export function isKeyInObj<O extends Record<string, unknown>>(key: PropertyKey, 
  * A type safe way to get the keys and values of an object..
  */
 export const objectEntries = <TObj extends object>(obj: TObj) =>
-	Object.entries(obj) as [keyof TObj, TObj[keyof TObj]][];
+	Object.entries(obj) as Array<[keyof TObj, TObj[keyof TObj]]>;
 
 export type NonEmptyString<T extends string> = T extends '' ? never : T;
 
@@ -44,3 +44,6 @@ export type Maybe<T> = T | null | undefined;
 export type PartialReadonly<T> = T | Readonly<T>;
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
+export type NoInfer<A extends any> = [A][A extends any ? 0 : never];

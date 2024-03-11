@@ -55,7 +55,7 @@ describe('turn actions', () => {
 				type: 'any',
 				quantity: 1,
 				onActionTaken: ({ cards }) => {
-					selectedCards.concat(cards);
+					selectedCards.push(...cards);
 				},
 			},
 			timeoutMs: 1000,
@@ -68,6 +68,6 @@ describe('turn actions', () => {
 			expectAction.value.action.submit({ cards: cardsToSubmit });
 		}
 		await iter.next();
-		expect(selectedCards).toBe(cardsToSubmit);
+		expect(selectedCards).toEqual(cardsToSubmit);
 	});
 });
