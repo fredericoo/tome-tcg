@@ -1,0 +1,33 @@
+{
+	"name": "tome-api",
+	"version": "0.0.0",
+	"scripts": {
+		"test": "bun test src/",
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run src/index.ts",
+		"db:migrate:create": "drizzle-kit generate:sqlite",
+		"db:migrate:run": "bun run src/db/migrate.ts",
+		"db:migrate": "bun run db:migrate:create && bun run db:migrate:run",
+		"db:studio": "bunx drizzle-kit studio --port 6969"
+	},
+	"dependencies": {
+		"@elysiajs/eden": "^0.8.1",
+		"@elysiajs/swagger": "^0.8.5",
+		"@libsql/client": "^0.5.2",
+		"@sinclair/typebox": "^0.32.14",
+		"chalk": "^5.3.0",
+		"drizzle-orm": "^0.29.4",
+		"drizzle-typebox": "^0.1.1",
+		"elysia": "latest",
+		"remeda": "^1.47.1",
+		"ts-pattern": "^5.0.6"
+	},
+	"devDependencies": {
+		"@total-typescript/ts-reset": "^0.5.1",
+		"@types/bun": "^1.0.8",
+		"dotenv": "^16.3.1",
+		"drizzle-kit": "^0.20.14",
+		"eslint-config-custom": "workspace:*"
+	},
+	"module": "src/index.js"
+}

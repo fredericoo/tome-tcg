@@ -1,0 +1,23 @@
+{
+	"name": "tsconfig",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
+	"compilerOptions": {
+		"lib": [
+			"ES2015"
+		],
+		"strict": true,
+		"noEmit": true,
+		"noUnusedLocals": true,
+		"noUncheckedIndexedAccess": true,
+		"noFallthroughCasesInSwitch": true,
+		"module": "ESNext",
+		"target": "es6",
+		"moduleResolution": "node",
+		"skipLibCheck": true
+	}
+}

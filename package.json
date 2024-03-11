@@ -1,0 +1,25 @@
+{
+	"private": true,
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"check": "turbo run check",
+		"format": "prettier --write \"**/*.{ts,tsx,md}\"",
+		"test": "turbo run test"
+	},
+	"devDependencies": {
+		"@trivago/prettier-plugin-sort-imports": "^4.2.0",
+		"@turbo/gen": "^1.9.7",
+		"concurrently": "^8.2.2",
+		"eslint": "^7.32.0",
+		"prettier": "^3.1.1",
+		"prettier-plugin-tailwindcss": "^0.5.9",
+		"turbo": "^1.10.16",
+		"@playwright/test": "^1.40.1"
+	},
+	"packageManager": "pnpm@8.5.1",
+	"name": "sdk-monorepo",
+	"dependencies": {
+		"@changesets/cli": "^2.27.1"
+	}
+}
