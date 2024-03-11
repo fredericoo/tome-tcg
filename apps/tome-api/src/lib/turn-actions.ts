@@ -1,6 +1,13 @@
 import { moveBottomCard, moveTopCard } from './board-utils';
-import { AnyCard, Board, Side, SpellStack } from './turn-manager';
+import { AnyCard, Board, FieldCard, Side, SpellCard, SpellStack } from './turn-manager';
 import { exhaustive } from './utils';
+
+export type CastActionParams = { card: SpellCard; stack: SpellStack } | { card: FieldCard; stack?: never };
+type CastFromHandAction = {
+	type: 'cast_from_hand';
+	config: { type: AnyCard['type'] | 'any'; onActionTaken: (params: CastActionParams) => void };
+	action: CastActionParams;
+};
 
 type SelectFromHandAction = {
 	type: 'select_from_hand';
@@ -14,12 +21,16 @@ type SelectSpellStackAction = {
 	action: { stack: SpellStack };
 };
 
-export type PlayerAction = SelectFromHandAction | SelectSpellStackAction;
+export type PlayerAction = SelectFromHandAction | SelectSpellStackAction | CastFromHandAction;
 
 /** Actions to be taken when a player action is submitted.  */
 const onAct = <TAction extends PlayerAction>(params: TAction) => {
 	switch (params.type) {
 		case 'select_from_hand': {
+			params.config.onActionTaken(params.action);
+			return;
+		}
+		case 'cast_from_hand': {
 			params.config.onActionTaken(params.action);
 			return;
 		}
@@ -31,7 +42,11 @@ const onAct = <TAction extends PlayerAction>(params: TAction) => {
 	}
 };
 
-export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
+export const playerAction = <
+	TSide extends Side,
+	TAction extends PlayerAction,
+	const TType extends PlayerAction['type'],
+>({
 	side,
 	type,
 	timeoutMs,
@@ -39,8 +54,8 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	onTimeout,
 }: {
 	side: TSide;
-	type: TAction['type'];
-	config: TAction['config'];
+	type: TType;
+	config: (TAction & { type: TType })['config'];
 	timeoutMs: number;
 	onTimeout?: () => void;
 }) => {
@@ -58,6 +73,7 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	return { completed, submitAction };
 };
 
+/** Hook-specific actions, that already yield their outcomes. */
 export const createHookActions = (board: Board) => ({
 	moveTopCard: function* (from: AnyCard[], to: AnyCard[]) {
 		moveTopCard(from, to);

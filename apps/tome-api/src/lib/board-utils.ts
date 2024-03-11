@@ -16,6 +16,8 @@ export const moveBottomCard = (from: AnyCard[], to: AnyCard[]) => {
 	return { card };
 };
 
+export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
+
 export const initialiseBoardSide = (deck: AnyCard[]): Board['players'][Side] => ({
 	hp: 100,
 	hand: [],

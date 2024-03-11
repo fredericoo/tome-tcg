@@ -15,7 +15,7 @@ const createCard = (): AnyCard => ({
 	id: String(cardId++),
 });
 
-describe('turn actions', () => {
+describe('hook actions', () => {
 	test('can discard top card from deck', () => {
 		const board: Board = {
 			field: [],
