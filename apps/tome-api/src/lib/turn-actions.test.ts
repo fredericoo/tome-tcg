@@ -1,29 +1,27 @@
 import { describe, expect, test } from 'bun:test';
 
-import { initialiseBoardSide } from './board-utils';
+import { initialiseGameBoard } from './board-utils';
+import { GameCard } from './game-engine';
 import { createHookActions } from './turn-actions';
-import { AnyCard, Board } from './turn-manager';
 import { invariant } from './utils';
 
 let cardId = 0;
-const createCard = (): AnyCard => ({
-	name: 'dummy card',
-	type: 'field',
-	description: '',
-	color: 'blue',
-	effects: {},
-	id: String(cardId++),
-});
+const createCard = (): GameCard => {
+	const key = cardId++;
+	return {
+		name: 'dummy card',
+		key,
+		type: 'field',
+		description: '',
+		color: 'blue',
+		effects: {},
+		id: String(key),
+	};
+};
 
 describe('hook actions', () => {
 	test('can discard top card from deck', () => {
-		const board: Board = {
-			field: [],
-			players: {
-				sideA: initialiseBoardSide([createCard()]),
-				sideB: initialiseBoardSide([]),
-			},
-		};
+		const board = initialiseGameBoard({ decks: { sideA: [createCard()], sideB: [] } });
 
 		const actions = createHookActions(board);
 
@@ -37,15 +35,9 @@ describe('hook actions', () => {
 	});
 
 	test('can wait for player action to be taken', async () => {
-		const board: Board = {
-			field: [],
-			players: {
-				sideA: initialiseBoardSide([createCard()]),
-				sideB: initialiseBoardSide([]),
-			},
-		};
+		const board = initialiseGameBoard({ decks: { sideA: [createCard()], sideB: [] } });
 
-		const selectedCards: AnyCard[] = [];
+		const selectedCards: GameCard[] = [];
 		const actions = createHookActions(board);
 
 		const iter = actions.playerAction({

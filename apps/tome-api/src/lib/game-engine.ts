@@ -1,6 +1,7 @@
-import { initialiseBoardSide, moveTopCard, shuffle, topOf } from './board-utils';
-import { CastActionParams, HookActions, createHookActions, playerAction } from './turn-actions';
-import { PartialBy } from './type-utils';
+import { initialiseGameBoard, moveTopCard } from './board-utils';
+import { TurnHooks, createTriggerHooks } from './hooks';
+import { CastActionParams, PlayerAction, createHookActions, playerAction } from './turn-actions';
+import { DistributiveOmit, PartialBy } from './type-utils';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
@@ -8,6 +9,7 @@ export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
 type SpellColor = 'red' | 'green' | 'blue' | 'neutral';
 
 type BaseCard = {
+	key: number;
 	id: string;
 	name: string;
 	description: string;
@@ -28,9 +30,18 @@ export interface FieldCard extends BaseCard {
 	effects: Partial<TurnHooks>;
 }
 
-export type AnyCard = SpellCard | FieldCard;
+export type GameCard = SpellCard | FieldCard;
 
+// TODO: reference this from the drizzle model
+export type DbCard = DistributiveOmit<GameCard, 'key'>;
+
+export const STACKS = ['red', 'green', 'blue'] as const satisfies SpellStack[];
 export type SpellStack = 'red' | 'green' | 'blue';
+
+export type GameIterationResponse = {
+	board: Board;
+	action?: { type: PlayerAction['type']; submit: (action: PlayerAction['action']) => void; side: Side };
+};
 
 export type Board = {
 	players: Record<
@@ -38,68 +49,44 @@ export type Board = {
 		{
 			hp: number;
 			stacks: Record<SpellStack, SpellCard[]>;
-			hand: AnyCard[];
-			drawPile: AnyCard[];
-			discardPile: AnyCard[];
+			hand: GameCard[];
+			drawPile: GameCard[];
+			discardPile: GameCard[];
 		}
 	>;
 	field: FieldCard[];
 };
-43;
 
-type FinishedTurn = {
+export type FinishedTurn = {
 	finishedTurns: FinishedTurn[];
-	draws: Record<Side, AnyCard[]>;
+	draws: Record<Side, GameCard[]>;
 	casts: Record<Side, Record<SpellStack, SpellCard[]> & Record<'field', FieldCard[]>>;
 	spells: Record<Side, { slot: SpellStack; card: SpellCard }>;
 };
 
-type TurnHooks<THasOwner extends boolean = false> = {
-	beforeDraw: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns'>;
-		board: Board;
-		actions: HookActions;
-	}) => Generator<{ board: Board } | undefined>;
-	beforeCast: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'draws'>;
-		board: Board;
-		actions: HookActions;
-	}) => Generator<{ board: Board } | undefined>;
-	beforeReveal: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'draws'>;
-		board: Board;
-		actions: HookActions;
-	}) => Generator<{ board: Board } | undefined>;
-	beforeSpell: (
-		info: Pick<FinishedTurn, 'finishedTurns' | 'draws' | 'casts'>,
-		board: Board,
-	) => Generator<{ board: Board } | undefined>;
-	beforeCombat: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
-		board: Board;
-		actions: HookActions;
-		ownerSide: THasOwner extends true ? Side : never;
-	}) => Generator<{ board: Board } | undefined>;
-	afterCombat: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
-		board: Board;
-		actions: HookActions;
-		ownerSide: THasOwner extends true ? Side : never;
-	}) => Generator<{ board: Board } | undefined>;
-};
+export const initialiseTurn = ({
+	finishedTurns,
+}: {
+	finishedTurns: FinishedTurn[];
+}): PartialBy<FinishedTurn, 'spells'> => ({
+	draws: { sideA: [], sideB: [] },
+	casts: { sideA: { blue: [], field: [], green: [], red: [] }, sideB: { blue: [], field: [], green: [], red: [] } },
+	finishedTurns,
+	spells: undefined,
+});
 
-export const playGame = async (decks: Record<Side, AnyCard[]>, settings: { castTimeoutMs: 10000 }) => {
+export const playGame = async ({
+	decks,
+	settings,
+}: {
+	decks: Record<Side, DbCard[]>;
+	settings: { castTimeoutMs: 10000 };
+}) => {
 	const finishedTurns: FinishedTurn[] = [];
-	const board: Board = {
-		field: [],
-		players: {
-			sideA: initialiseBoardSide(decks.sideA),
-			sideB: initialiseBoardSide(decks.sideB),
-		},
-	};
-
+	const board = initialiseGameBoard({ decks });
 	const actions = createHookActions(board);
-	const getCurrentField = (board: Board) => topOf(board.field);
+	const triggerHooks = createTriggerHooks(board);
+
 	const drawCard = (side: Side, turn: Pick<FinishedTurn, 'draws'>) => {
 		const draw = moveTopCard(board.players[side].drawPile, board.players[side].hand);
 		if (draw.card) {
@@ -107,32 +94,8 @@ export const playGame = async (decks: Record<Side, AnyCard[]>, settings: { castT
 		}
 	};
 
-	async function* triggerHooks<THook extends keyof TurnHooks>(params: {
-		hookName: THook;
-		context: Parameters<TurnHooks[THook]>[0];
-	}) {
-		const currentField = getCurrentField(board);
-		const fieldEffect = currentField?.effects[params.hookName];
-		if (fieldEffect) {
-			yield* fieldEffect(params.context as any, board);
-		}
-
-		const cards = SIDES.flatMap(side => Object.values(board.players[side].stacks).map(topOf)).filter(Boolean);
-		for (const card of cards) {
-			const cardEffect = card.effects[params.hookName];
-			if (cardEffect) {
-				yield* cardEffect(params.context as any, board);
-			}
-		}
-	}
-
 	async function* handleTurn() {
-		const turn: PartialBy<FinishedTurn, 'spells'> = {
-			draws: { sideA: [], sideB: [] },
-			casts: { sideA: { blue: [], field: [], green: [], red: [] }, sideB: { blue: [], field: [], green: [], red: [] } },
-			finishedTurns,
-			spells: undefined,
-		};
+		const turn = initialiseTurn({ finishedTurns });
 
 		/** Draw phase */
 		yield triggerHooks({ hookName: 'beforeDraw', context: { actions, board, turn } });
@@ -184,12 +147,10 @@ export const playGame = async (decks: Record<Side, AnyCard[]>, settings: { castT
 		// Rock Paper Scissors time
 	}
 
-	SIDES.map(side => shuffle(board.players[side].drawPile));
-
 	return handleTurn();
 };
 
-const _cards: AnyCard[] = [
+const _cards: DbCard[] = [
 	{
 		id: '1',
 		type: 'field',
@@ -197,7 +158,7 @@ const _cards: AnyCard[] = [
 		description: 'If both players cast spells from the blue stack during combat, heals both wizards for 10 HP.',
 		color: 'blue',
 		effects: {
-			afterCombat: function* ({ board, turn }) {
+			afterCombat: async function* ({ board, turn }) {
 				if (turn.spells.sideA.slot === 'blue' && turn.spells.sideB.slot === 'blue') {
 					board.players.sideA.hp += 10;
 					board.players.sideB.hp += 10;
@@ -214,7 +175,7 @@ const _cards: AnyCard[] = [
 		colors: ['blue'],
 		attack: 10,
 		effects: {
-			beforeCombat: function* ({ actions, ownerSide, turn, board }) {
+			beforeCombat: async function* ({ actions, ownerSide, turn, board }) {
 				if (turn.spells[ownerSide].slot === 'blue') {
 					const opponentSide = ownerSide === 'sideA' ? 'sideB' : 'sideA';
 					actions.moveTopCard(board.players[opponentSide].stacks.green, board.players[opponentSide].discardPile);
@@ -230,9 +191,9 @@ const _cards: AnyCard[] = [
 		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it',
 		color: 'neutral',
 		effects: {
-			beforeCombat: function* ({ actions, board }) {
+			beforeCombat: async function* ({ actions, board }) {
 				for (const side of SIDES) {
-					yield actions.playerAction({
+					yield* actions.playerAction({
 						side,
 						type: 'select_spell_stack',
 						config: {

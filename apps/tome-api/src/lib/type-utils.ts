@@ -47,3 +47,7 @@ export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
 export type NoInfer<A extends any> = [A][A extends any ? 0 : never];
+
+export type DistributivePick<T, K extends keyof T> = T extends unknown ? Pick<T, K> : never;
+
+export type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;

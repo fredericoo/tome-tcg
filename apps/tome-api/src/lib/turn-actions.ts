@@ -1,18 +1,18 @@
 import { moveBottomCard, moveTopCard } from './board-utils';
-import { AnyCard, Board, FieldCard, Side, SpellCard, SpellStack } from './turn-manager';
+import { Board, FieldCard, GameCard, GameIterationResponse, Side, SpellCard, SpellStack } from './game-engine';
 import { exhaustive } from './utils';
 
 export type CastActionParams = { card: SpellCard; stack: SpellStack } | { card: FieldCard; stack?: never };
 type CastFromHandAction = {
 	type: 'cast_from_hand';
-	config: { type: AnyCard['type'] | 'any'; onActionTaken: (params: CastActionParams) => void };
+	config: { type: GameCard['type'] | 'any'; onActionTaken: (params: CastActionParams) => void };
 	action: CastActionParams;
 };
 
 type SelectFromHandAction = {
 	type: 'select_from_hand';
-	config: { type: AnyCard['type'] | 'any'; quantity: number; onActionTaken: (params: { cards: AnyCard[] }) => void };
-	action: { cards: AnyCard[] };
+	config: { type: GameCard['type'] | 'any'; quantity: number; onActionTaken: (params: { cards: GameCard[] }) => void };
+	action: { cards: GameCard[] };
 };
 
 type SelectSpellStackAction = {
@@ -75,11 +75,11 @@ export const playerAction = <
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const createHookActions = (board: Board) => ({
-	moveTopCard: function* (from: AnyCard[], to: AnyCard[]) {
+	moveTopCard: function* (from: GameCard[], to: GameCard[]) {
 		moveTopCard(from, to);
 		yield { board };
 	},
-	moveBottomCard: function* (from: AnyCard[], to: AnyCard[]) {
+	moveBottomCard: function* (from: GameCard[], to: GameCard[]) {
 		moveBottomCard(from, to);
 		yield { board };
 	},
@@ -87,9 +87,14 @@ export const createHookActions = (board: Board) => ({
 		TSide extends Side,
 		TAction extends PlayerAction,
 		const TType extends TAction['type'],
-	>(params: { side: TSide; type: TType; config: (TAction & { type: TType })['config']; timeoutMs: number }) {
+	>(params: {
+		side: TSide;
+		type: TType;
+		config: (TAction & { type: TType })['config'];
+		timeoutMs: number;
+	}): AsyncGenerator<GameIterationResponse> {
 		const { submitAction, completed } = playerAction(params);
-		yield { board, action: { submit: submitAction, side: params.side } };
+		yield { board, action: { type: params.type, submit: submitAction, side: params.side } };
 		await completed;
 		yield { board };
 	},
