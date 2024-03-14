@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 
 import { initialiseGameBoard } from './board-utils';
 import { GameCard } from './game-engine';
-import { createHookActions } from './turn-actions';
-import { invariant } from './utils';
+import { createHookActions } from './hooks-actions';
+import { invariant, noop } from './utils';
 
 let cardId = 0;
 const createCard = (): GameCard => {
@@ -42,22 +42,27 @@ describe('hook actions', () => {
 
 		const iter = actions.playerAction({
 			side: 'sideA',
-			type: 'select_from_hand',
-			config: {
-				type: 'any',
-				quantity: 1,
-				onActionTaken: ({ cards }) => {
+			action: {
+				type: 'select_from_hand',
+				config: {
+					type: 'any',
+					quantity: 1,
+				},
+				onAction: ({ cards }) => {
 					selectedCards.push(...cards);
 				},
 			},
 			timeoutMs: 1000,
+			onTimeout: noop,
 		});
 
 		const cardsToSubmit = [createCard()];
 		const expectAction = await iter.next();
 		if (expectAction.done === false) {
-			invariant('action' in expectAction.value && expectAction.value.action, 'Expected action to have an action key');
-			expectAction.value.action.submit({ cards: cardsToSubmit });
+			const action = expectAction.value.actions?.sideA;
+			if (action?.type === 'select_from_hand') {
+				action.submit({ cards: cardsToSubmit });
+			}
 		}
 		await iter.next();
 		expect(selectedCards).toEqual(cardsToSubmit);

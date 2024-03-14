@@ -1,6 +1,6 @@
 import { topOf } from './board-utils';
 import { Board, FinishedTurn, GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard } from './game-engine';
-import { HookActions } from './turn-actions';
+import { HookActions } from './hooks-actions';
 import { exhaustive } from './utils';
 
 export type TurnHooks<THasOwner extends boolean = false> = {

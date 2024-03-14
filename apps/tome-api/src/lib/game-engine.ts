@@ -1,7 +1,9 @@
-import { initialiseGameBoard, moveTopCard } from './board-utils';
+import { initialiseGameBoard, moveTopCard, topOf } from './board-utils';
 import { TurnHooks, createTriggerHooks } from './hooks';
-import { CastActionParams, PlayerAction, createHookActions, playerAction } from './turn-actions';
+import { createHookActions } from './hooks-actions';
+import { PlayerActionMap, playerAction } from './turn-actions';
 import { DistributiveOmit, PartialBy } from './type-utils';
+import { invariant, noop } from './utils';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
@@ -40,13 +42,22 @@ export type SpellStack = 'red' | 'green' | 'blue';
 
 export type GameIterationResponse = {
 	board: Board;
-	action?: { type: PlayerAction['type']; submit: (action: PlayerAction['action']) => void; side: Side };
+	actions?: {
+		[A in keyof PlayerActionMap]: {
+			[K in Side]?: {
+				type: A;
+				config: PlayerActionMap[A]['config'];
+				submit: PlayerActionMap[A]['onAction'];
+			};
+		};
+	}[keyof PlayerActionMap];
 };
 
 export type Board = {
 	players: Record<
 		Side,
 		{
+			side: Side;
 			hp: number;
 			stacks: Record<SpellStack, SpellCard[]>;
 			hand: GameCard[];
@@ -106,8 +117,8 @@ export const playGame = async ({
 		yield triggerHooks({ hookName: 'beforeCast', context: { actions, board, turn } });
 
 		const onCast =
-			(side: Side) =>
-			({ card, stack }: CastActionParams) => {
+			(side: Side): PlayerActionMap['cast_from_hand']['onAction'] =>
+			({ card, stack }) => {
 				if (card.type === 'field') {
 					return turn.casts[side]['field'].push(card);
 				}
@@ -116,24 +127,31 @@ export const playGame = async ({
 				}
 				throw new Error(`Invalid cast ${card}`);
 			};
+
 		const [actionA, actionB] = [
 			playerAction({
 				side: 'sideA',
-				type: 'cast_from_hand',
-				config: {
-					type: 'any',
-					onActionTaken: onCast('sideA'),
+				action: {
+					type: 'cast_from_hand',
+					config: {
+						type: 'any',
+					},
+					onAction: onCast('sideA'),
 				},
 				timeoutMs: settings.castTimeoutMs,
+				onTimeout: noop,
 			}),
 			playerAction({
 				side: 'sideB',
-				type: 'cast_from_hand',
-				config: {
-					type: 'any',
-					onActionTaken: onCast('sideB'),
+				action: {
+					type: 'cast_from_hand',
+					config: {
+						type: 'any',
+					},
+					onAction: onCast('sideA'),
 				},
 				timeoutMs: settings.castTimeoutMs,
+				onTimeout: noop,
 			}),
 		];
 		yield { board, actions: { sideA: actionA.submitAction, sideB: actionB.submitAction } };
@@ -192,16 +210,29 @@ const _cards: DbCard[] = [
 		color: 'neutral',
 		effects: {
 			beforeCombat: async function* ({ actions, board }) {
+				const discardFromStack = (stack: SpellStack, side: Side) => {
+					const selectedStack = board.players[side].stacks[stack];
+					const cardToDiscard = topOf(selectedStack);
+					if (!cardToDiscard) return;
+					actions.discard({ card: cardToDiscard, from: selectedStack, side });
+				};
+
 				for (const side of SIDES) {
 					yield* actions.playerAction({
-						side,
-						type: 'select_spell_stack',
-						config: {
-							onActionTaken: ({ stack }) => {
-								actions.moveTopCard(board.players[side].stacks[stack], board.players[side].discardPile);
+						action: {
+							type: 'select_spell_stack',
+							config: {},
+							onAction: ({ stack }) => {
+								discardFromStack(stack, side);
 							},
 						},
+						side,
 						timeoutMs: 10000,
+						onTimeout: () => {
+							const randomStack = STACKS[Math.floor(Math.random() * STACKS.length)];
+							invariant(randomStack, 'randomStack is undefined');
+							discardFromStack(randomStack, side);
+						},
 					});
 				}
 				yield { board };

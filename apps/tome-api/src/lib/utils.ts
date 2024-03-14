@@ -21,3 +21,5 @@ type StringSplit<T extends string, D extends string> = T extends `${infer L}${D}
 :	[T];
 export const stringSplit = <T extends string, D extends string>(input: T, divider: D) =>
 	input.split(divider) as StringSplit<T, D>;
+
+export function noop() {}
