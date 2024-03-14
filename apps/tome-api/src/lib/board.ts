@@ -1,4 +1,21 @@
-import { Board, DbCard, GameCard, Side } from './game-engine';
+import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellStack } from './game-engine';
+
+export type Board = {
+	phase: 'draw' | 'cast' | 'reveal' | 'spell' | 'combat' | 'end';
+	players: Record<
+		Side,
+		{
+			side: Side;
+			hp: number;
+			stacks: Record<SpellStack, SpellCard[]>;
+			hand: GameCard[];
+			drawPile: GameCard[];
+			discardPile: GameCard[];
+			casting: Partial<Record<SpellStack, SpellCard>> & { field?: FieldCard };
+		}
+	>;
+	field: FieldCard[];
+};
 
 export const shuffle = (deck: GameCard[]) => {
 	deck.sort(() => Math.random() - 0.5);
@@ -32,6 +49,7 @@ export const initialiseGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB
 			hp: 100,
 			hand: [],
 			discardPile: [],
+			casting: {},
 			drawPile: deck.map(card => ({ ...card, key: cardIndex++ })),
 			stacks: {
 				blue: [],
@@ -44,6 +62,7 @@ export const initialiseGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB
 	};
 
 	return {
+		phase: 'draw',
 		field: [],
 		players: {
 			sideA: initialiseBoardSide(decks.sideA, 'sideA'),

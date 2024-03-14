@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'bun:test';
 
-import { initialiseGameBoard } from './board-utils';
+import { initialiseGameBoard } from './board';
 import { SIDES, STACKS, Side, SpellStack, initialiseTurn } from './game-engine';
 import { createTriggerHooks } from './hooks';
 import { createHookActions } from './hooks-actions';

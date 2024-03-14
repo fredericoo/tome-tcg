@@ -1,67 +1,67 @@
-import { topOf } from './board-utils';
-import { Board, FinishedTurn, GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard } from './game-engine';
+import { Board, topOf } from './board';
+import { GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard, Turn } from './game-engine';
 import { HookActions } from './hooks-actions';
 import { exhaustive } from './utils';
 
 export type TurnHooks<THasOwner extends boolean = false> = {
 	// TODO: implement these
 	onDiscard: (params: {
-		turn: Partial<FinishedTurn>;
+		turn: Partial<Turn>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDraw: (params: {
-		turn: Partial<FinishedTurn>;
+		turn: Partial<Turn>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDamage: (params: {
-		turn: Partial<FinishedTurn>;
+		turn: Partial<Turn>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onHeal: (params: {
-		turn: Partial<FinishedTurn>;
+		turn: Partial<Turn>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 
 	beforeDraw: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns'>;
+		turn: Pick<Turn, 'finishedTurns'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCast: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'draws'>;
+		turn: Pick<Turn, 'finishedTurns' | 'draws'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeReveal: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'draws'>;
+		turn: Pick<Turn, 'finishedTurns' | 'draws'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeSpell: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'draws' | 'casts'>;
+		turn: Pick<Turn, 'finishedTurns' | 'draws' | 'casts'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCombat: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
+		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	afterCombat: (params: {
-		turn: Pick<FinishedTurn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
+		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
 		board: Board;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;

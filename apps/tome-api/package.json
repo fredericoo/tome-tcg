@@ -21,7 +21,7 @@
 		"drizzle-typebox": "^0.1.1",
 		"elysia": "latest",
 		"remeda": "^1.47.1",
-		"ts-pattern": "^5.0.6"
+		"ts-pattern": "^5.0.8"
 	},
 	"devDependencies": {
 		"@total-typescript/ts-reset": "^0.5.1",

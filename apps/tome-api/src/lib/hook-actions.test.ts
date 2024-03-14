@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { initialiseGameBoard } from './board-utils';
+import { initialiseGameBoard } from './board';
 import { GameCard } from './game-engine';
 import { createHookActions } from './hooks-actions';
 import { invariant, noop } from './utils';

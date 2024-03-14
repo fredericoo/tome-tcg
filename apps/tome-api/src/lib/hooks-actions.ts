@@ -1,5 +1,5 @@
-import { moveBottomCard, moveTopCard, removeCard } from './board-utils';
-import { Board, GameCard, GameIterationResponse, Side } from './game-engine';
+import { Board, moveBottomCard, moveTopCard, removeCard } from './board';
+import { GameCard, GameIterationResponse, Side } from './game-engine';
 import { PlayerAction, playerAction } from './turn-actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
