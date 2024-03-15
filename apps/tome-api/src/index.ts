@@ -1,66 +1,97 @@
 import chalk from 'chalk';
-import { Elysia, t } from 'elysia';
+import { Elysia } from 'elysia';
 
 import { UnauthorisedError } from './lib/error';
 
-async function* gameStub({ publish, send }: { send: (data: any) => void; publish: (data: any) => void }) {
-	yield { state: 'idle' as const };
-
-	// wait for 5 seconds
-	await new Promise(resolve => setTimeout(resolve, 5000));
-	send({ state: 'you', message: 'just for the user that subscribed, probably a bad idea' });
-	await new Promise(resolve => setTimeout(resolve, 5000));
-	publish({ state: 'everyone', message: 'for everyone in the game' });
+/** Used to allow breaking off the `for await` loop without stopping the iterator. */
+function unclosed<T>(iterable: AsyncGenerator<T>) {
+	return {
+		[Symbol.asyncIterator]() {
+			const iterator = iterable[Symbol.asyncIterator]();
+			return {
+				next: iterator.next.bind(iterator),
+				return: async function () {
+					return { type: 'return', value: null };
+				},
+				throw: async function () {
+					return { type: 'throw', value: null };
+				},
+			};
+		},
+	};
 }
+
+async function* gameStub(stepFrom = 0): AsyncGenerator<{ state: 'idle' | 'ready' | 'playing'; step: number }> {
+	let step = stepFrom;
+	yield { state: 'idle', step };
+	step++;
+	await new Promise(resolve => setTimeout(resolve, 1000));
+	yield { state: 'ready', step };
+	step++;
+	await new Promise(resolve => setTimeout(resolve, 1000));
+	yield { state: 'playing', step };
+	step++;
+	await new Promise(resolve => setTimeout(resolve, 1000));
+	yield* gameStub(step);
+}
+
 /** In-memory storage of all games ongoing. */
-const ongoingGames: Record<string, { online: string[]; game: ReturnType<typeof gameStub> }> = {};
+const ongoingGames: Record<string, { online: string[]; lastState: any; game: ReturnType<typeof gameStub> }> = {};
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
-	.guard({ cookie: t.Object({ token: t.String() }) }, app =>
-		app
-			.resolve(({ cookie }) => {
-				return { userId: cookie.token.get() };
-			})
-			.ws('/game/:id', {
-				open(ws) {
-					const channel = ws.data.params.id;
-					console.log(`[open] Connection established to ${channel}`);
-					ws.subscribe(channel);
+	.ws('/game/:id', {
+		async open(ws) {
+			const channel = ws.data.params.id;
+			console.log(`[open] Connection established to ${channel}`);
+			ws.subscribe(channel);
 
-					const state =
-						ongoingGames[channel] ??
-						(ongoingGames[channel] = {
-							online: [],
-							game: gameStub({ send: ws.send, publish: data => ws.publish(channel, data) }),
-						});
-					if (!state.online.includes(ws.data.userId)) {
-						state.online.push(ws.data.userId);
-					}
+			const ongoingGame =
+				ongoingGames[channel] ??
+				(ongoingGames[channel] = {
+					online: [],
+					lastState: undefined,
+					game: gameStub(),
+				});
 
-					// send it to joining user so they know the current state.
-					ws.send(state);
-					// publish that a new user has joined.
-					ws.publish(channel, { online: state.online });
-				},
-				close(ws) {
-					const channel = ws.data.params.id;
+			ongoingGame.online.push(ws.id);
 
-					console.log(`[close] Connection closed to ${channel}`);
+			if (ongoingGame.lastState) {
+				ws.send(ongoingGame.lastState);
+			}
 
-					ws.unsubscribe(channel);
+			console.log('connected', ongoingGame.online);
+			for await (const state of unclosed(ongoingGame.game)) {
+				ongoingGame.lastState = state;
+				console.log('iterating', ongoingGame.online, state, ws.id);
+				ws.send(state);
+				ws.publish(channel, state);
+				if (!ongoingGame.online.includes(ws.id)) {
+					break;
+				}
+			}
+		},
+		close(ws) {
+			const channel = ws.data.params.id;
 
-					const state = ongoingGames[channel];
-					if (state) {
-						const userIndex = state.online.indexOf(ws.data.userId);
-						if (userIndex !== -1) {
-							state.online.splice(userIndex, 1);
-						}
-						ws.publish(channel, { online: state.online });
-					}
-				},
-			}),
-	)
+			console.log(`[close] Connection closed to ${channel}`);
+
+			ws.unsubscribe(channel);
+
+			const state = ongoingGames[channel];
+			if (state) {
+				const userIndex = state.online.indexOf(ws.id);
+				if (userIndex !== -1) {
+					state.online.splice(userIndex, 1);
+				}
+				ws.publish(channel, { online: state.online });
+			}
+		},
+		message(ws, message) {
+			console.log('message', message);
+		},
+	})
+
 	.listen(process.env.PORT ?? 8080);
 
 console.log(
