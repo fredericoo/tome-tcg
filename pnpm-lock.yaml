@@ -67,7 +67,7 @@ importers:
         specifier: ^1.47.1
         version: 1.47.1
       ts-pattern:
-        specifier: ^5.0.6
+        specifier: ^5.0.8
         version: 5.0.8
     devDependencies:
       '@total-typescript/ts-reset':
