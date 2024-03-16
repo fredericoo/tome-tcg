@@ -18,6 +18,6 @@ const dbConfig = match(process.env)
 	});
 
 const client = createClient(dbConfig);
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, { schema, logger: true });
 
 export type Database = typeof db;

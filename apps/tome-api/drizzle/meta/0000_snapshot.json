@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "89d0792c-54f6-4005-b02b-c06398723748",
+  "id": "fe71a941-e89f-4415-a89e-97805350d866",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "cards": {
@@ -43,10 +43,66 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": true
+        },
+        "side_a": {
+          "name": "side_a",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "side_b": {
+          "name": "side_b",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "games_side_a_user_id_fk": {
+          "name": "games_side_a_user_id_fk",
+          "tableFrom": "games",
+          "tableTo": "user",
+          "columnsFrom": [
+            "side_a"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "games_side_b_user_id_fk": {
+          "name": "games_side_b_user_id_fk",
+          "tableFrom": "games",
+          "tableTo": "user",
+          "columnsFrom": [
+            "side_b"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -114,6 +170,13 @@
         "github_id": {
           "name": "github_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

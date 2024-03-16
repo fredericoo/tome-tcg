@@ -12,6 +12,7 @@
 		"db:studio": "bunx drizzle-kit studio --port 6969"
 	},
 	"dependencies": {
+		"@elysiajs/cors": "^1.0.0",
 		"@elysiajs/eden": "^1.0.0",
 		"@elysiajs/swagger": "^0.8.5",
 		"@libsql/client": "^0.5.2",

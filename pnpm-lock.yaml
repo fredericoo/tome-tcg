@@ -39,6 +39,9 @@ importers:
 
   apps/tome-api:
     dependencies:
+      '@elysiajs/cors':
+        specifier: ^1.0.0
+        version: 1.0.0(elysia@1.0.0)
       '@elysiajs/eden':
         specifier: ^1.0.0
         version: 1.0.0(elysia@1.0.0)
@@ -104,8 +107,8 @@ importers:
   apps/tome-web:
     dependencies:
       '@elysiajs/eden':
-        specifier: ^0.8.1
-        version: 0.8.1(elysia@0.8.17)
+        specifier: ^1.0.0
+        version: 1.0.0(elysia@1.0.0)
       '@remix-run/node':
         specifier: ^2.8.1
         version: 2.8.1(typescript@5.3.3)
@@ -135,8 +138,8 @@ importers:
         specifier: ^6.7.4
         version: 6.21.0(eslint@8.57.0)(typescript@5.3.3)
       elysia:
-        specifier: ^0.8.17
-        version: 0.8.17(typescript@5.3.3)
+        specifier: ^1.0.0
+        version: 1.0.0(@sinclair/typebox@0.32.15)(typescript@5.3.3)
       eslint:
         specifier: ^8.38.0
         version: 8.57.0
@@ -824,17 +827,12 @@ packages:
       superjson: 2.2.1
     dev: true
 
-  /@elysiajs/eden@0.8.1(elysia@0.8.17):
-    resolution: {integrity: sha512-YzvcIANyzdxWqaXBYjVN/Y9hqaIDQwF3jc7rUMqVLVo+zOd3eTn8zruNEWcumA6n+rJujqqMYanrOD3pUolOtg==}
+  /@elysiajs/cors@1.0.0(elysia@1.0.0):
+    resolution: {integrity: sha512-u3aBCI8dAdAw9XyvkWfTrZRI8pInVx2sfz/Mw9jk+274y4iw1kvmRS9tUDEbD/uN5BLINnQSkAhCgFILo/yjug==}
     peerDependencies:
-      '@sinclair/typebox': '*'
-      elysia: '>= 0.8.0'
-    peerDependenciesMeta:
-      '@sinclair/typebox':
-        optional: true
+      elysia: '>= 1.0.0'
     dependencies:
-      elysia: 0.8.17(typescript@5.3.3)
-      superjson: 2.2.1
+      elysia: 1.0.0(@sinclair/typebox@0.32.15)(typescript@5.3.3)
     dev: false
 
   /@elysiajs/eden@1.0.0(elysia@1.0.0):
@@ -2776,7 +2774,6 @@ packages:
 
   /@sinclair/typebox@0.32.15:
     resolution: {integrity: sha512-5Lrwo7VOiWEBJBhHmqNmf3TPB9ll8gcEshvYJyAIJyCZ2PF48MFOtiDHJNj8+FsNcqImaQYmxVkKBCBlyAa/wg==}
-    dev: false
 
   /@total-typescript/ts-reset@0.5.1:
     resolution: {integrity: sha512-AqlrT8YA1o7Ff5wPfMOL0pvL+1X+sw60NN6CcOCqs658emD6RfiXhF7Gu9QcfKBH7ELY2nInLhKSCWVoNL70MQ==}
@@ -3945,6 +3942,7 @@ packages:
     engines: {node: '>=12.13'}
     dependencies:
       is-what: 4.1.16
+    dev: true
 
   /core-js-pure@3.33.1:
     resolution: {integrity: sha512-wCXGbLjnsP10PlK/thHSQlOLlLKNEkaWbTzVvHHZ79fZNeN1gUmw2gBlpItxPv/pvqldevEXFh/d5stdNvl6EQ==}
@@ -4366,27 +4364,6 @@ packages:
     resolution: {integrity: sha512-qRq74Mo7ChePOU6GHdfAJ0NREXU8vQTlVlfWz3wNygFay6xrd/fY2J7oGHwrhFeU30OVctGLdTh/FcnokTWpng==}
     dev: true
 
-  /elysia@0.8.17(typescript@5.3.3):
-    resolution: {integrity: sha512-hqKHKUxbvlDHnobudtna5nBoGiZ4oa0xdnhynLAJF3+6gTYHAcQ/8/IyxUx5Az5Uy0zTuNiv7m2bIFu7xeMiWg==}
-    peerDependencies:
-      '@sinclair/typebox': '>= 0.31.0'
-      openapi-types: '>= 12.0.0'
-      typescript: '>= 5.0.0'
-    peerDependenciesMeta:
-      '@sinclair/typebox':
-        optional: true
-      openapi-types:
-        optional: true
-      typescript:
-        optional: true
-    dependencies:
-      cookie: 0.6.0
-      eventemitter3: 5.0.1
-      fast-decode-uri-component: 1.0.1
-      fast-querystring: 1.1.2
-      memoirist: 0.1.10
-      typescript: 5.3.3
-
   /elysia@1.0.0(@sinclair/typebox@0.32.15)(typescript@5.3.3):
     resolution: {integrity: sha512-l1f0Zx9vypy9i29e3cEpEurW8Ii7YUNnwzr325QzCHH0lyBozGYa40Lzz1+2oKt2RPcAjs1tzkjChrhT5B9R/w==}
     peerDependencies:
@@ -4405,7 +4382,6 @@ packages:
       fast-decode-uri-component: 1.0.1
       fast-querystring: 1.1.2
       typescript: 5.3.3
-    dev: false
 
   /emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -6344,6 +6320,7 @@ packages:
   /is-what@4.1.16:
     resolution: {integrity: sha512-ZhMwEosbFJkA0YhFnNDgTM4ZxDRsS6HqTo7qsZM08fehyRYIYa0yHu5R6mgo1n/8MgaPBXiPimPD77baVFYg+A==}
     engines: {node: '>=12.13'}
+    dev: true
 
   /is-windows@1.0.2:
     resolution: {integrity: sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==}
@@ -6867,9 +6844,6 @@ packages:
       fs-monkey: 1.0.5
     dev: false
     optional: true
-
-  /memoirist@0.1.10:
-    resolution: {integrity: sha512-k2ARHDrSzqeQAWrgvE2NgNj7p5c1LkeFI1VizklJWDXAOTgq7m8mtl0v6W1mVawFNe3DH0hb4BdA91y3vwbqvw==}
 
   /memoizee@0.4.15:
     resolution: {integrity: sha512-UBWmJpLZd5STPm7PMUlOw/TSy972M+z8gcyQ5veOnSDRREz/0bmpyTfKt3/51DhEBqCZQn1udM/5flcSPYhkdQ==}
@@ -8975,6 +8949,7 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       copy-anything: 3.0.5
+    dev: true
 
   /supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}

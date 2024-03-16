@@ -1,23 +1,42 @@
+import { EdenWS } from '@elysiajs/eden/treaty';
 import type { MetaFunction } from '@remix-run/node';
-import { useSearchParams } from '@remix-run/react';
+import { ClientLoaderFunction, redirect, useLoaderData, useSearchParams } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { eden } from '~/lib/api';
+
+import { api } from '../lib/api';
 
 export const meta: MetaFunction = () => {
-	return [{ title: 'New Remix SPA' }, { name: 'description', content: 'Welcome to Remix (SPA Mode)!' }];
+	return [{ title: 'Games' }, { name: 'description', content: ':)' }];
 };
+
+export const clientLoader = (async ({ params }) => {
+	const gameId = params.id;
+	if (!gameId) return redirect('/games');
+
+	const { data, error } = await api.games({ id: gameId }).get();
+
+	if (error) {
+		switch (error.status) {
+			case 404:
+				return redirect('/games');
+			default:
+				throw error.value;
+		}
+	}
+	return { game: data };
+}) satisfies ClientLoaderFunction;
 
 const useGameSub = (gameId: string) => {
 	const [search] = useSearchParams();
 	const user = search.get('user');
-	const [latestData, setLatestData] = useState<any>();
+	const [latestData, setLatestData] = useState<unknown>();
 	const [i, setI] = useState(0);
 	const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle');
 	if (user && status === 'idle') setStatus('connecting');
-	const subRef = useRef<ReturnType<(typeof eden)['game'][string]['subscribe']>>();
+	const subRef = useRef<EdenWS<any>>();
 	useEffect(() => {
 		if (!user) return;
-		const subscription = eden.game[gameId].subscribe({ $query: { user } });
+		const subscription = api.game({ id: gameId }).subscribe({ query: { user } });
 		subscription.on('open', () => setStatus('connected'));
 		subscription.on('close', () => {
 			setLatestData(undefined);
@@ -42,9 +61,9 @@ const useGameSub = (gameId: string) => {
 	return { status, reconnect, sub: subRef.current, latestData };
 };
 
-export default function Index() {
-	const gameId = 'testGame';
-	const { reconnect, status, sub, latestData } = useGameSub(gameId);
+export default function Page() {
+	const { game } = useLoaderData<typeof clientLoader>();
+	const { reconnect, status, sub, latestData } = useGameSub(game.id.toString());
 
 	return (
 		<div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.8' }}>

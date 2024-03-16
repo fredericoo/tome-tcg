@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const cards = sqliteTable('cards', {
@@ -29,4 +30,14 @@ export const sessions = sqliteTable('session', {
 
 export const games = sqliteTable('games', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
+	sideA: text('side_a')
+		.notNull()
+		.references(() => users.id),
+	sideB: text('side_b')
+		.notNull()
+		.references(() => users.id),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	status: text('status', { enum: ['CREATED', 'PLAYING', 'FINISHED'] }).notNull(),
 });

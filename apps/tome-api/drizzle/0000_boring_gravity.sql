@@ -5,7 +5,13 @@ CREATE TABLE `cards` (
 );
 --> statement-breakpoint
 CREATE TABLE `games` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`side_a` text NOT NULL,
+	`side_b` text NOT NULL,
+	`created_at` integer DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`status` text NOT NULL,
+	FOREIGN KEY (`side_a`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`side_b`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `session` (
@@ -18,7 +24,8 @@ CREATE TABLE `session` (
 CREATE TABLE `user` (
 	`id` text(255) PRIMARY KEY NOT NULL,
 	`username` text,
-	`github_id` integer
+	`github_id` integer,
+	`avatar_url` text
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_github_id_unique` ON `user` (`github_id`);

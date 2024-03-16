@@ -1,9 +1,11 @@
+import { cors } from '@elysiajs/cors';
 import chalk from 'chalk';
 import { Elysia, t } from 'elysia';
 
 import { UnauthorisedError } from './lib/error';
 import { SIDES, Side } from './lib/game-engine';
 import { authRoutes } from './routes/auth';
+import { gamesRoutes } from './routes/games';
 
 async function* gameStub(
 	stepFrom = 0,
@@ -84,7 +86,9 @@ const runningGameInstances: Record<string, GameInstance> = {};
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
+	.use(cors({ origin: ['localhost:5173'], credentials: true, allowedHeaders: ['Content-Type'] }))
 	.use(authRoutes)
+	.use(gamesRoutes)
 	.ws('/game/:id', {
 		query: t.Object({ user: t.String() }),
 		async open(ws) {
