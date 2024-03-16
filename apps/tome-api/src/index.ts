@@ -3,6 +3,7 @@ import { Elysia, t } from 'elysia';
 
 import { UnauthorisedError } from './lib/error';
 import { SIDES, Side } from './lib/game-engine';
+import { authRoutes } from './routes/auth';
 
 async function* gameStub(
 	stepFrom = 0,
@@ -83,6 +84,7 @@ const runningGameInstances: Record<string, GameInstance> = {};
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
+	.use(authRoutes)
 	.ws('/game/:id', {
 		query: t.Object({ user: t.String() }),
 		async open(ws) {
