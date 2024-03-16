@@ -1,32 +1,17 @@
 import chalk from 'chalk';
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 
 import { UnauthorisedError } from './lib/error';
+import { SIDES, Side } from './lib/game-engine';
 
-/** Used to allow breaking off the `for await` loop without stopping the iterator. */
-function unclosed<T>(iterable: AsyncGenerator<T>) {
-	return {
-		[Symbol.asyncIterator]() {
-			const iterator = iterable[Symbol.asyncIterator]();
-			return {
-				next: iterator.next.bind(iterator),
-				return: async function () {
-					return { type: 'return', value: null };
-				},
-				throw: async function () {
-					return { type: 'throw', value: null };
-				},
-			};
-		},
-	};
-}
-
-async function* gameStub(stepFrom = 0): AsyncGenerator<{ state: 'idle' | 'ready' | 'playing'; step: number }> {
+async function* gameStub(
+	stepFrom = 0,
+): AsyncGenerator<{ state: 'idle' | 'ready' | 'playing'; step: number; action?: string }> {
 	let step = stepFrom;
 	yield { state: 'idle', step };
 	step++;
 	await new Promise(resolve => setTimeout(resolve, 1000));
-	yield { state: 'ready', step };
+	yield { state: 'ready', step, action: 'message' };
 	step++;
 	await new Promise(resolve => setTimeout(resolve, 1000));
 	yield { state: 'playing', step };
@@ -35,67 +20,118 @@ async function* gameStub(stepFrom = 0): AsyncGenerator<{ state: 'idle' | 'ready'
 	yield* gameStub(step);
 }
 
-/** In-memory storage of all games ongoing. */
-const ongoingGames: Record<string, { online: string[]; lastState: any; game: ReturnType<typeof gameStub> }> = {};
+type GameInstanceState = {
+	connections: {
+		sideA: { id: string; send: (data: any) => void } | undefined;
+		sideB: { id: string; send: (data: any) => void } | undefined;
+	};
+	lastState: any;
+	submitFn: () => void;
+};
+
+const sanitiseIteration = (side: Side, iteration: any) => {
+	return { side, iteration };
+};
+
+const createGameInstance = () => {
+	const game = gameStub();
+	const state: GameInstanceState = {
+		connections: { sideA: undefined, sideB: undefined },
+		lastState: undefined,
+		submitFn: () => {},
+	};
+
+	const handleGame = async () => {
+		for await (const iteration of game) {
+			state.lastState = iteration;
+			SIDES.forEach(side => state.connections[side]?.send(iteration));
+			if (iteration.action) {
+				await new Promise(resolve => {
+					state.submitFn = () => {
+						resolve(null);
+					};
+				});
+			}
+		}
+	};
+	handleGame();
+
+	return {
+		state,
+		join: (side: Side, connectionId: string, sendFn: (data: any) => void) => {
+			state.connections[side] = { id: connectionId, send: (data: any) => sendFn(sanitiseIteration(side, data)) };
+			if (state.lastState) state.connections[side]?.send(state.lastState);
+		},
+		leave: (connectionId: string) => {
+			if (state.connections.sideA?.id === connectionId) {
+				state.connections.sideA = undefined;
+				return { ok: true };
+			}
+			if (state.connections.sideB?.id === connectionId) {
+				state.connections.sideB = undefined;
+				return { ok: true };
+			}
+			return { ok: false };
+		},
+	};
+};
+
+type GameInstance = ReturnType<typeof createGameInstance>;
+
+/** In-memory storage of all instances. */
+const runningGameInstances: Record<string, GameInstance> = {};
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
 	.ws('/game/:id', {
+		query: t.Object({ user: t.String() }),
 		async open(ws) {
+			// temporary mocks
+			const userId = ws.data.query.user;
+			// call the db, find out which users are in each side of the game
+			const userIdToSide: Record<string, Side> = {
+				a: 'sideA',
+				b: 'sideB',
+			};
+			// get the user’s intended side
+			const sideToJoin = userIdToSide[userId];
+
+			if (!sideToJoin) {
+				ws.send({ error: 'Unauthorised' });
+				return;
+			}
+
 			const channel = ws.data.params.id;
-			console.log(`[open] Connection established to ${channel}`);
+			const ongoingGame = runningGameInstances[channel] ?? (runningGameInstances[channel] = createGameInstance());
+			ongoingGame.join(sideToJoin, ws.id, ws.send);
+
 			ws.subscribe(channel);
-
-			const ongoingGame =
-				ongoingGames[channel] ??
-				(ongoingGames[channel] = {
-					online: [],
-					lastState: undefined,
-					game: gameStub(),
-				});
-
-			ongoingGame.online.push(ws.id);
-
-			if (ongoingGame.lastState) {
-				ws.send(ongoingGame.lastState);
-			}
-
-			console.log('connected', ongoingGame.online);
-			for await (const state of unclosed(ongoingGame.game)) {
-				ongoingGame.lastState = state;
-				console.log('iterating', ongoingGame.online, state, ws.id);
-				ws.send(state);
-				ws.publish(channel, state);
-				if (!ongoingGame.online.includes(ws.id)) {
-					break;
-				}
-			}
+			console.log(`⚡ (${channel}) “${userId}” is now`, chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`));
 		},
 		close(ws) {
+			const userId = ws.data.query.user;
 			const channel = ws.data.params.id;
-
-			console.log(`[close] Connection closed to ${channel}`);
-
 			ws.unsubscribe(channel);
-
-			const state = ongoingGames[channel];
-			if (state) {
-				const userIndex = state.online.indexOf(ws.id);
-				if (userIndex !== -1) {
-					state.online.splice(userIndex, 1);
-				}
-				ws.publish(channel, { online: state.online });
+			const game = runningGameInstances[channel];
+			if (!game) return;
+			const left = game.leave(ws.id);
+			if (left.ok) {
+				console.log(`⚡ (${channel}) “${userId}” is now`, chalk.red(`\uE0B6${chalk.bgRed(`offline`)}\uE0B4`));
 			}
 		},
 		message(ws, message) {
-			console.log('message', message);
+			const userId = ws.data.query.user;
+			const channel = ws.data.params.id;
+			const ongoingGame = runningGameInstances[channel];
+			if (!ongoingGame) return;
+			ongoingGame.state.submitFn();
+			console.log(`👾 (${channel}) ${userId}:`, message);
 		},
 	})
-
-	.listen(process.env.PORT ?? 8080);
+	.listen({ port: process.env.PORT ?? 8080 });
 
 console.log(
-	chalk.green(`\uE0B6${chalk.bgGreen('Tome API')}\uE0B4`),
+	chalk.blue(`\uE0B6${chalk.bgBlue('Tome API')}\uE0B4`),
 	`running at http://${app.server?.hostname}:${app.server?.port}`,
 );
 
