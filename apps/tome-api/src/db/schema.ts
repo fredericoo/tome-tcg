@@ -12,6 +12,7 @@ export const users = sqliteTable('user', {
 	}).primaryKey(),
 	username: text('username'),
 	githubId: integer('github_id').unique(),
+	avatarUrl: text('avatar_url'),
 });
 
 export const sessions = sqliteTable('session', {

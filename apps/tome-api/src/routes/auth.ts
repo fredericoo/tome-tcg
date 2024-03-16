@@ -18,8 +18,9 @@ const githubEnv = Value.Cast(
 );
 
 const githubUserSchema = t.Object({
-	id: t.String({ minLength: 1 }),
+	id: t.Number(),
 	login: t.String({ minLength: 1 }),
+	avatar_url: t.Optional(t.String()),
 });
 
 const github = new GitHub(githubEnv.GITHUB_CLIENT_ID, githubEnv.GITHUB_CLIENT_SECRET);
@@ -63,7 +64,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			const existingUser = await db
 				.select()
 				.from(users)
-				.where(eq(users.githubId, Number(githubUser.id)))
+				.where(eq(users.githubId, githubUser.id))
 				.limit(1)
 				.then(takeFirst);
 
@@ -78,8 +79,9 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			const userId = generateId(15);
 			await db.insert(users).values({
 				id: userId,
-				githubId: Number(githubUser.id),
+				githubId: githubUser.id,
 				username: githubUser.login,
+				avatarUrl: githubUser.avatar_url,
 			});
 			const session = await lucia.createSession(userId, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
