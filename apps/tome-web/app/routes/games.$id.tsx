@@ -24,7 +24,7 @@ export const clientLoader = (async ({ params }) => {
 				throw error.value;
 		}
 	}
-	return { game: data };
+	return data;
 }) satisfies ClientLoaderFunction;
 
 type Subscription = ReturnType<ReturnType<(typeof api)['games']>['pubsub']['subscribe']>;
@@ -62,13 +62,14 @@ const useGameSub = (gameId: string) => {
 };
 
 export default function Page() {
-	const { game } = useLoaderData<typeof clientLoader>();
+	const { game, cards } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData } = useGameSub(game.id.toString());
+
+	const playerSide = latestData?.board[latestData.side];
+	// const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
 
 	return (
 		<div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.8' }}>
-			<h1>Playground</h1>
-
 			<span>status: {status}</span>
 			{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
 			{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
@@ -81,6 +82,26 @@ export default function Page() {
 			</button>
 
 			<div>{JSON.stringify(latestData)}</div>
+
+			<div>
+				<h3>Your hand</h3>
+				<ol>
+					{playerSide?.hand.map(cardRef => {
+						if ('id' in cardRef) {
+							return (
+								<li key={cardRef.key}>
+									<div key={cardRef.key}>{cards[cardRef.id].name}</div>
+								</li>
+							);
+						}
+						return (
+							<li key={cardRef.key}>
+								<div key={cardRef.key}>Hidden</div>
+							</li>
+						);
+					})}
+				</ol>
+			</div>
 
 			<p>Phase: {latestData?.board.phase}</p>
 			<p>
