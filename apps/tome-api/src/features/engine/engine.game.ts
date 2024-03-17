@@ -182,8 +182,6 @@ export const createGameInstance = ({
 		};
 		await Promise.all([castA.completed, castB.completed]);
 
-		console.log(castA.completed, castB.completed);
-
 		yield { board };
 
 		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, board, turn } });

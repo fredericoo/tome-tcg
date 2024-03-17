@@ -96,6 +96,8 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 					id: card.id,
 				}))),
 		);
+
+		iteration.board[side].action = side === playerSide ? originalIteration.actions?.[side] : undefined;
 	});
 	return iteration;
 };
