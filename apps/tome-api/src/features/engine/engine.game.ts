@@ -58,6 +58,7 @@ export type GameIterationResponse = {
 				type: A;
 				config: PlayerActionMap[A]['config'];
 				submit: PlayerActionMap[A]['onAction'];
+				timesOutAt: number;
 			};
 		}[keyof PlayerActionMap];
 	};
@@ -170,12 +171,13 @@ export const createGameInstance = ({
 				onTimeout: noop,
 			}),
 		];
+		const timesOutAt = Date.now() + settings.castTimeoutMs;
 
 		yield {
 			board,
 			actions: {
-				sideA: { submit: castA.submitAction, config: { type: 'any' }, type: 'cast_from_hand' },
-				sideB: { submit: castB.submitAction, config: { type: 'any' }, type: 'cast_from_hand' },
+				sideA: { submit: castA.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
+				sideB: { submit: castB.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
 			},
 		};
 		await Promise.all([castA.completed, castB.completed]);

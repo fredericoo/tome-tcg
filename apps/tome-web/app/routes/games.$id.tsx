@@ -2,6 +2,7 @@ import { EdenWS } from '@elysiajs/eden/treaty';
 import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData, useSearchParams } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { RerenderEvery } from '~/components/rerender-every';
 
 import { api } from '../lib/api';
 
@@ -81,6 +82,21 @@ export default function Page() {
 			</button>
 
 			<div>{JSON.stringify(latestData)}</div>
+
+			<p>Phase: {latestData?.iteration?.board.phase}</p>
+			<p>
+				<RerenderEvery seconds={1}>
+					{() => {
+						if (!latestData?.iteration) return null;
+						if (!('actions' in latestData.iteration)) return null;
+						if (!(latestData.side in latestData.iteration.actions)) return null;
+
+						const date = new Date(latestData.iteration.actions[latestData.side].timesOutAt);
+						// return seconds remaining
+						return <span>Time left for action: {Math.floor((date.getTime() - Date.now()) / 1000)}</span>;
+					}}
+				</RerenderEvery>
+			</p>
 		</div>
 	);
 }

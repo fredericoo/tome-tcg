@@ -1,25 +1,10 @@
 import chalk from 'chalk';
 import { Elysia, t } from 'elysia';
 
-import { SIDES, Side } from '../engine/engine.game';
+import { delay } from '../../lib/utils';
+import { SIDES, Side, createGameInstance } from '../engine/engine.game';
 
-async function* gameStub(
-	stepFrom = 0,
-): AsyncGenerator<{ state: 'idle' | 'ready' | 'playing'; step: number; action?: string }> {
-	let step = stepFrom;
-	yield { state: 'idle', step };
-	step++;
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	yield { state: 'ready', step, action: 'message' };
-	step++;
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	yield { state: 'playing', step };
-	step++;
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	yield* gameStub(step);
-}
-
-type GameInstanceState = {
+type GameRoomState = {
 	connections: {
 		sideA: { id: string; send: (data: any) => void } | undefined;
 		sideB: { id: string; send: (data: any) => void } | undefined;
@@ -32,9 +17,12 @@ const sanitiseIteration = (side: Side, iteration: any) => {
 	return { side, iteration };
 };
 
-const createGameInstance = () => {
-	const game = gameStub();
-	const state: GameInstanceState = {
+const createGameRoom = () => {
+	const game = createGameInstance({
+		decks: { sideA: [], sideB: [] },
+		settings: { castTimeoutMs: 10000, spellTimeoutMs: 1000 },
+	});
+	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
 		lastState: undefined,
 		submitFn: () => {},
@@ -44,13 +32,7 @@ const createGameInstance = () => {
 		for await (const iteration of game) {
 			state.lastState = iteration;
 			SIDES.forEach(side => state.connections[side]?.send(iteration));
-			if (iteration.action) {
-				await new Promise(resolve => {
-					state.submitFn = () => {
-						resolve(null);
-					};
-				});
-			}
+			await delay(1000);
 		}
 	};
 	handleGame();
@@ -75,10 +57,10 @@ const createGameInstance = () => {
 	};
 };
 
-type GameInstance = ReturnType<typeof createGameInstance>;
+type GameRoom = ReturnType<typeof createGameRoom>;
 
 /** In-memory storage of all instances. */
-const runningGameInstances: Record<string, GameInstance> = {};
+const runningGameRooms: Record<string, GameRoom> = {};
 
 export const gamePubSub = new Elysia().ws('/:id/pubsub', {
 	query: t.Object({ user: t.String() }),
@@ -99,7 +81,7 @@ export const gamePubSub = new Elysia().ws('/:id/pubsub', {
 		}
 
 		const channel = ws.data.params.id;
-		const ongoingGame = runningGameInstances[channel] ?? (runningGameInstances[channel] = createGameInstance());
+		const ongoingGame = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom());
 		ongoingGame.join(sideToJoin, ws.id, ws.send);
 
 		ws.subscribe(channel);
@@ -109,7 +91,7 @@ export const gamePubSub = new Elysia().ws('/:id/pubsub', {
 		const userId = ws.data.query.user;
 		const channel = ws.data.params.id;
 		ws.unsubscribe(channel);
-		const game = runningGameInstances[channel];
+		const game = runningGameRooms[channel];
 		if (!game) return;
 		const left = game.leave(ws.id);
 		if (left.ok) {
@@ -119,7 +101,7 @@ export const gamePubSub = new Elysia().ws('/:id/pubsub', {
 	message(ws, message) {
 		const userId = ws.data.query.user;
 		const channel = ws.data.params.id;
-		const ongoingGame = runningGameInstances[channel];
+		const ongoingGame = runningGameRooms[channel];
 		if (!ongoingGame) return;
 		ongoingGame.state.submitFn();
 		console.log(`👾 (${channel}) ${userId}:`, message);

@@ -23,3 +23,5 @@ export const stringSplit = <T extends string, D extends string>(input: T, divide
 	input.split(divider) as StringSplit<T, D>;
 
 export function noop() {}
+
+export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
