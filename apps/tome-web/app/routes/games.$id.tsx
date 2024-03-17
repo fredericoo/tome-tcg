@@ -1,9 +1,9 @@
-import { EdenWS } from '@elysiajs/eden/treaty';
 import type { MetaFunction } from '@remix-run/node';
-import { ClientLoaderFunction, redirect, useLoaderData, useSearchParams } from '@remix-run/react';
+import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RerenderEvery } from '~/components/rerender-every';
 
+import type { SanitisedIteration } from '../../../tome-api/src/features/game/game.pubsub';
+import { RerenderEvery } from '../components/rerender-every';
 import { api } from '../lib/api';
 
 export const meta: MetaFunction = () => {
@@ -27,17 +27,16 @@ export const clientLoader = (async ({ params }) => {
 	return { game: data };
 }) satisfies ClientLoaderFunction;
 
+type Subscription = ReturnType<ReturnType<(typeof api)['games']>['pubsub']['subscribe']>;
+
 const useGameSub = (gameId: string) => {
-	const [search] = useSearchParams();
-	const user = search.get('user');
-	const [latestData, setLatestData] = useState<unknown>();
+	const [latestData, setLatestData] = useState<SanitisedIteration>();
 	const [i, setI] = useState(0);
 	const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle');
-	if (user && status === 'idle') setStatus('connecting');
-	const subRef = useRef<EdenWS<any>>();
+	if (status === 'idle') setStatus('connecting');
+	const subRef = useRef<Subscription>();
 	useEffect(() => {
-		if (!user) return;
-		const subscription = api.games({ id: gameId }).pubsub.subscribe({ query: { user } });
+		const subscription = api.games({ id: gameId }).pubsub.subscribe();
 		subscription.on('open', () => setStatus('connected'));
 		subscription.on('close', () => {
 			setLatestData(undefined);
@@ -46,14 +45,14 @@ const useGameSub = (gameId: string) => {
 		subscription.on('error', () => setStatus('error'));
 
 		subscription.subscribe(({ data, isTrusted }) => {
-			if (isTrusted) setLatestData(data);
+			if (isTrusted) setLatestData(data as SanitisedIteration);
 		});
 		subRef.current = subscription;
 		return () => {
 			subscription.close();
 			subRef.current = undefined;
 		};
-	}, [gameId, user, i]);
+	}, [gameId, i]);
 	const reconnect = useCallback(() => {
 		setStatus('connecting');
 		setI(i => i + 1);
@@ -83,15 +82,14 @@ export default function Page() {
 
 			<div>{JSON.stringify(latestData)}</div>
 
-			<p>Phase: {latestData?.iteration?.board.phase}</p>
+			<p>Phase: {latestData?.board.phase}</p>
 			<p>
 				<RerenderEvery seconds={1}>
 					{() => {
-						if (!latestData?.iteration) return null;
-						if (!('actions' in latestData.iteration)) return null;
-						if (!(latestData.side in latestData.iteration.actions)) return null;
-
-						const date = new Date(latestData.iteration.actions[latestData.side].timesOutAt);
+						if (!latestData) return null;
+						const action = latestData.board[latestData.side].action;
+						if (!action) return null;
+						const date = new Date(action.timesOutAt);
 						// return seconds remaining
 						return <span>Time left for action: {Math.floor((date.getTime() - Date.now()) / 1000)}</span>;
 					}}
