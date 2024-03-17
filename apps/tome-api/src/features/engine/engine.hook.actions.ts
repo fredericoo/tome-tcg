@@ -1,6 +1,6 @@
-import { Board, moveBottomCard, moveTopCard, removeCard } from './board';
-import { GameCard, GameIterationResponse, Side } from './game-engine';
-import { PlayerAction, playerAction } from './turn-actions';
+import { Board, moveBottomCard, moveTopCard, removeCard } from './engine.board';
+import { GameCard, GameIterationResponse, Side } from './engine.game';
+import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const createHookActions = (board: Board) => ({

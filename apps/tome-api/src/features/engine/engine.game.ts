@@ -1,10 +1,10 @@
-import { Board, initialiseGameBoard, moveTopCard, topOf } from './board';
-import { TurnHooks, createTriggerHooks } from './hooks';
-import { createHookActions } from './hooks-actions';
-import { initialiseTurn } from './turn';
-import { PlayerActionMap, playerAction } from './turn-actions';
-import { DistributiveOmit } from './type-utils';
-import { invariant, noop } from './utils';
+import { DistributiveOmit } from '../../lib/type-utils';
+import { invariant, noop } from '../../lib/utils';
+import { Board, initialiseGameBoard, moveTopCard, topOf } from './engine.board';
+import { createHookActions } from './engine.hook.actions';
+import { TurnHooks, createTriggerHooks } from './engine.hooks';
+import { initialiseTurn } from './engine.turn';
+import { PlayerActionMap, playerAction } from './engine.turn.actions';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
@@ -93,7 +93,7 @@ const resolveWinnerField = (
 	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
 };
 
-export const playGame = ({
+export const createGameInstance = ({
 	decks,
 	settings,
 }: {

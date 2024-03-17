@@ -1,4 +1,4 @@
-import { FieldCard, GameCard, Side, SpellCard, SpellStack } from './game-engine';
+import { FieldCard, GameCard, Side, SpellCard, SpellStack } from './engine.game';
 
 export type PlayerActionMap = {
 	cast_from_hand: {

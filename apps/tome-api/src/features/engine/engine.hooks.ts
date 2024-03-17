@@ -1,7 +1,7 @@
-import { Board, topOf } from './board';
-import { GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard, Turn } from './game-engine';
-import { HookActions } from './hooks-actions';
-import { exhaustive } from './utils';
+import { exhaustive } from '../../lib/utils';
+import { Board, topOf } from './engine.board';
+import { GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard, Turn } from './engine.game';
+import { HookActions } from './engine.hook.actions';
 
 export type TurnHooks<THasOwner extends boolean = false> = {
 	// TODO: implement these

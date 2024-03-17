@@ -1,4 +1,4 @@
-import { SIDES, STACKS, Turn } from './game-engine';
+import { SIDES, STACKS, Turn } from './engine.game';
 
 export const getTurnCastCards = (casts: Turn['casts']) =>
 	[casts.sideA.field, casts.sideB.field, ...SIDES.flatMap(side => STACKS.flatMap(stack => casts[side][stack]))].filter(

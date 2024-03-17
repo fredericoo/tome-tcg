@@ -36,7 +36,7 @@ const useGameSub = (gameId: string) => {
 	const subRef = useRef<EdenWS<any>>();
 	useEffect(() => {
 		if (!user) return;
-		const subscription = api.game({ id: gameId }).subscribe({ query: { user } });
+		const subscription = api.games({ id: gameId }).pubsub.subscribe({ query: { user } });
 		subscription.on('open', () => setStatus('connected'));
 		subscription.on('close', () => {
 			setLatestData(undefined);

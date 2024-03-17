@@ -1,9 +1,10 @@
 import { expect, mock, test } from 'bun:test';
 
-import { initialiseGameBoard } from './board';
-import { SIDES, STACKS, Side, SpellStack, initialiseTurn } from './game-engine';
-import { createTriggerHooks } from './hooks';
-import { createHookActions } from './hooks-actions';
+import { initialiseGameBoard } from './engine.board';
+import { SIDES, STACKS, Side, SpellStack } from './engine.game';
+import { createHookActions } from './engine.hook.actions';
+import { createTriggerHooks } from './engine.hooks';
+import { initialiseTurn } from './engine.turn';
 
 test('trigger all effects of fields and spells from both sides', async () => {
 	const effect = mock((ownerSide: undefined | [Side, SpellStack]) => ownerSide);

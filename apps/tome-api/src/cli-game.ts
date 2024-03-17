@@ -1,5 +1,5 @@
-import { topOf } from './lib/board';
-import { DbCard, SIDES, STACKS, Side, SpellStack, playGame } from './lib/game-engine';
+import { topOf } from './features/engine/engine.board';
+import { DbCard, SIDES, STACKS, Side, SpellStack, createGameInstance } from './features/engine/engine.game';
 import { invariant } from './lib/utils';
 
 const deck: DbCard[] = [
@@ -76,7 +76,7 @@ const deck: DbCard[] = [
 ];
 
 const play = async () => {
-	const game = playGame({
+	const game = createGameInstance({
 		decks: { sideA: [...deck], sideB: [...deck] },
 		settings: { castTimeoutMs: Infinity, spellTimeoutMs: Infinity },
 	});

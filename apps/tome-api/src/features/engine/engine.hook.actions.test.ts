@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { initialiseGameBoard } from './board';
-import { GameCard } from './game-engine';
-import { createHookActions } from './hooks-actions';
-import { invariant, noop } from './utils';
+import { invariant, noop } from '../../lib/utils';
+import { initialiseGameBoard } from './engine.board';
+import { GameCard } from './engine.game';
+import { createHookActions } from './engine.hook.actions';
 
 let cardId = 0;
 const createCard = (): GameCard => {

@@ -4,10 +4,10 @@ import { eq } from 'drizzle-orm';
 import { Elysia, error, t } from 'elysia';
 import { generateId } from 'lucia';
 
-import { db } from '../db';
-import { users } from '../db/schema';
-import { lucia } from '../lib/auth';
-import { takeFirst } from '../lib/utils';
+import { db } from '../../db';
+import { users } from '../../db/schema';
+import { takeFirst } from '../../lib/utils';
+import { lucia } from './auth';
 
 const githubEnv = Value.Cast(
 	t.Object({

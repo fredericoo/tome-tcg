@@ -1,13 +1,15 @@
 import { and, eq, or } from 'drizzle-orm';
 import { Elysia, error, t } from 'elysia';
 
-import { db } from '../db';
-import { games } from '../db/schema';
-import { withUser } from '../lib/auth.plugin';
-import { takeFirst, takeFirstOrThrow } from '../lib/utils';
+import { db } from '../../db';
+import { games } from '../../db/schema';
+import { takeFirst, takeFirstOrThrow } from '../../lib/utils';
+import { withUser } from '../auth/auth.plugin';
+import { gamePubSub } from './game.pubsub';
 
-export const gamesRoutes = new Elysia({ prefix: '/games' })
+export const gameRoutes = new Elysia({ prefix: '/games' })
 	.use(withUser)
+	.use(gamePubSub)
 	.get('/:id', async ({ user, params }) => {
 		if (!user) return error('Unauthorized', 'You must be logged in to view a game.');
 		const gameIncludesUser = or(eq(games.sideA, user.id), eq(games.sideB, user.id));
