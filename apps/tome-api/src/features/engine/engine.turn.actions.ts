@@ -1,12 +1,10 @@
-import { FieldCard, GameCard, Side, SpellCard, SpellStack } from './engine.game';
+import { GameCard, Side, SpellStack } from './engine.game';
 
 export type PlayerActionMap = {
 	cast_from_hand: {
 		type: 'cast_from_hand';
 		config: { type: GameCard['type'] | 'any' };
-		onAction: (
-			params: { side: Side; card: SpellCard; stack: SpellStack } | { side: Side; card: FieldCard; stack?: never },
-		) => void;
+		onAction: (params: { side: Side; cardKey: number; stack?: SpellStack }) => void;
 	};
 	select_from_hand: {
 		type: 'select_from_hand';

@@ -73,7 +73,10 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	...Array.from({ length: 50 }).map(
+];
+
+deck.push(
+	...Array.from({ length: 30 - deck.length }).map(
 		(_, i): DbCard => ({
 			type: 'spell',
 			attack: Math.ceil(Math.random() * 20),
@@ -84,4 +87,4 @@ export const deck: DbCard[] = [
 			name: `Random Spell ${i}`,
 		}),
 	),
-];
+);

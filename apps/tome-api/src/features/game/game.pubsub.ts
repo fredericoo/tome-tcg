@@ -1,11 +1,20 @@
+import { Value } from '@sinclair/typebox/value';
 import chalk from 'chalk';
-import { Elysia } from 'elysia';
+import { Elysia, Static, t } from 'elysia';
 
 import { delay } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { Board } from '../engine/engine.board';
-import { GameIterationResponse, SIDES, STACKS, Side, SpellStack, createGameInstance } from '../engine/engine.game';
+import {
+	GameCard,
+	GameIterationResponse,
+	SIDES,
+	STACKS,
+	Side,
+	SpellStack,
+	createGameInstance,
+} from '../engine/engine.game';
 import { PlayerActionMap } from '../engine/engine.turn.actions';
 import { getGameById } from './game.api';
 
@@ -14,18 +23,19 @@ type GameRoomState = {
 		sideA: { id: string; send: (data: any) => void } | undefined;
 		sideB: { id: string; send: (data: any) => void } | undefined;
 	};
-	lastState: any;
+	lastState: GameIterationResponse | undefined;
 };
 
 /** Card info that gets sent over the websockets connection */
-type PubSubCard = { key: number; id?: string };
+export type PubSubCard = { key: number; id?: string };
 
 export type SanitisedIteration = {
 	side: Side;
-	board: { phase: Board['phase'] } & Record<
+	board: { phase: Board['phase']; field: PubSubCard[] } & Record<
 		Side,
 		{
 			hp: number;
+			casting: Partial<Record<'field' | SpellStack, PubSubCard>>;
 			drawPile: PubSubCard[];
 			discardPile: PubSubCard[];
 			hand: PubSubCard[];
@@ -42,6 +52,10 @@ export type SanitisedIteration = {
 	>;
 };
 
+export type PubSubError = { error: string };
+
+const hideCard = (card: GameCard): PubSubCard => ({ key: card.key });
+const showCard = (card: GameCard): PubSubCard => ({ key: card.key, id: card.id });
 /**
  * Clears data that’s not supposed to make it to end users.
  * E.g.: Deck cards are never supposed to be sent to the client.
@@ -50,9 +64,11 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 	const iteration: SanitisedIteration = {
 		side: playerSide,
 		board: {
+			field: originalIteration.board.field.map(card => ({ key: card.key })),
 			phase: originalIteration.board.phase,
 			sideA: {
 				hp: originalIteration.board.players.sideA.hp,
+				casting: {},
 				discardPile: [],
 				drawPile: [],
 				hand: [],
@@ -64,6 +80,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			},
 			sideB: {
 				hp: originalIteration.board.players.sideB.hp,
+				casting: {},
 				discardPile: [],
 				drawPile: [],
 				hand: [],
@@ -76,28 +93,24 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		},
 	};
 	SIDES.forEach(side => {
-		// no one can see the deck cards
-		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(card => ({ key: card.key }));
-		// everyone can see the discard pile cards
-		iteration.board[side].discardPile = originalIteration.board.players[side].discardPile.map(card => ({
-			key: card.key,
-			id: card.id,
-		}));
-		// only the owner of the hand should see the ids
-		iteration.board[side].hand = originalIteration.board.players[side].hand.map(card => ({
-			key: card.key,
-			...(side === playerSide ? { id: card.id } : {}),
-		}));
+		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
+		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
+		iteration.board[side].discardPile = originalIteration.board.players[side].discardPile.map(hideCard);
+		iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
 		// everyone can see the stacks
-		STACKS.forEach(
-			stack =>
-				(iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(card => ({
-					key: card.key,
-					id: card.id,
-				}))),
-		);
+		STACKS.forEach(stack => {
+			iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
 
-		iteration.board[side].action = side === playerSide ? originalIteration.actions?.[side] : undefined;
+			const casting = originalIteration.board.players[side].casting[stack];
+			if (casting) {
+				iteration.board[side].casting[stack] = hideCard(casting);
+			}
+		});
+		const castingField = originalIteration.board.players[side].casting.field;
+		if (castingField) {
+			iteration.board[side].casting.field = hideCard(castingField);
+		}
+		iteration.board[side].action = originalIteration.actions?.[side];
 	});
 	return iteration;
 };
@@ -106,7 +119,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 10000, spellTimeoutMs: 1000 },
+		settings: { castTimeoutMs: 10000000, spellTimeoutMs: 10000000 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
@@ -215,6 +228,53 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			return;
 		}
 
-		console.log(`👾 (${channel}) ${user.username ?? user.id}:`, message);
+		const userSide =
+			ongoingGame.state.connections.sideA?.id === ws.id ? 'sideA'
+			: ongoingGame.state.connections.sideA?.id === ws.id ? 'sideB'
+			: undefined;
+
+		if (!userSide) {
+			ws.send({ error: 'Unauthorised' });
+			return;
+		}
+
+		const action = ongoingGame.state.lastState?.actions?.[userSide];
+		if (!action) {
+			ws.send({ error: 'Action not requested' });
+			return;
+		}
+
+		try {
+			validateAction(action, message, userSide);
+			console.log(`⚡ (${channel}) “${user.username ?? user.id}”:`, message);
+		} catch (error) {
+			console.error(error);
+			ws.send({ error: 'Invalid action' });
+			return;
+		}
 	},
 });
+
+const CastFromHandMessageSchema = t.Object({
+	type: t.Literal('cast_from_hand'),
+	cardKey: t.Number(),
+	stack: t.Union([t.Literal('blue'), t.Literal('green'), t.Literal('red')]),
+});
+
+export type CastFromHandMessageSchema = Static<typeof CastFromHandMessageSchema>;
+
+const validateAction = (
+	action: NonNullable<NonNullable<GameIterationResponse['actions']>[Side]>,
+	message: unknown,
+	side: Side,
+) => {
+	switch (action.type) {
+		case 'cast_from_hand': {
+			const payload = Value.Decode(CastFromHandMessageSchema, message);
+			action.submit({ cardKey: payload.cardKey, stack: payload.stack, side });
+			return;
+		}
+		default:
+			throw new Error('Not implemented');
+	}
+};

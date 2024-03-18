@@ -7,6 +7,7 @@ type Subscription = ReturnType<ReturnType<(typeof api)['games']>['pubsub']['subs
 
 export const useGameSub = (gameId: string) => {
 	const [latestData, setLatestData] = useState<SanitisedIteration>();
+	const [error, setError] = useState<string>();
 	const [i, setI] = useState(0);
 	const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle');
 	if (status === 'idle') setStatus('connecting');
@@ -21,7 +22,12 @@ export const useGameSub = (gameId: string) => {
 		subscription.on('error', () => setStatus('error'));
 
 		subscription.subscribe(({ data, isTrusted }) => {
-			if (isTrusted) setLatestData(data as SanitisedIteration);
+			setError(undefined);
+			if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
+				setError(data.error);
+				return;
+			}
+			if (isTrusted && data && typeof data === 'object' && 'side' in data) setLatestData(data as SanitisedIteration);
 		});
 		subRef.current = subscription;
 		return () => {
@@ -34,5 +40,5 @@ export const useGameSub = (gameId: string) => {
 		setI(i => i + 1);
 	}, []);
 
-	return { status, reconnect, sub: subRef.current, latestData };
+	return { error, status, reconnect, sub: subRef.current, latestData };
 };

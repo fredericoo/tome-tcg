@@ -140,21 +140,22 @@ export const createGameInstance = ({
 
 		const onCast =
 			(side: Side): PlayerActionMap['cast_from_hand']['onAction'] =>
-			({ card, stack }) => {
+			({ cardKey, stack }) => {
 				const hand = board.players[side].hand;
-				const index = hand.indexOf(card);
-				invariant(index !== -1, `Card “${card.name}” not found in ${side}’s hand`);
+				const index = hand.findIndex(handCard => handCard.key === cardKey);
+				const card = hand[index];
+				invariant(index !== -1 && card, `Card key “${cardKey}” not found in ${side}’s hand`);
 				hand.splice(index, 1);
 
 				if (card.type === 'field') {
 					board.players[side].casting.field = card;
 					return turn.casts[side].field.push(card);
 				}
-				if (stack) {
+				if (stack && card.colors.includes(stack)) {
 					board.players[side].casting[stack] = card;
 					return turn.casts[side][stack].push(card);
 				}
-				throw new Error(`Invalid cast ${card}`);
+				throw new Error(`Invalid cast ${card.name}`);
 			};
 
 		const [castA, castB] = [
@@ -185,13 +186,17 @@ export const createGameInstance = ({
 		];
 		const timesOutAt = Date.now() + settings.castTimeoutMs;
 
-		yield {
+		const castState: GameIterationResponse = {
 			board,
 			actions: {
 				sideA: { submit: castA.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
 				sideB: { submit: castB.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
 			},
 		};
+		yield castState;
+		const finished = await Promise.race([castA.completed, castB.completed]);
+		delete castState.actions?.[finished.side];
+		yield castState;
 		await Promise.all([castA.completed, castB.completed]);
 
 		yield { board };
