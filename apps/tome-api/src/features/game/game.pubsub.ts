@@ -17,8 +17,8 @@ type GameRoomState = {
 	lastState: any;
 };
 
-type HiddenCard = { key: number };
-type ShownCard = { key: number; id: string };
+/** Card info that gets sent over the websockets connection */
+type PubSubCard = { key: number; id?: string };
 
 export type SanitisedIteration = {
 	side: Side;
@@ -26,10 +26,10 @@ export type SanitisedIteration = {
 		Side,
 		{
 			hp: number;
-			drawPile: HiddenCard[];
-			discardPile: ShownCard[];
-			hand: ShownCard[] | HiddenCard[];
-			stacks: Record<SpellStack, ShownCard[]>;
+			drawPile: PubSubCard[];
+			discardPile: PubSubCard[];
+			hand: PubSubCard[];
+			stacks: Record<SpellStack, PubSubCard[]>;
 			action?: {
 				[A in keyof PlayerActionMap]: {
 					type: A;

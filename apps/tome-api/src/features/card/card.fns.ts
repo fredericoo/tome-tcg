@@ -73,4 +73,15 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+	...Array.from({ length: 50 }).map(
+		(_, i): DbCard => ({
+			type: 'spell',
+			attack: Math.ceil(Math.random() * 20),
+			colors: ['red'],
+			description: 'Randomly generated spell',
+			id: (10 + i).toString(),
+			effects: {},
+			name: `Random Spell ${i}`,
+		}),
+	),
 ];

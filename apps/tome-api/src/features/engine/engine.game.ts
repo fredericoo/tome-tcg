@@ -116,6 +116,18 @@ export const createGameInstance = ({
 	async function* handleTurn(): AsyncGenerator<GameIterationResponse> {
 		const turn = initialiseTurn({ finishedTurns });
 
+		if (finishedTurns.length === 0) {
+			yield { board };
+			SIDES.forEach(side => drawCard(side, turn));
+			yield { board };
+			SIDES.forEach(side => drawCard(side, turn));
+			yield { board };
+			SIDES.forEach(side => drawCard(side, turn));
+			yield { board };
+			SIDES.forEach(side => drawCard(side, turn));
+			yield { board };
+		}
+
 		yield* triggerHook({ hookName: 'beforeDraw', context: { actions, board, turn } });
 		board.phase = 'draw';
 		yield { board };
