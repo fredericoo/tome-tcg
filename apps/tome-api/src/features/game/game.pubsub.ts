@@ -69,7 +69,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		side: playerSide,
 		board: {
 			highlights: {},
-			field: originalIteration.board.field.map(card => ({ key: card.key })),
+			field: originalIteration.board.field.map(showCard),
 			phase: originalIteration.board.phase,
 			sideA: {
 				hp: originalIteration.board.players.sideA.hp,

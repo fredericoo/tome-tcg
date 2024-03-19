@@ -34,15 +34,16 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	let submitAction: TAction['onAction'] = function () {};
 
 	const completed = new Promise<{ side: TSide; action: TAction }>(resolve => {
-		submitAction = (params: any) => {
-			action.onAction(params);
-			resolve({ side, action });
-		};
-
-		setTimeout(() => {
+		const timeoutAction = setTimeout(() => {
 			onTimeout({ side, action });
 			resolve({ side, action });
 		}, timeoutMs);
+
+		submitAction = (params: any) => {
+			action.onAction(params);
+			clearTimeout(timeoutAction);
+			resolve({ side, action });
+		};
 	});
 	return { completed, submitAction };
 };

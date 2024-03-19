@@ -55,6 +55,10 @@ export const createHookActions = (board: Board) => ({
 			}
 			const finished = await Promise.race(actionsLeft);
 			delete actionsState.actions[finished.side];
+			actionEntries.splice(
+				actionEntries.findIndex(([side]) => side === finished.side),
+				1,
+			);
 			yield actionsState;
 			yield* yieldAsResolved();
 		}
