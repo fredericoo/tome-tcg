@@ -3,6 +3,7 @@ import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 
 import { DbCard } from '../../../tome-api/src/features/engine/engine.game';
+import { useCardHighlight } from '../routes/games.$id';
 
 export const cardClass = cva({
 	base: 'aspect-[63/88] rounded-lg select-none',
@@ -22,6 +23,11 @@ export const cardClass = cva({
 		interactive: {
 			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer transition-shadow',
 		},
+		highlight: {
+			effect: 'shadow-md, shadow-amber-500',
+			negative: 'shadow-md, shadow-red-500',
+			positive: 'shadow-md, shadow-teal-500',
+		},
 	},
 	defaultVariants: {
 		size: 'sm',
@@ -40,13 +46,14 @@ export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof M
 
 export const Card = ({ layoutId, data, className, size, interactive, ...props }: CardProps) => {
 	const flipped = !!data;
+	const highlight = useCardHighlight(layoutId);
 
 	if (!flipped)
 		return (
 			<motion.div
 				layoutId={layoutId.toString()}
 				layout="preserve-aspect"
-				className={cardClass({ face: 'back', size, className, interactive })}
+				className={cardClass({ face: 'back', size, className, interactive, highlight })}
 				initial={false}
 				animate={{ rotateY: 180 }}
 				{...props}
@@ -57,7 +64,7 @@ export const Card = ({ layoutId, data, className, size, interactive, ...props }:
 		<motion.div
 			layoutId={layoutId.toString()}
 			layout="preserve-aspect"
-			className={cardClass({ face: 'front', size, className, interactive })}
+			className={cardClass({ face: 'front', size, className, interactive, highlight })}
 			animate={{ rotate: 0 }}
 			{...props}
 		>

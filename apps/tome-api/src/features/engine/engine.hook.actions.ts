@@ -18,25 +18,48 @@ export const createHookActions = (board: Board) => ({
 		moveBottomCard(from, to);
 		yield { board };
 	},
-	playerAction: async function* <TSide extends Side, TAction extends PlayerAction>(params: {
-		side: TSide;
+	playerAction: async function* <TSide extends Side, TAction extends PlayerAction>({
+		sides,
+		...params
+	}: {
+		sides: TSide[];
 		action: TAction;
 		onTimeout: (params: { side: TSide; action: TAction }) => void;
 		timeoutMs: number;
 	}) {
-		const { submitAction, completed } = playerAction(params);
-		yield {
+		const timesOutAt = Date.now() + params.timeoutMs;
+		const actionEntries = sides.map(side => [side, playerAction({ ...params, side })] as const);
+
+		const actionsState = {
 			board,
-			actions: {
-				[params.side as Side]: {
-					config: params.action.config as TAction['config'],
-					submit: submitAction as TAction['onAction'],
-					type: params.action.type as TAction['type'],
-				},
-			},
+			actions: Object.fromEntries(
+				actionEntries.map(([side, action]) => [
+					side,
+					{
+						config: params.action.config,
+						submit: action.submitAction,
+						type: params.action.type,
+						timesOutAt,
+					},
+				]),
+			),
 		} satisfies GameIterationResponse;
-		await completed;
-		yield { board };
+
+		yield actionsState;
+
+		async function* yieldAsResolved(): AsyncGenerator<GameIterationResponse> {
+			const actionsLeft = actionEntries.map(([, action]) => action.completed);
+			if (!actionsLeft.length) {
+				yield actionsState;
+				return;
+			}
+			const finished = await Promise.race(actionsLeft);
+			delete actionsState.actions[finished.side];
+			yield actionsState;
+			yield* yieldAsResolved();
+		}
+
+		yield* yieldAsResolved();
 	},
 });
 

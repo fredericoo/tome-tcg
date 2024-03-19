@@ -27,7 +27,10 @@ export const useGameSub = (gameId: string) => {
 				setError(data.error);
 				return;
 			}
-			if (isTrusted && data && typeof data === 'object' && 'side' in data) setLatestData(data as SanitisedIteration);
+			if (isTrusted && data && typeof data === 'object' && 'side' in data) {
+				console.log(data);
+				setLatestData(data as SanitisedIteration);
+			}
 		});
 		subRef.current = subscription;
 		return () => {

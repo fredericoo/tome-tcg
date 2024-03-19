@@ -18,7 +18,8 @@
     "cva": "1.0.0-beta.1",
     "framer-motion": "^11.0.14",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.8.1",

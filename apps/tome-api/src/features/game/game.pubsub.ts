@@ -31,7 +31,11 @@ export type PubSubCard = { key: number; id?: string };
 
 export type SanitisedIteration = {
 	side: Side;
-	board: { phase: Board['phase']; field: PubSubCard[] } & Record<
+	board: {
+		phase: Board['phase'];
+		field: PubSubCard[];
+		highlights: Record<string, 'effect' | 'negative' | 'positive'>;
+	} & Record<
 		Side,
 		{
 			hp: number;
@@ -64,6 +68,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 	const iteration: SanitisedIteration = {
 		side: playerSide,
 		board: {
+			highlights: {},
 			field: originalIteration.board.field.map(card => ({ key: card.key })),
 			phase: originalIteration.board.phase,
 			sideA: {
@@ -92,6 +97,15 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			},
 		},
 	};
+	originalIteration.highlights?.effect?.forEach(card => {
+		iteration.board.highlights[card.key] = 'effect';
+	});
+	originalIteration.highlights?.positive?.forEach(card => {
+		iteration.board.highlights[card.key] = 'positive';
+	});
+	originalIteration.highlights?.negative?.forEach(card => {
+		iteration.board.highlights[card.key] = 'negative';
+	});
 	SIDES.forEach(side => {
 		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
 		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
@@ -119,7 +133,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 10000000, spellTimeoutMs: 10000000 },
+		settings: { castTimeoutMs: 10000, spellTimeoutMs: 10000 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
@@ -166,6 +180,7 @@ const runningGameRooms: Record<string, GameRoom> = {};
 export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 	async open(ws) {
 		const user = ws.data.user;
+
 		if (!user) {
 			ws.send({ error: 'Unauthorised' });
 			return;
@@ -182,6 +197,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			game.sideA === user.id ? 'sideA'
 			: game.sideB === user.id ? 'sideB'
 			: undefined;
+
 		if (!sideToJoin) {
 			ws.send({ error: 'Unauthorised' });
 			return;
@@ -216,6 +232,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 	},
 	async message(ws, message) {
 		const user = ws.data.user;
+
 		if (!user) {
 			ws.send({ error: 'Unauthorised' });
 			return;
@@ -230,7 +247,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 
 		const userSide =
 			ongoingGame.state.connections.sideA?.id === ws.id ? 'sideA'
-			: ongoingGame.state.connections.sideA?.id === ws.id ? 'sideB'
+			: ongoingGame.state.connections.sideB?.id === ws.id ? 'sideB'
 			: undefined;
 
 		if (!userSide) {

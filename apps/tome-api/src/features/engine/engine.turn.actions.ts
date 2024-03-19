@@ -9,12 +9,12 @@ export type PlayerActionMap = {
 	select_from_hand: {
 		type: 'select_from_hand';
 		config: { type: GameCard['type'] | 'any'; quantity: number };
-		onAction: (params: { cards: GameCard[] }) => void;
+		onAction: (params: { side: Side; cards: GameCard[] }) => void;
 	};
 	select_spell_stack: {
 		type: 'select_spell_stack';
 		config: Record<string, never>;
-		onAction: (params: { stack: SpellStack }) => void;
+		onAction: (params: { side: Side; stack: SpellStack }) => void;
 	};
 };
 

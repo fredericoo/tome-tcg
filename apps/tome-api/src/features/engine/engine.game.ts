@@ -4,7 +4,7 @@ import { Board, initialiseGameBoard, moveTopCard, topOf } from './engine.board';
 import { createHookActions } from './engine.hook.actions';
 import { TurnHooks, createTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
-import { PlayerActionMap, playerAction } from './engine.turn.actions';
+import { PlayerActionMap } from './engine.turn.actions';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
@@ -68,7 +68,7 @@ export type Turn = {
 	finishedTurns: Turn[];
 	draws: Record<Side, GameCard[]>;
 	casts: Record<Side, Record<SpellStack, SpellCard[]> & { field: FieldCard[] }>;
-	spells: Record<Side, { slot: SpellStack; card: SpellCard } | undefined>;
+	spells: Record<Side, { slot: SpellStack; card: SpellCard | null } | undefined>;
 };
 
 const winnerColorMap: Record<SpellColor, SpellColor[]> = {
@@ -78,7 +78,7 @@ const winnerColorMap: Record<SpellColor, SpellColor[]> = {
 	neutral: [],
 };
 
-const resolveWinnerField = (
+const resolveFieldClash = (
 	players: Board['players'],
 ): Partial<Record<'won' | 'lost', { side: Side; card: FieldCard }>> => {
 	const [cardA, cardB] = [players.sideA.casting.field, players.sideB.casting.field];
@@ -92,6 +92,20 @@ const resolveWinnerField = (
 		return { won: { side: 'sideB', card: cardB }, lost: { side: 'sideA', card: cardA } };
 
 	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
+};
+
+const resolveSpellClash = (spells: Turn['spells']): Partial<Record<'won' | 'lost', Array<Turn['spells'][Side]>>> => {
+	if (!spells.sideA && !spells.sideB) return {};
+	if (!spells.sideA) return { won: [spells.sideB] };
+	if (!spells.sideB) return { won: [spells.sideA] };
+
+	if (spells.sideA.slot === spells.sideB.slot) return { lost: [spells.sideA, spells.sideB] };
+	if (winnerColorMap[spells.sideA.slot].includes(spells.sideB.slot))
+		return { won: [spells.sideA], lost: [spells.sideB] };
+	if (winnerColorMap[spells.sideB.slot].includes(spells.sideA.slot))
+		return { won: [spells.sideB], lost: [spells.sideA] };
+
+	throw new Error(`Failed resolving winner spell between “${spells.sideA.slot}” and “${spells.sideB.slot}”`);
 };
 
 export const createGameInstance = ({
@@ -138,68 +152,32 @@ export const createGameInstance = ({
 		board.phase = 'cast';
 		yield { board };
 
-		const onCast =
-			(side: Side): PlayerActionMap['cast_from_hand']['onAction'] =>
-			({ cardKey, stack }) => {
-				const hand = board.players[side].hand;
-				const index = hand.findIndex(handCard => handCard.key === cardKey);
-				const card = hand[index];
-				invariant(index !== -1 && card, `Card key “${cardKey}” not found in ${side}’s hand`);
-				hand.splice(index, 1);
+		yield* actions.playerAction({
+			sides: ['sideA', 'sideB'],
+			timeoutMs: settings.castTimeoutMs,
+			onTimeout: noop,
+			action: {
+				type: 'cast_from_hand',
+				config: { type: 'any' },
+				onAction: ({ side, cardKey, stack }) => {
+					const hand = board.players[side].hand;
+					const index = hand.findIndex(handCard => handCard.key === cardKey);
+					const card = hand[index];
+					invariant(index !== -1 && card, `Card key “${cardKey}” not found in ${side}’s hand`);
+					hand.splice(index, 1);
 
-				if (card.type === 'field') {
-					board.players[side].casting.field = card;
-					return turn.casts[side].field.push(card);
-				}
-				if (stack && card.colors.includes(stack)) {
-					board.players[side].casting[stack] = card;
-					return turn.casts[side][stack].push(card);
-				}
-				throw new Error(`Invalid cast ${card.name}`);
-			};
-
-		const [castA, castB] = [
-			playerAction({
-				side: 'sideA',
-				action: {
-					type: 'cast_from_hand',
-					config: {
-						type: 'any',
-					},
-					onAction: onCast('sideA'),
+					if (card.type === 'field') {
+						board.players[side].casting.field = card;
+						return turn.casts[side].field.push(card);
+					}
+					if (stack && card.colors.includes(stack)) {
+						board.players[side].casting[stack] = card;
+						return turn.casts[side][stack].push(card);
+					}
+					throw new Error(`Invalid cast ${card.name}`);
 				},
-				timeoutMs: settings.castTimeoutMs,
-				onTimeout: noop,
-			}),
-			playerAction({
-				side: 'sideB',
-				action: {
-					type: 'cast_from_hand',
-					config: {
-						type: 'any',
-					},
-					onAction: onCast('sideA'),
-				},
-				timeoutMs: settings.castTimeoutMs,
-				onTimeout: noop,
-			}),
-		];
-		const timesOutAt = Date.now() + settings.castTimeoutMs;
-
-		const castState: GameIterationResponse = {
-			board,
-			actions: {
-				sideA: { submit: castA.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
-				sideB: { submit: castB.submitAction, config: { type: 'any' }, type: 'cast_from_hand', timesOutAt },
 			},
-		};
-		yield castState;
-		const finished = await Promise.race([castA.completed, castB.completed]);
-		delete castState.actions?.[finished.side];
-		yield castState;
-		await Promise.all([castA.completed, castB.completed]);
-
-		yield { board };
+		});
 
 		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, board, turn } });
 		board.phase = 'reveal';
@@ -213,15 +191,21 @@ export const createGameInstance = ({
 		);
 		yield { board };
 
-		const { won, lost } = resolveWinnerField(board.players);
-		yield { board, highlights: { positive: [won?.card].filter(Boolean), negative: [lost?.card].filter(Boolean) } };
-		if (won) {
-			board.field.push(won.card);
-			board.players[won.side].casting.field = undefined;
+		const fieldClash = resolveFieldClash(board.players);
+		yield {
+			board,
+			highlights: {
+				positive: [fieldClash.won?.card].filter(Boolean),
+				negative: [fieldClash.lost?.card].filter(Boolean),
+			},
+		};
+		if (fieldClash.won) {
+			board.field.push(fieldClash.won.card);
+			board.players[fieldClash.won.side].casting.field = undefined;
 		}
-		if (lost) {
-			board.players[lost.side].discardPile.push(lost.card);
-			board.players[lost.side].casting.field = undefined;
+		if (fieldClash.lost) {
+			board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
+			board.players[fieldClash.lost.side].casting.field = undefined;
 		}
 		yield { board };
 
@@ -229,23 +213,33 @@ export const createGameInstance = ({
 		board.phase = 'spell';
 		yield { board };
 
-		const spellSlotA = playerAction({
-			side: 'sideA',
+		yield* actions.playerAction({
+			sides: ['sideA', 'sideB'],
 			action: {
 				type: 'select_spell_stack',
 				config: {},
-				onAction: ({ stack }) => {
-					const cardToUse = topOf(board.players.sideA.stacks[stack]);
-					if (!cardToUse) return;
-					turn.spells.sideA = {
+				onAction: ({ stack, side }) => {
+					const cardToUse = topOf(board.players[side].stacks[stack]);
+					turn.spells[side] = {
 						slot: stack,
-						card: cardToUse,
+						card: cardToUse ?? null,
 					};
 				},
 			},
 			timeoutMs: settings.spellTimeoutMs,
 			onTimeout: noop,
 		});
+
+		const spellClash = resolveSpellClash(turn.spells);
+		yield {
+			board,
+			highlights: {
+				positive: spellClash.won?.map(spell => spell?.card).filter(Boolean),
+				negative: spellClash.lost?.map(spell => spell?.card).filter(Boolean),
+			},
+		};
+
+		// winner deals damage to loser
 	}
 
 	return handleTurn();

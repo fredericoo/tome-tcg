@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { cva } from 'cva';
 import { motion } from 'framer-motion';
 import { ComponentPropsWithoutRef, useMemo } from 'react';
+import { create } from 'zustand';
 
 import { type DbCard, STACKS, type Side } from '../../../tome-api/src/features/engine/engine.game';
 import type {
@@ -51,7 +52,7 @@ const CardPile = ({ cards, cardData, last = 5, size = 'md' }: CardPileProps) => 
 		<div className="relative">
 			<ol className={cardClass({ size, variant: 'placeholder', className: 'grid' })}>
 				{
-					// we only add the last 5 cards onto the dom to avoid excessive dom nodes
+					// we only add the last N cards onto the dom to avoid excessive dom nodes
 					cards.slice(-last).map(cardRef => (
 						<li className="col-end-1 row-end-1" key={cardRef.key}>
 							<Card size={size} layoutId={cardRef.key} data={cardRef.id ? cardData[cardRef.id] : undefined} />
@@ -109,7 +110,7 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 									<Card size="sm" layoutId={casting.key} data={casting.id ? cardData[casting.id] : undefined} />
 								</div>
 							)}
-							<CardPile cardData={cardData} cards={side.stacks[stack]} last={5} size="sm" />
+							<CardPile cardData={cardData} cards={side.stacks[stack]} last={2} size="sm" />
 						</li>
 					);
 				})}
@@ -120,7 +121,7 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 					'flex-row-reverse': relative === 'opponent',
 				})}
 			>
-				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={5} size="sm" />
+				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={2} size="sm" />
 				<RerenderEvery seconds={0.5}>
 					{() => {
 						const action = side?.action;
@@ -150,7 +151,7 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 							key={cardRef.key}
 						>
 							<Card
-								interactive={Boolean(selectCallback)}
+								interactive={Boolean(selectCallback) && relative === 'player'}
 								onClick={selectCallback ? () => selectCallback(cardRef) : undefined}
 								size={relative === 'player' ? 'md' : 'sm'}
 								layoutId={cardRef.key}
@@ -164,13 +165,25 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 	);
 };
 
+type HighlightedCardsStore = {
+	highlightedCards: SanitisedIteration['board']['highlights'] | undefined;
+	setHighlightedCards: (highlights: SanitisedIteration['board']['highlights'] | undefined) => void;
+};
+const useHighlightedCardsStore = create<HighlightedCardsStore>(() => ({
+	highlightedCards: undefined,
+	setHighlightedCards: () => {},
+}));
+export const useCardHighlight = (cardKey: number) => {
+	return useHighlightedCardsStore(state => state.highlightedCards?.[cardKey]);
+};
+
 export default function Page() {
 	const { game, cards } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData, error } = useGameSub(game.id.toString());
-
+	const setHighlightedCards = useHighlightedCardsStore(state => state.setHighlightedCards);
+	setHighlightedCards(latestData?.board.highlights);
 	const playerSide = latestData?.board[latestData.side];
 	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
-
 	const castingField = [latestData?.board.sideA.casting.field, latestData?.board.sideB.casting.field].filter(Boolean);
 	const onSelectFromHand: PlayerSideProps['onSelectFromHand'] = (type, cardKey) => {
 		switch (type) {
@@ -197,7 +210,7 @@ export default function Page() {
 			</nav>
 
 			<section className="flex flex-grow justify-center">
-				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={5} size="sm" />
+				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={2} size="sm" />
 				{castingField && (
 					<div className="absolute translate-y-1/2">
 						{castingField.map(castingCard => (
