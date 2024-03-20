@@ -133,7 +133,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 10000, spellTimeoutMs: 10000 },
+		settings: { castTimeoutMs: 60000, spellTimeoutMs: 60000 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
@@ -144,7 +144,7 @@ const createGameRoom = () => {
 		for await (const iteration of game) {
 			state.lastState = iteration;
 			SIDES.forEach(side => state.connections[side]?.send(iteration));
-			await delay(1000);
+			await delay(350);
 		}
 	};
 	handleGame();
@@ -275,7 +275,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 const CastFromHandMessageSchema = t.Object({
 	type: t.Literal('cast_from_hand'),
 	cardKey: t.Number(),
-	stack: t.Union([t.Literal('blue'), t.Literal('green'), t.Literal('red')]),
+	stack: t.Optional(t.Union([t.Literal('blue'), t.Literal('green'), t.Literal('red')])),
 });
 
 export type CastFromHandMessageSchema = Static<typeof CastFromHandMessageSchema>;

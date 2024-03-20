@@ -3,15 +3,16 @@ import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react'
 import clsx from 'clsx';
 import { cva } from 'cva';
 import { motion } from 'framer-motion';
-import { ComponentPropsWithoutRef, useMemo } from 'react';
+import { ComponentPropsWithoutRef, useMemo, useState } from 'react';
 import { create } from 'zustand';
 
-import { type DbCard, STACKS, type Side } from '../../../tome-api/src/features/engine/engine.game';
+import { type DbCard, STACKS, type Side, SpellStack } from '../../../tome-api/src/features/engine/engine.game';
 import type {
 	CastFromHandMessageSchema,
 	PubSubCard,
 	SanitisedIteration,
 } from '../../../tome-api/src/features/game/game.pubsub';
+import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { Card, CardProps, cardClass } from '../components/card';
 import { RerenderEvery } from '../components/rerender-every';
 import { api } from '../lib/api';
@@ -21,7 +22,7 @@ export const meta: MetaFunction = () => {
 	return [{ title: 'Games' }, { name: 'description', content: ':)' }];
 };
 
-type CardData = Record<string, Pick<DbCard, 'name' | 'description' | 'type'>>;
+type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;
 
 export const clientLoader = (async ({ params }) => {
 	const gameId = params.id;
@@ -73,7 +74,6 @@ const CardPile = ({ cards, cardData, last = 5, size = 'md' }: CardPileProps) => 
 };
 
 type ActionType = NonNullable<SanitisedIteration['board'][Side]['action']>['type'];
-const selectFromHandTypes = ['cast_from_hand', 'select_from_hand'] as const satisfies ActionType[];
 
 const stackClass = cva({
 	base: 'rounded-xl shadow-inner p-2',
@@ -82,21 +82,37 @@ const stackClass = cva({
 
 interface PlayerSideProps {
 	side: SanitisedIteration['board'][Side];
-	cardData: Record<string, Pick<DbCard, 'name' | 'description' | 'type'>>;
+	cardData: Record<string, DistributiveOmit<DbCard, 'effects'>>;
 	relative: 'opponent' | 'player';
-	onSelectFromHand: (actionType: ActionType, cardKey: number) => void;
+	onSelectFromHand: (params: { actionType: ActionType; cardKey: number; stack: SpellStack | undefined }) => void;
 }
 
+const isStack = (color: string): color is SpellStack => STACKS.includes(color);
+
 const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSideProps) => {
+	const isCasting = side.action?.type === 'cast_from_hand' && relative === 'player';
+	const [cast, setCast] = useState<{ cardKey: number; stack: SpellStack | null } | null>(null);
+	if (!isCasting && cast) setCast(null);
+
 	const selectCallback = useMemo(() => {
-		if (!side.action) return undefined;
-		if (selectFromHandTypes.includes(side.action.type)) {
-			return (card: PubSubCard) => {
-				if (!side.action) return undefined;
-				return onSelectFromHand(side.action.type, card.key);
-			};
-		}
-	}, [onSelectFromHand, side.action]);
+		if (!isCasting) return;
+		return (pubsubCard: PubSubCard) => () => {
+			if (!pubsubCard.id || !side.action) return;
+			const card = cardData[pubsubCard.id];
+			if (card.type === 'spell') {
+				const targetStacks = card.colors.filter(isStack);
+				if (targetStacks.length === 1) {
+					// we can auto select the stack
+					const stack = targetStacks[0];
+					return onSelectFromHand({ actionType: side.action?.type, cardKey: pubsubCard.key, stack });
+				} else {
+					// we need to ask the player to select a stack
+					return setCast({ cardKey: pubsubCard.key, stack: null });
+				}
+			}
+			return onSelectFromHand({ actionType: side.action?.type, cardKey: pubsubCard.key, stack: undefined });
+		};
+	}, [cardData, isCasting, onSelectFromHand, side.action]);
 
 	return (
 		<div className={clsx('flex flex-col items-center', { 'flex-col-reverse': relative === 'opponent' })}>
@@ -133,11 +149,13 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 				</RerenderEvery>
 			</div>
 
+			{isCasting && <div className="fixed inset-0 z-10 bg-neutral-900/50" />}
 			<ol
 				aria-label="Hand"
 				className={clsx('absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2', {
 					'bottom-0 translate-y-1/4': relative === 'player',
 					'top-0 -translate-y-1/4': relative === 'opponent',
+					'z-20': isCasting,
 				})}
 			>
 				{side.hand.map((cardRef, index) => {
@@ -151,8 +169,9 @@ const PlayerSide = ({ side, cardData, relative, onSelectFromHand }: PlayerSidePr
 							key={cardRef.key}
 						>
 							<Card
-								interactive={Boolean(selectCallback) && relative === 'player'}
-								onClick={selectCallback ? () => selectCallback(cardRef) : undefined}
+								interactive={isCasting}
+								highlight={cast?.cardKey === cardRef.key ? 'effect' : undefined}
+								onClick={selectCallback?.(cardRef)}
 								size={relative === 'player' ? 'md' : 'sm'}
 								layoutId={cardRef.key}
 								data={cardRef.id ? cardData[cardRef.id] : undefined}
@@ -185,10 +204,10 @@ export default function Page() {
 	const playerSide = latestData?.board[latestData.side];
 	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
 	const castingField = [latestData?.board.sideA.casting.field, latestData?.board.sideB.casting.field].filter(Boolean);
-	const onSelectFromHand: PlayerSideProps['onSelectFromHand'] = (type, cardKey) => {
-		switch (type) {
+	const onSelectFromHand: PlayerSideProps['onSelectFromHand'] = ({ actionType, cardKey, stack }) => {
+		switch (actionType) {
 			case 'cast_from_hand': {
-				const payload: CastFromHandMessageSchema = { cardKey, stack: 'red', type };
+				const payload: CastFromHandMessageSchema = { cardKey, stack, type: actionType };
 				return sub?.send(payload);
 			}
 			default:
