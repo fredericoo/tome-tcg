@@ -133,7 +133,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 60000, spellTimeoutMs: 60000 },
+		settings: { castTimeoutMs: 60000, spellTimeoutMs: 60000, startingCards: 2 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
@@ -262,7 +262,11 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 		}
 
 		try {
-			validateAction(action, message, userSide);
+			for await (const iteration of validateAction(action, message, userSide)) {
+				ongoingGame.state.lastState = iteration;
+				SIDES.forEach(side => ongoingGame.state.connections[side]?.send(iteration));
+				await delay(350);
+			}
 			console.log(`⚡ (${channel}) “${user.username ?? user.id}”:`, message);
 		} catch (error) {
 			console.error(error);
@@ -272,26 +276,35 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 	},
 });
 
-const CastFromHandMessageSchema = t.Object({
-	type: t.Literal('cast_from_hand'),
-	cardKey: t.Number(),
-	stack: t.Optional(t.Union([t.Literal('blue'), t.Literal('green'), t.Literal('red')])),
+const SelectFromHandMessageSchema = t.Object({
+	type: t.Literal('select_from_hand'),
+	cardKeys: t.Array(t.Number()),
 });
+export type SelectFromHandMessageSchema = Static<typeof SelectFromHandMessageSchema>;
 
-export type CastFromHandMessageSchema = Static<typeof CastFromHandMessageSchema>;
+const SelectStackMessageSchema = t.Object({
+	type: t.Literal('select_spell_stack'),
+	stacks: t.Array(t.Union([t.Literal('blue'), t.Literal('green'), t.Literal('red')])),
+});
+export type SelectStackMessageSchema = Static<typeof SelectStackMessageSchema>;
 
-const validateAction = (
+async function* validateAction(
 	action: NonNullable<NonNullable<GameIterationResponse['actions']>[Side]>,
 	message: unknown,
 	side: Side,
-) => {
+) {
 	switch (action.type) {
-		case 'cast_from_hand': {
-			const payload = Value.Decode(CastFromHandMessageSchema, message);
-			action.submit({ cardKey: payload.cardKey, stack: payload.stack, side });
+		case 'select_from_hand': {
+			const payload = Value.Decode(SelectFromHandMessageSchema, message);
+			yield* action.submit({ side, cardKeys: payload.cardKeys });
+			return;
+		}
+		case 'select_spell_stack': {
+			const payload = Value.Decode(SelectStackMessageSchema, message);
+			yield* action.submit({ side, stacks: payload.stacks });
 			return;
 		}
 		default:
 			throw new Error('Not implemented');
 	}
-};
+}

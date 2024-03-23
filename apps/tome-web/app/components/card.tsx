@@ -98,7 +98,15 @@ export const Card = ({
 			key={key}
 			layoutId={key}
 			layout="preserve-aspect"
-			className={cardClass({ face: 'front', size, className, interactive, highlight, color1, color2 })}
+			className={cardClass({
+				face: 'front',
+				size,
+				className,
+				interactive,
+				highlight,
+				color1: color1 ?? 'neutral',
+				color2: color2 ?? color1 ?? 'neutral',
+			})}
 			animate={{ rotate: 0 }}
 			{...props}
 		>

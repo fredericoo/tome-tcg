@@ -1,20 +1,21 @@
-import { GameCard, Side, SpellStack } from './engine.game';
+import { GameCard, GameIterationResponse, Side, SpellStack } from './engine.game';
 
 export type PlayerActionMap = {
-	cast_from_hand: {
-		type: 'cast_from_hand';
-		config: { type: GameCard['type'] | 'any' };
-		onAction: (params: { side: Side; cardKey: number; stack?: SpellStack }) => void;
-	};
 	select_from_hand: {
 		type: 'select_from_hand';
-		config: { type: GameCard['type'] | 'any'; quantity: number };
-		onAction: (params: { side: Side; cards: GameCard[] }) => void;
+		config: { type: GameCard['type'] | 'any'; from: 'self' | 'opponent'; min: number; max: number };
+		onAction: (params: {
+			side: Side;
+			cardKeys: number[];
+		}) => Generator<GameIterationResponse> | AsyncGenerator<GameIterationResponse>;
 	};
 	select_spell_stack: {
 		type: 'select_spell_stack';
-		config: Record<string, never>;
-		onAction: (params: { side: Side; stack: SpellStack }) => void;
+		config: { availableStacks: SpellStack[]; from: 'self' | 'opponent'; min: number; max: number };
+		onAction: (params: {
+			side: Side;
+			stacks: SpellStack[];
+		}) => Generator<GameIterationResponse> | AsyncGenerator<GameIterationResponse>;
 	};
 };
 
@@ -31,19 +32,18 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	timeoutMs: number;
 	onTimeout: (params: { side: TSide; action: TAction }) => void;
 }) => {
-	let submitAction: TAction['onAction'] = function () {};
+	const { promise: completed, resolve } = Promise.withResolvers<{ side: TSide; action: TAction }>();
+	const timeoutAction = setTimeout(() => {
+		onTimeout({ side, action });
+		resolve({ side, action });
+	}, timeoutMs);
 
-	const completed = new Promise<{ side: TSide; action: TAction }>(resolve => {
-		const timeoutAction = setTimeout(() => {
-			onTimeout({ side, action });
-			resolve({ side, action });
-		}, timeoutMs);
-
-		submitAction = (params: any) => {
-			action.onAction(params);
+	return {
+		completed,
+		submitAction: async function* (params: any) {
 			clearTimeout(timeoutAction);
 			resolve({ side, action });
-		};
-	});
-	return { completed, submitAction };
+			yield* action.onAction(params);
+		},
+	};
 };

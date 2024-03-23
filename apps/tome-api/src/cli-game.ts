@@ -41,7 +41,7 @@ const deck: DbCard[] = [
 		type: 'field',
 		name: 'Void Space',
 		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it',
-		color: 'neutral',
+		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, board }) {
 				const discardFromStack = (stack: SpellStack, side: Side) => {
@@ -56,8 +56,9 @@ const deck: DbCard[] = [
 						action: {
 							type: 'select_spell_stack',
 							config: {},
-							onAction: ({ stack }) => {
+							onAction: function* ({ stack }) {
 								discardFromStack(stack, side);
+								yield { board };
 							},
 						},
 						side,

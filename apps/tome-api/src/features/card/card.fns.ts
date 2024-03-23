@@ -1,4 +1,4 @@
-import { invariant } from '../../lib/utils';
+import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
 import { DbCard, STACKS, Side, SpellStack } from '../engine/engine.game';
 
@@ -78,16 +78,30 @@ deck.push(
 		(_, i): DbCard => ({
 			type: 'spell',
 			attack: Math.ceil(Math.random() * 20),
-			colors: [randomColor()],
-			description: 'Before the Spell phase, discard the rightmost card from your opponent hand.',
+			colors: [randomColor(), randomColor()],
+			description: 'Choose a spell stack to discard the top card from.',
 			id: (10 + i).toString(),
 			effects: {
-				beforeSpell: async function* ({ actions, board, ownerSide }) {
-					const opponentSide = ownerSide === 'sideA' ? 'sideB' : 'sideA';
-					const rightmostCard = topOf(board.players[opponentSide].hand);
-					if (rightmostCard) {
-						yield* actions.discard({ card: rightmostCard, from: board.players[opponentSide].hand, side: opponentSide });
-					}
+				beforeSpell: async function* ({ board, actions, ownerSide, turn }) {
+					const oppoonentSide = ownerSide === 'sideA' ? 'sideB' : 'sideA';
+					yield* actions.playerAction({
+						sides: [ownerSide],
+						action: {
+							type: 'select_spell_stack',
+							config: { from: 'opponent', availableStacks: STACKS, min: 1, max: 1 },
+							onAction: ({ side, stacks }) => {
+								const cardToDiscard = topOf(board.players[oppoonentSide].stacks[stack]);
+								if (!cardToDiscard) return;
+								actions.discard({
+									card: cardToDiscard,
+									from: board.players[oppoonentSide].stacks[stack],
+									side: oppoonentSide,
+								});
+							},
+						},
+						timeoutMs: 10000,
+						onTimeout: noop,
+					});
 				},
 			},
 			name: `Random Spell ${i}`,

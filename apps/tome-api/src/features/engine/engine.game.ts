@@ -9,7 +9,7 @@ import { PlayerActionMap } from './engine.turn.actions';
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
 
-type SpellColor = 'red' | 'green' | 'blue' | 'neutral';
+type SpellColor = 'red' | 'green' | 'blue';
 
 type BaseCard = {
 	key: number;
@@ -29,7 +29,7 @@ export interface SpellCard extends BaseCard {
 export interface FieldCard extends BaseCard {
 	type: 'field';
 	name: string;
-	color: SpellColor;
+	color: SpellColor | null;
 	effects: Partial<TurnHooks>;
 }
 
@@ -40,6 +40,15 @@ export type DbCard = DistributiveOmit<GameCard, 'key'>;
 
 export const STACKS = ['red', 'green', 'blue'] as const satisfies SpellStack[];
 export type SpellStack = 'red' | 'green' | 'blue';
+
+export type GameAction = {
+	[A in keyof PlayerActionMap]: {
+		type: A;
+		config: PlayerActionMap[A]['config'];
+		submit: PlayerActionMap[A]['onAction'];
+		timesOutAt: number;
+	};
+}[keyof PlayerActionMap];
 
 export type GameIterationResponse = {
 	board: Board;
@@ -52,15 +61,8 @@ export type GameIterationResponse = {
 		from: GameCard;
 		to: GameCard;
 	}>;
-	actions?: {
-		[K in Side]?: {
-			[A in keyof PlayerActionMap]: {
-				type: A;
-				config: PlayerActionMap[A]['config'];
-				submit: PlayerActionMap[A]['onAction'];
-				timesOutAt: number;
-			};
-		}[keyof PlayerActionMap];
+	actions: {
+		[K in Side]?: GameAction;
 	};
 };
 
@@ -71,24 +73,30 @@ export type Turn = {
 	spells: Record<Side, { slot: SpellStack; card: SpellCard | null } | undefined>;
 };
 
-const winnerColorMap: Record<SpellColor, SpellColor[]> = {
-	blue: ['red', 'neutral'],
-	green: ['blue', 'neutral'],
-	red: ['green', 'neutral'],
-	neutral: [],
+const winnerColorMap: Record<SpellColor, SpellColor> = {
+	blue: 'red',
+	green: 'blue',
+	red: 'green',
 };
 
 const resolveFieldClash = (
 	players: Board['players'],
 ): Partial<Record<'won' | 'lost', { side: Side; card: FieldCard }>> => {
 	const [cardA, cardB] = [players.sideA.casting.field, players.sideB.casting.field];
+	// vs no card
 	if (!cardA && !cardB) return {};
 	if (!cardA) return { won: { side: 'sideB', card: cardB! } };
 	if (!cardB) return { won: { side: 'sideA', card: cardA } };
 
-	if (winnerColorMap[cardA.color].includes(cardB.color))
+	// vs neutral
+	if (!cardA.color && !cardB.color) return {};
+	if (!cardB.color) return { won: { side: 'sideA', card: cardA }, lost: { side: 'sideB', card: cardB } };
+	if (!cardA.color) return { won: { side: 'sideB', card: cardA }, lost: { side: 'sideA', card: cardB } };
+
+	// vs card
+	if (winnerColorMap[cardA.color] === cardB.color)
 		return { won: { side: 'sideA', card: cardA }, lost: { side: 'sideB', card: cardB } };
-	if (winnerColorMap[cardB.color].includes(cardA.color))
+	if (winnerColorMap[cardB.color] === cardA.color)
 		return { won: { side: 'sideB', card: cardB }, lost: { side: 'sideA', card: cardA } };
 
 	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
@@ -113,11 +121,12 @@ export const createGameInstance = ({
 	settings,
 }: {
 	decks: Record<Side, DbCard[]>;
-	settings: { castTimeoutMs: number; spellTimeoutMs: number };
+	settings: { castTimeoutMs: number; spellTimeoutMs: number; startingCards: number };
 }) => {
 	const finishedTurns: Turn[] = [];
 	const board = initialiseGameBoard({ decks });
-	const actions = createHookActions(board);
+	const game: GameIterationResponse = { board, actions: {} };
+	const actions = createHookActions(game);
 	const triggerHook = createTriggerHooks(board);
 
 	const drawCard = (side: Side, turn: Pick<Turn, 'draws'>) => {
@@ -129,50 +138,82 @@ export const createGameInstance = ({
 
 	async function* handleTurn(): AsyncGenerator<GameIterationResponse> {
 		const turn = initialiseTurn({ finishedTurns });
+		yield game;
 
+		// if first turn, draw cards
 		if (finishedTurns.length === 0) {
-			yield { board };
-			SIDES.forEach(side => drawCard(side, turn));
-			yield { board };
-			SIDES.forEach(side => drawCard(side, turn));
-			yield { board };
-			SIDES.forEach(side => drawCard(side, turn));
-			yield { board };
-			SIDES.forEach(side => drawCard(side, turn));
-			yield { board };
+			for (let i = 0; i < settings.startingCards; i++) {
+				SIDES.forEach(side => drawCard(side, turn));
+				yield game;
+			}
 		}
 
 		yield* triggerHook({ hookName: 'beforeDraw', context: { actions, board, turn } });
 		board.phase = 'draw';
-		yield { board };
+		yield game;
 		SIDES.forEach(side => drawCard(side, turn));
-		yield { board };
+		yield game;
 
 		yield* triggerHook({ hookName: 'beforeCast', context: { actions, board, turn } });
 		board.phase = 'cast';
-		yield { board };
+		yield game;
 
+		// Spooky cast from hand action with multi-threading state LOL
 		yield* actions.playerAction({
 			sides: ['sideA', 'sideB'],
 			timeoutMs: settings.castTimeoutMs,
 			onTimeout: noop,
 			action: {
-				type: 'cast_from_hand',
-				config: { type: 'any' },
-				onAction: ({ side, cardKey, stack }) => {
+				type: 'select_from_hand',
+				config: { type: 'any', min: 1, max: 1, from: 'self' },
+				onAction: async function* ({ side, cardKeys }) {
+					const cardKey = cardKeys[0];
+					invariant(cardKey, 'No card key provided');
+
 					const hand = board.players[side].hand;
 					const index = hand.findIndex(handCard => handCard.key === cardKey);
 					const card = hand[index];
 					invariant(index !== -1 && card, `Card key “${cardKey}” not found in ${side}’s hand`);
-					hand.splice(index, 1);
 
 					if (card.type === 'field') {
+						hand.splice(index, 1);
 						board.players[side].casting.field = card;
-						return turn.casts[side].field.push(card);
+						turn.casts[side].field.push(card);
+						return;
 					}
-					if (stack && card.colors.includes(stack)) {
+
+					if (card.colors.length === 1) {
+						// cast to the card’s colour
+						const stack = card.colors[0];
+						invariant(stack, `Card “${card.name}” has undefined color`);
+						hand.splice(index, 1);
 						board.players[side].casting[stack] = card;
-						return turn.casts[side][stack].push(card);
+						turn.casts[side][stack].push(card);
+						yield game;
+						return;
+					}
+					if (card.colors.length !== 1) {
+						// if no color, cast to any stack
+						const stacks = card.colors.length > 0 ? card.colors : STACKS;
+						yield* actions.playerAction({
+							sides: [side],
+							onTimeout: noop,
+							timeoutMs: 10000,
+							action: {
+								type: 'select_spell_stack',
+								config: { availableStacks: stacks, min: 1, max: 1, from: 'self' },
+								onAction: function* ({ stacks, side }) {
+									const stack = stacks[0];
+									invariant(stack, 'Expected exactly one stack');
+									hand.splice(index, 1);
+									board.players[side].casting[stack] = card;
+									turn.casts[side][stack].push(card);
+									yield game;
+								},
+							},
+						});
+						yield game;
+						return;
 					}
 					throw new Error(`Invalid cast ${card.name}`);
 				},
@@ -181,7 +222,7 @@ export const createGameInstance = ({
 
 		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, board, turn } });
 		board.phase = 'reveal';
-		yield { board };
+		yield game;
 		// Reveals spells cast and moves them into the slots
 		SIDES.forEach(side =>
 			STACKS.forEach(stack => {
@@ -189,41 +230,47 @@ export const createGameInstance = ({
 				board.players[side].casting[stack] = undefined;
 			}),
 		);
-		yield { board };
+		yield game;
 
+		/** Field card resolution */
 		const fieldClash = resolveFieldClash(board.players);
-		yield {
-			board,
-			highlights: {
+		// only resolve if there was a clash
+		if (fieldClash.lost || fieldClash.won) {
+			game.highlights = {
 				positive: [fieldClash.won?.card].filter(Boolean),
 				negative: [fieldClash.lost?.card].filter(Boolean),
-			},
-		};
-		if (fieldClash.won) {
-			board.field.push(fieldClash.won.card);
-			board.players[fieldClash.won.side].casting.field = undefined;
+			};
+			if (fieldClash.won) {
+				board.field.push(fieldClash.won.card);
+				board.players[fieldClash.won.side].casting.field = undefined;
+			}
+			if (fieldClash.lost) {
+				board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
+				board.players[fieldClash.lost.side].casting.field = undefined;
+			}
+			yield game;
+			game.highlights = {};
+			yield game;
 		}
-		if (fieldClash.lost) {
-			board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
-			board.players[fieldClash.lost.side].casting.field = undefined;
-		}
-		yield { board };
 
 		yield* triggerHook({ hookName: 'beforeSpell', context: { actions, board, turn } });
 		board.phase = 'spell';
-		yield { board };
+		yield game;
 
 		yield* actions.playerAction({
 			sides: ['sideA', 'sideB'],
 			action: {
 				type: 'select_spell_stack',
-				config: {},
-				onAction: ({ stack, side }) => {
+				config: { availableStacks: STACKS, min: 1, max: 1, from: 'self' },
+				onAction: function* ({ stacks, side }) {
+					const stack = stacks[0];
+					invariant(stack, 'Expected exactly one stack');
 					const cardToUse = topOf(board.players[side].stacks[stack]);
 					turn.spells[side] = {
 						slot: stack,
 						card: cardToUse ?? null,
 					};
+					yield game;
 				},
 			},
 			timeoutMs: settings.spellTimeoutMs,
@@ -231,13 +278,11 @@ export const createGameInstance = ({
 		});
 
 		const spellClash = resolveSpellClash(turn.spells);
-		yield {
-			board,
-			highlights: {
-				positive: spellClash.won?.map(spell => spell?.card).filter(Boolean),
-				negative: spellClash.lost?.map(spell => spell?.card).filter(Boolean),
-			},
+		game.highlights = {
+			positive: spellClash.won?.map(spell => spell?.card).filter(Boolean),
+			negative: spellClash.lost?.map(spell => spell?.card).filter(Boolean),
 		};
+		yield game;
 
 		// winner deals damage to loser
 	}
