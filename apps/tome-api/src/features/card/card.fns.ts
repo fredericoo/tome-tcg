@@ -82,16 +82,21 @@ deck.push(
 			colors: [randomColor(), randomColor()],
 			description: 'Before the spell phase, choose a card from your opponent’s hand to be discarded',
 			effects: {
-				beforeSpell: async function* ({ game, actions, ownerSide }) {
+				beforeSpell: async function* ({ game, actions, ownerSide, opponentSide }) {
+					if (game.board.players[opponentSide].hand.length === 0) return;
 					yield* actions.playerAction({
 						sides: [ownerSide],
 						action: {
 							type: 'select_from_hand',
 							config: { from: 'opponent', max: 1, min: 1, type: 'any' },
-							onAction: function* ({ cardKeys, side }) {
-								const cardToDiscard = game.board.players[side].hand.find(card => cardKeys.includes(card.key));
+							onAction: function* ({ cardKeys }) {
+								const cardToDiscard = game.board.players[opponentSide].hand.find(card => cardKeys.includes(card.key));
 								if (!cardToDiscard) return;
-								yield* actions.discard({ card: cardToDiscard, from: game.board.players[side].hand, side });
+								yield* actions.discard({
+									card: cardToDiscard,
+									from: game.board.players[opponentSide].hand,
+									side: opponentSide,
+								});
 							},
 						},
 						timeoutMs: 10000,

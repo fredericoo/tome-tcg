@@ -179,7 +179,13 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={2} size="sm" />
 			</div>
 
-			<PlayerHand side={side} cardData={cardData} onSelectFromHand={onSelectFromHand} relative={relative} />
+			<PlayerHand
+				side={side}
+				cardData={cardData}
+				action={action}
+				onSelectFromHand={onSelectFromHand}
+				relative={relative}
+			/>
 		</div>
 	);
 };

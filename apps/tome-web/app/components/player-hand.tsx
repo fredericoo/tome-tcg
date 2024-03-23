@@ -10,16 +10,16 @@ import { Card } from '../components/card';
 
 interface PlayerHandProps {
 	side: SanitisedIteration['board'][Side];
+	action: SanitisedIteration['board'][Side]['action'] | null;
 	cardData: Record<string, DistributiveOmit<DbCard, 'effects'>>;
 	relative: 'opponent' | 'self';
 	onSelectFromHand: (params: SelectFromHandMessageSchema) => void;
 }
 
-export function PlayerHand({ cardData, relative, side, onSelectFromHand }: PlayerHandProps) {
-	const isSelectingFromHand = side.action?.type === 'select_from_hand' && side.action.config.from === relative;
+export function PlayerHand({ cardData, relative, side, action, onSelectFromHand }: PlayerHandProps) {
+	const isSelectingFromHand = action?.type === 'select_from_hand' && action.config.from === relative;
 	const [cardKeysSelectedFromHand, setCardKeysSelectedFromHand] = useState<Set<number>>(new Set());
-	if (cardKeysSelectedFromHand.size > 0 && side.action?.type !== 'select_from_hand')
-		setCardKeysSelectedFromHand(new Set());
+	if (cardKeysSelectedFromHand.size > 0 && action?.type !== 'select_from_hand') setCardKeysSelectedFromHand(new Set());
 
 	return (
 		<>
@@ -59,10 +59,10 @@ export function PlayerHand({ cardData, relative, side, onSelectFromHand }: Playe
 													return set.add(cardRef.key);
 												});
 											});
-											invariant(side.action?.type === 'select_from_hand', 'Invalid action type');
+											invariant(action?.type === 'select_from_hand', 'Invalid action type');
 											if (
-												cardKeysSelectedFromHand.size >= side.action.config.min &&
-												cardKeysSelectedFromHand.size <= side.action.config.max
+												cardKeysSelectedFromHand.size >= action.config.min &&
+												cardKeysSelectedFromHand.size <= action.config.max
 											) {
 												onSelectFromHand({ type: 'select_from_hand', cardKeys: Array.from(cardKeysSelectedFromHand) });
 											}
