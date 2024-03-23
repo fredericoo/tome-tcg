@@ -6,7 +6,13 @@ import { ComponentPropsWithoutRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { create } from 'zustand';
 
-import { type DbCard, STACKS, type Side, SpellStack } from '../../../tome-api/src/features/engine/engine.game';
+import {
+	type DbCard,
+	GameAction,
+	STACKS,
+	type Side,
+	SpellStack,
+} from '../../../tome-api/src/features/engine/engine.game';
 import type {
 	PubSubCard,
 	SanitisedIteration,
@@ -17,7 +23,6 @@ import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { invariant } from '../../../tome-api/src/lib/utils';
 import { Card, CardProps, cardClass } from '../components/card';
 import { PlayerHand } from '../components/player-hand';
-import { RerenderEvery } from '../components/rerender-every';
 import { api } from '../lib/api';
 import { useGameSub } from '../lib/game.utils';
 
@@ -86,6 +91,20 @@ const stackClass = cva({
 	},
 });
 
+const ActionProgressBar = ({ action }: { action: GameAction }) => {
+	if (!action) return null;
+	const durationMs = action.timesOutAt - action.requestedAt;
+
+	// return seconds remaining
+	return (
+		<div className="absolute h-1 w-full bg-neutral-300">
+			<div
+				style={{ animationDuration: `${durationMs}ms` }}
+				className="animate-to-zero-width absolute h-full rounded-full bg-teal-600"
+			/>
+		</div>
+	);
+};
 interface PlayerSideProps {
 	action: SanitisedIteration['board'][Side]['action'] | undefined;
 	side: SanitisedIteration['board'][Side];
@@ -102,6 +121,10 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 
 	return (
 		<div className={clsx('flex flex-col items-center', { 'flex-col-reverse': relative === 'opponent' })}>
+			{side.action ?
+				<ActionProgressBar action={side.action} />
+			:	null}
+
 			{isSelectingStack && <div className="fixed inset-0 z-10 bg-neutral-900/50" />}
 			<ol aria-label="Stacks" className={clsx('flex gap-4 p-4', { 'z-20': isSelectingStack })}>
 				{STACKS.map(stack => {
@@ -109,6 +132,7 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 					return (
 						<li key={stack}>
 							<button
+								disabled={!isSelectingStack}
 								aria-label={stack}
 								onClick={
 									isSelectingStack ?
@@ -146,20 +170,13 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 			</ol>
 
 			<div
-				className={clsx('flex w-full justify-start p-4', {
-					'flex-row-reverse': relative === 'opponent',
+				className={clsx('flex w-full justify-between p-4', {
+					'flex-row-reverse items-start': relative === 'opponent',
+					'items-end': relative === 'self',
 				})}
 			>
+				<div className="p-4 text-2xl">{side.hp}</div>
 				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={2} size="sm" />
-				<RerenderEvery seconds={0.5}>
-					{() => {
-						const action = side?.action;
-						if (!action) return null;
-						const date = new Date(action.timesOutAt);
-						// return seconds remaining
-						return <p className="p-4">{Math.floor((date.getTime() - Date.now()) / 1000)}s</p>;
-					}}
-				</RerenderEvery>
 			</div>
 
 			<PlayerHand side={side} cardData={cardData} onSelectFromHand={onSelectFromHand} relative={relative} />
@@ -202,13 +219,13 @@ export default function Page() {
 			)}
 
 			<nav className="absolute left-2 top-2 rounded-lg bg-white px-4 py-2 text-center shadow-lg">
-				Phase: {latestData?.board.phase}
 				<span>status: {status}</span>
 				{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
 				{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
 				{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
 			</nav>
 
+			<p className="text-center text-xs">Phase: {latestData?.board.phase}</p>
 			<section className="flex flex-grow justify-center">
 				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={2} size="sm" />
 				{castingField && (

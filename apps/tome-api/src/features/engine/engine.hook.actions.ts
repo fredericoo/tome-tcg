@@ -28,6 +28,7 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		onTimeout: (params: { side: TSide; action: TAction }) => void;
 		timeoutMs: number;
 	}) {
+		const requestedAt = Date.now();
 		const timesOutAt = Date.now() + params.timeoutMs;
 		const actionEntries = sides.reduce(
 			(acc, side) => {
@@ -37,6 +38,7 @@ export const createHookActions = (game: GameIterationResponse) => ({
 					submit: promise.submitAction,
 					type: params.action.type,
 					timesOutAt,
+					requestedAt,
 				} as GameAction;
 				acc[side] = {
 					promise,

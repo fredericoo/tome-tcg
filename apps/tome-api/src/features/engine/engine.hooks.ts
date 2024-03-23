@@ -7,64 +7,74 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 	// TODO: implement these
 	onDiscard: (params: {
 		turn: Partial<Turn>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDraw: (params: {
 		turn: Partial<Turn>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDamage: (params: {
 		turn: Partial<Turn>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onHeal: (params: {
 		turn: Partial<Turn>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 
 	beforeDraw: (params: {
 		turn: Pick<Turn, 'finishedTurns'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCast: (params: {
 		turn: Pick<Turn, 'finishedTurns' | 'draws'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeReveal: (params: {
 		turn: Pick<Turn, 'finishedTurns' | 'draws'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeSpell: (params: {
 		turn: Pick<Turn, 'finishedTurns' | 'draws' | 'casts'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCombat: (params: {
 		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	afterCombat: (params: {
 		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
-		board: Board;
+		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 };
 
@@ -81,16 +91,19 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 	}
 };
 
-export const createTriggerHooks = (board: Board) =>
+export const createTriggerHooks = (game: GameIterationResponse) =>
 	async function* triggerHooks<THook extends keyof TurnHooks>(params: {
 		hookName: THook;
-		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide'>;
+		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide' | 'opponentSide'>;
 	}) {
+		const board = game.board;
 		const currentField = topOf(board.field);
 		const fieldEffect = currentField?.effects[params.hookName];
 		const context = params.context;
 		if (fieldEffect) {
-			yield* fieldEffect(params.context as any);
+			game.highlights.effect.add(currentField.key);
+			yield* fieldEffect(context as any);
+			game.highlights.effect.delete(currentField.key);
 		}
 
 		const effectStacks: Array<[SpellCard[], Side]> = [
@@ -109,13 +122,16 @@ export const createTriggerHooks = (board: Board) =>
 
 			const cardEffect = spell.effects[params.hookName];
 			if (cardEffect) {
+				game.highlights.effect.add(spell.key);
 				yield* cardEffect({
-					board: context.board,
+					game: context.game,
 					actions: context.actions,
 					// @ts-expect-error - union too complex
 					turn: context.turn,
 					ownerSide,
+					opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
 				});
+				game.highlights.effect.delete(spell.key);
 			}
 		}
 	};

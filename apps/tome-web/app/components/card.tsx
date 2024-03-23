@@ -7,7 +7,7 @@ import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { useCardHighlight } from '../routes/games.$id';
 
 export const cardClass = cva({
-	base: 'aspect-[63/88] rounded-lg select-none',
+	base: 'aspect-[63/88] rounded-lg select-none transition-shadow',
 	variants: {
 		variant: {
 			placeholder: '',
@@ -22,12 +22,12 @@ export const cardClass = cva({
 			sm: 'h-[15vh]',
 		},
 		interactive: {
-			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer transition-shadow',
+			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer',
 		},
 		highlight: {
-			effect: 'shadow-md, shadow-amber-500',
-			negative: 'shadow-md, shadow-red-500',
-			positive: 'shadow-md, shadow-teal-500',
+			effect: 'shadow-[0_0_32px_rgba(0,255,255)] z-20',
+			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20',
+			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20',
 		},
 		color1: {
 			red: 'from-red-800',
@@ -51,7 +51,7 @@ export const cardClass = cva({
 type Variants = VariantProps<typeof cardClass>;
 
 const cardBodyClass = cva({
-	base: 'bg-white h-full overflow-hidden rounded-sm p-2 flex flex-col gap-2',
+	base: 'bg-white h-full overflow-hidden rounded-sm p-2 space-y-2',
 });
 
 export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps> {
@@ -83,8 +83,6 @@ export const Card = ({
 				key={key}
 				layout="preserve-aspect"
 				className={cardClass({ face: 'back', size, className, interactive, highlight })}
-				initial={false}
-				animate={{ rotateY: 180 }}
 				{...props}
 			></motion.div>
 		);

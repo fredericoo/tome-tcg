@@ -47,17 +47,19 @@ export type GameAction = {
 		config: PlayerActionMap[A]['config'];
 		submit: PlayerActionMap[A]['onAction'];
 		timesOutAt: number;
+		requestedAt: number;
 	};
 }[keyof PlayerActionMap];
 
 export type GameIterationResponse = {
 	board: Board;
-	highlights?: {
-		positive?: GameCard[];
-		negative?: GameCard[];
-		effect?: GameCard[];
+	/** Highlighted card keys */
+	highlights: {
+		positive: Set<number>;
+		negative: Set<number>;
+		effect: Set<number>;
 	};
-	arrows?: Array<{
+	arrows: Array<{
 		from: GameCard;
 		to: GameCard;
 	}>;
@@ -125,9 +127,14 @@ export const createGameInstance = ({
 }) => {
 	const finishedTurns: Turn[] = [];
 	const board = initialiseGameBoard({ decks });
-	const game: GameIterationResponse = { board, actions: {} };
+	const game: GameIterationResponse = {
+		board,
+		actions: {},
+		highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
+		arrows: [],
+	};
 	const actions = createHookActions(game);
-	const triggerHook = createTriggerHooks(board);
+	const triggerHook = createTriggerHooks(game);
 
 	const drawCard = (side: Side, turn: Pick<Turn, 'draws'>) => {
 		const draw = moveTopCard(board.players[side].drawPile, board.players[side].hand);
@@ -148,13 +155,13 @@ export const createGameInstance = ({
 			}
 		}
 
-		yield* triggerHook({ hookName: 'beforeDraw', context: { actions, board, turn } });
+		yield* triggerHook({ hookName: 'beforeDraw', context: { actions, game, turn } });
 		board.phase = 'draw';
 		yield game;
 		SIDES.forEach(side => drawCard(side, turn));
 		yield game;
 
-		yield* triggerHook({ hookName: 'beforeCast', context: { actions, board, turn } });
+		yield* triggerHook({ hookName: 'beforeCast', context: { actions, game, turn } });
 		board.phase = 'cast';
 		yield game;
 
@@ -195,7 +202,7 @@ export const createGameInstance = ({
 					if (card.colors.length !== 1) {
 						// if no color, cast to any stack
 						const stacks = card.colors.length > 0 ? card.colors : STACKS;
-						console.log('reqing action 2');
+
 						yield* actions.playerAction({
 							sides: [side],
 							onTimeout: noop,
@@ -204,7 +211,6 @@ export const createGameInstance = ({
 								type: 'select_spell_stack',
 								config: { availableStacks: stacks, min: 1, max: 1, from: 'self' },
 								onAction: function* ({ stacks, side }) {
-									console.log('picked stack');
 									const stack = stacks[0];
 									invariant(stack, 'Expected exactly one stack');
 									hand.splice(index, 1);
@@ -221,7 +227,7 @@ export const createGameInstance = ({
 			},
 		});
 
-		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, board, turn } });
+		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, game, turn } });
 		board.phase = 'reveal';
 		yield game;
 		// Reveals spells cast and moves them into the slots
@@ -237,24 +243,23 @@ export const createGameInstance = ({
 		const fieldClash = resolveFieldClash(board.players);
 		// only resolve if there was a clash
 		if (fieldClash.lost || fieldClash.won) {
-			game.highlights = {
-				positive: [fieldClash.won?.card].filter(Boolean),
-				negative: [fieldClash.lost?.card].filter(Boolean),
-			};
 			if (fieldClash.won) {
+				game.highlights.positive.add(fieldClash.won.card.key);
 				board.field.push(fieldClash.won.card);
 				board.players[fieldClash.won.side].casting.field = undefined;
 			}
 			if (fieldClash.lost) {
+				game.highlights.negative.add(fieldClash.lost.card.key);
 				board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
 				board.players[fieldClash.lost.side].casting.field = undefined;
 			}
 			yield game;
-			game.highlights = {};
+			if (fieldClash.won) game.highlights.positive.delete(fieldClash.won.card.key);
+			if (fieldClash.lost) game.highlights.positive.delete(fieldClash.lost.card.key);
 			yield game;
 		}
 
-		yield* triggerHook({ hookName: 'beforeSpell', context: { actions, board, turn } });
+		yield* triggerHook({ hookName: 'beforeSpell', context: { actions, game, turn } });
 		board.phase = 'spell';
 		yield game;
 
@@ -279,13 +284,18 @@ export const createGameInstance = ({
 		});
 
 		const spellClash = resolveSpellClash(turn.spells);
-		game.highlights = {
-			positive: spellClash.won?.map(spell => spell?.card).filter(Boolean),
-			negative: spellClash.lost?.map(spell => spell?.card).filter(Boolean),
-		};
+		const wonCards = spellClash.won?.map(spell => spell?.card).filter(Boolean) ?? [];
+		const lostCards = spellClash.won?.map(spell => spell?.card).filter(Boolean) ?? [];
+		wonCards.forEach(card => game.highlights.positive.add(card.key));
+		lostCards.forEach(card => game.highlights.negative.add(card.key));
 		yield game;
 
 		// winner deals damage to loser
+
+		// remove highlights
+		wonCards.forEach(card => game.highlights.positive.delete(card.key));
+		lostCards.forEach(card => game.highlights.negative.delete(card.key));
+		yield game;
 	}
 
 	return handleTurn();

@@ -41,6 +41,7 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	return {
 		completed,
 		submitAction: async function* (params: any) {
+			// TODO: Validate actions here.
 			clearTimeout(timeoutAction);
 			resolve({ side, action });
 			yield* action.onAction(params);

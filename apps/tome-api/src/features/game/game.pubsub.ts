@@ -7,6 +7,7 @@ import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { Board } from '../engine/engine.board';
 import {
+	GameAction,
 	GameCard,
 	GameIterationResponse,
 	SIDES,
@@ -15,7 +16,6 @@ import {
 	SpellStack,
 	createGameInstance,
 } from '../engine/engine.game';
-import { PlayerActionMap } from '../engine/engine.turn.actions';
 import { getGameById } from './game.api';
 
 type GameRoomState = {
@@ -44,14 +44,7 @@ export type SanitisedIteration = {
 			discardPile: PubSubCard[];
 			hand: PubSubCard[];
 			stacks: Record<SpellStack, PubSubCard[]>;
-			action?: {
-				[A in keyof PlayerActionMap]: {
-					type: A;
-					config: PlayerActionMap[A]['config'];
-					submit: PlayerActionMap[A]['onAction'];
-					timesOutAt: number;
-				};
-			}[keyof PlayerActionMap];
+			action?: GameAction;
 		}
 	>;
 };
@@ -97,14 +90,14 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			},
 		},
 	};
-	originalIteration.highlights?.effect?.forEach(card => {
-		iteration.board.highlights[card.key] = 'effect';
+	originalIteration.highlights.effect.forEach(cardKey => {
+		iteration.board.highlights[cardKey] = 'effect';
 	});
-	originalIteration.highlights?.positive?.forEach(card => {
-		iteration.board.highlights[card.key] = 'positive';
+	originalIteration.highlights.positive.forEach(cardKey => {
+		iteration.board.highlights[cardKey] = 'positive';
 	});
-	originalIteration.highlights?.negative?.forEach(card => {
-		iteration.board.highlights[card.key] = 'negative';
+	originalIteration.highlights.negative.forEach(cardKey => {
+		iteration.board.highlights[cardKey] = 'negative';
 	});
 	SIDES.forEach(side => {
 		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
@@ -124,7 +117,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		if (castingField) {
 			iteration.board[side].casting.field = hideCard(castingField);
 		}
-		iteration.board[side].action = originalIteration.actions?.[side];
+		iteration.board[side].action = originalIteration.actions[side];
 	});
 	return iteration;
 };
@@ -133,7 +126,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 60000, spellTimeoutMs: 60000, startingCards: 2 },
+		settings: { castTimeoutMs: 10000, spellTimeoutMs: 10000, startingCards: 2 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
@@ -255,7 +248,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			return;
 		}
 
-		const action = ongoingGame.state.lastState?.actions?.[userSide];
+		const action = ongoingGame.state.lastState?.actions[userSide];
 		if (!action) {
 			ws.send({ error: 'Action not requested' });
 			return;

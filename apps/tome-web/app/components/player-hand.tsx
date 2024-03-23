@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -39,8 +38,9 @@ export function PlayerHand({ cardData, relative, side, onSelectFromHand }: Playe
 					const angle = (index + 0.5 - side.hand.length / 2) * fanRatio;
 					const y = Math.cos(Math.abs(angle) / fanRatio) * -10 * fanRatio;
 					return (
-						<motion.li
-							animate={{ marginInline: '-10px', transform: `rotate(${angle}deg) translateY(${y}px)` }}
+						<li
+							className="transition-transform duration-300 ease-in-out"
+							style={{ marginInline: '-10px', transform: `rotate(${angle}deg) translateY(${y}px)` }}
 							key={cardRef.key}
 						>
 							<Card
@@ -72,7 +72,7 @@ export function PlayerHand({ cardData, relative, side, onSelectFromHand }: Playe
 								layoutId={cardRef.key}
 								data={cardRef.id ? cardData[cardRef.id] : undefined}
 							/>
-						</motion.li>
+						</li>
 					);
 				})}
 			</ol>

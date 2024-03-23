@@ -76,27 +76,22 @@ const randomColor = (): SpellStack => (['red', 'green', 'blue'] as const)[Math.f
 deck.push(
 	...Array.from({ length: 30 - deck.length }).map(
 		(_, i): DbCard => ({
+			id: (10 + i).toString(),
 			type: 'spell',
 			attack: Math.ceil(Math.random() * 20),
 			colors: [randomColor(), randomColor()],
-			description: 'Choose a spell stack to discard the top card from.',
-			id: (10 + i).toString(),
+			description: 'Before the spell phase, choose a card from your opponent’s hand to be discarded',
 			effects: {
-				beforeSpell: async function* ({ board, actions, ownerSide, turn }) {
-					const oppoonentSide = ownerSide === 'sideA' ? 'sideB' : 'sideA';
+				beforeSpell: async function* ({ game, actions, ownerSide }) {
 					yield* actions.playerAction({
 						sides: [ownerSide],
 						action: {
-							type: 'select_spell_stack',
-							config: { from: 'opponent', availableStacks: STACKS, min: 1, max: 1 },
-							onAction: ({ side, stacks }) => {
-								const cardToDiscard = topOf(board.players[oppoonentSide].stacks[stack]);
+							type: 'select_from_hand',
+							config: { from: 'opponent', max: 1, min: 1, type: 'any' },
+							onAction: function* ({ cardKeys, side }) {
+								const cardToDiscard = game.board.players[side].hand.find(card => cardKeys.includes(card.key));
 								if (!cardToDiscard) return;
-								actions.discard({
-									card: cardToDiscard,
-									from: board.players[oppoonentSide].stacks[stack],
-									side: oppoonentSide,
-								});
+								yield* actions.discard({ card: cardToDiscard, from: game.board.players[side].hand, side });
 							},
 						},
 						timeoutMs: 10000,
