@@ -1,5 +1,5 @@
 import { DistributiveOmit } from '../../lib/type-utils';
-import { invariant, noop } from '../../lib/utils';
+import { invariant, noop, pill } from '../../lib/utils';
 import { Board, initialiseGameBoard, moveTopCard, topOf } from './engine.board';
 import { createHookActions } from './engine.hook.actions';
 import { TurnHooks, createTriggerHooks } from './engine.hooks';
@@ -23,6 +23,7 @@ export interface SpellCard extends BaseCard {
 	name: string;
 	colors: SpellColor[];
 	attack: number;
+	heal?: number;
 	effects: Partial<TurnHooks<true>>;
 }
 
@@ -73,6 +74,7 @@ export type Turn = {
 	draws: Record<Side, GameCard[]>;
 	casts: Record<Side, Record<SpellStack, SpellCard[]> & { field: FieldCard[] }>;
 	spells: Record<Side, { slot: SpellStack; card: SpellCard | null } | undefined>;
+	extraDamage: Record<Side, number>;
 };
 
 const winnerColorMap: Record<SpellColor, SpellColor> = {
@@ -173,7 +175,7 @@ export const createGameInstance = ({
 				config: { type: 'any', min: 1, max: 1, from: 'self' },
 				onAction: async function* ({ side, cardKeys }) {
 					const cardKey = cardKeys[0];
-					invariant(cardKey, 'No card key provided');
+					invariant(cardKey !== undefined, 'No card key provided');
 
 					const hand = board.players[side].hand;
 					const index = hand.findIndex(handCard => handCard.key === cardKey);
@@ -228,14 +230,27 @@ export const createGameInstance = ({
 		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, game, turn } });
 		board.phase = 'reveal';
 		yield game;
+
 		// Reveals spells cast and moves them into the slots
-		SIDES.forEach(side =>
-			STACKS.forEach(stack => {
-				board.players[side].stacks[stack].push(...turn.casts[side][stack]);
+		for (const side of SIDES) {
+			for (const stack of STACKS) {
+				const castCards = turn.casts[side][stack];
+				board.players[side].stacks[stack].push(...castCards);
 				board.players[side].casting[stack] = undefined;
-			}),
-		);
-		yield game;
+				yield game;
+				for (const card of castCards) {
+					if (card.effects.onReveal) {
+						yield* card.effects.onReveal({
+							actions,
+							game,
+							turn,
+							opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
+							ownerSide: side,
+						});
+					}
+				}
+			}
+		}
 
 		/** Field card resolution */
 		const fieldClash = resolveFieldClash(board.players);
@@ -288,7 +303,16 @@ export const createGameInstance = ({
 		if (spellClash.won && damage > 0) {
 			const losingSide = spellClash.won === 'sideA' ? 'sideB' : 'sideA';
 			yield* actions.damage({ side: losingSide, amount: damage });
-			yield* triggerHook({ hookName: 'onDamage', context: { actions, game, turn } });
+			const cardDamageHook = turn.spells[spellClash.won]?.card?.effects.onDealDamage;
+			if (cardDamageHook) {
+				console.log(
+					pill('gray', turn.spells[spellClash.won]?.card?.name),
+					'’s effect triggered by',
+					pill('yellow', 'onDealDamage'),
+					'hook.',
+				);
+				yield* cardDamageHook({ actions, game, turn, ownerSide: spellClash.won, opponentSide: losingSide });
+			}
 		}
 		yield game;
 		yield* triggerHook({ hookName: 'afterCombat', context: { actions, game, turn } });

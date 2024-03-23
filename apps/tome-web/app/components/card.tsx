@@ -7,7 +7,7 @@ import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { useCardHighlight } from '../routes/games.$id';
 
 export const cardClass = cva({
-	base: 'aspect-[63/88] rounded-lg select-none transition-shadow',
+	base: 'aspect-[63/88] rounded-lg select-none transition-shadow overflow-hidden',
 	variants: {
 		variant: {
 			placeholder: '',
@@ -25,9 +25,9 @@ export const cardClass = cva({
 			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer',
 		},
 		highlight: {
-			effect: 'shadow-[0_0_32px_rgba(0,255,255)] z-20',
-			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20',
-			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20',
+			effect: 'shadow-[0_0_32px_rgba(0,255,255)] z-20 bg-orange-500',
+			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20 bg-red-500',
+			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20 bg-green-500',
 		},
 		color1: {
 			red: 'from-red-800',
@@ -51,7 +51,7 @@ export const cardClass = cva({
 type Variants = VariantProps<typeof cardClass>;
 
 const cardBodyClass = cva({
-	base: 'bg-white h-full overflow-hidden rounded-sm p-2 space-y-2',
+	base: 'bg-white h-full overflow-hidden rounded-sm p-2',
 });
 
 export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps> {
@@ -73,6 +73,7 @@ export const Card = ({
 }: CardProps) => {
 	const flipped = !!data;
 	const pubsubHighlight = useCardHighlight(layoutId);
+	if (pubsubHighlight) console.log('@@@@@@@@@@@@@@ pubsubHighlight', pubsubHighlight);
 	const highlight = highlightOverride || pubsubHighlight;
 	const key = layoutId.toString();
 
@@ -109,8 +110,10 @@ export const Card = ({
 			{...props}
 		>
 			<div className={cardBodyClass()}>
-				<p className="text-sm font-bold leading-none tracking-tight">{data?.name}</p>
-				<p className="text-xs leading-tight text-neutral-600">{data?.description}</p>
+				<div className="h-full w-full space-y-2 overflow-hidden">
+					<p className="text-center text-sm font-bold leading-none tracking-tight">{data?.name}</p>
+					<p className="overflow-hidden text-left text-xs leading-tight text-neutral-600">{data?.description}</p>
+				</div>
 			</div>
 		</motion.div>
 	);

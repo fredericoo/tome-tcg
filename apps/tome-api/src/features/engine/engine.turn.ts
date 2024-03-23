@@ -10,4 +10,5 @@ export const initialiseTurn = ({ finishedTurns }: { finishedTurns: Turn[] }): Tu
 	casts: { sideA: { blue: [], green: [], red: [], field: [] }, sideB: { blue: [], green: [], red: [], field: [] } },
 	finishedTurns,
 	spells: { sideA: undefined, sideB: undefined },
+	extraDamage: { sideA: 0, sideB: 0 },
 });

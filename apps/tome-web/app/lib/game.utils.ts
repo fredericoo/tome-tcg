@@ -28,7 +28,6 @@ export const useGameSub = (gameId: string) => {
 				return;
 			}
 			if (isTrusted && data && typeof data === 'object' && 'side' in data) {
-				console.log(data);
 				setLatestData(data as SanitisedIteration);
 			}
 		});

@@ -1,6 +1,7 @@
 import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
 import { GameAction, GameCard, GameIterationResponse, Side } from './engine.game';
+import { createTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
@@ -19,9 +20,16 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		moveBottomCard(from, to);
 		yield game;
 	},
-	damage: function* ({ side, amount }: { side: Side; amount: number }) {
+	damage: async function* ({ side, amount }: { side: Side; amount: number }) {
 		game.board.players[side].hp -= amount;
 		yield game;
+	},
+	draw: async function* ({ side }: { side: Side }) {
+		const actions = createHookActions(game);
+		const triggerHook = createTriggerHooks(game);
+		moveTopCard(game.board.players[side].drawPile, game.board.players[side].hand);
+		yield game;
+		yield* triggerHook({ hookName: 'onDraw', context: { actions, game } });
 	},
 	playerAction: async function* <TSide extends Side, TAction extends PlayerAction>({
 		sides,

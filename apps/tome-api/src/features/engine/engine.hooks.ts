@@ -1,4 +1,4 @@
-import { exhaustive } from '../../lib/utils';
+import { exhaustive, pill } from '../../lib/utils';
 import { Board, topOf } from './engine.board';
 import { GameCard, GameIterationResponse, SIDES, STACKS, Side, SpellCard, Turn } from './engine.game';
 import { HookActions } from './engine.hook.actions';
@@ -13,13 +13,19 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDraw: (params: {
+		game: GameIterationResponse;
+		actions: HookActions;
+		ownerSide: THasOwner extends true ? Side : never;
+		opponentSide: THasOwner extends true ? Side : never;
+	}) => AsyncGenerator<GameIterationResponse>;
+	onReveal: (params: {
 		turn: Partial<Turn>;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
 		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
-	onDamage: (params: {
+	onDealDamage: (params: {
 		turn: Partial<Turn>;
 		game: GameIterationResponse;
 		actions: HookActions;
@@ -63,7 +69,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		opponentSide: THasOwner extends true ? Side : never;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCombat: (params: {
-		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells'>;
+		turn: Pick<Turn, 'finishedTurns' | 'casts' | 'draws' | 'spells' | 'extraDamage'>;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : never;
@@ -123,6 +129,8 @@ export const createTriggerHooks = (game: GameIterationResponse) =>
 			const cardEffect = spell.effects[params.hookName];
 			if (cardEffect) {
 				game.highlights.effect.add(spell.key);
+				console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
+
 				yield* cardEffect({
 					game: context.game,
 					actions: context.actions,
