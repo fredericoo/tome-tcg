@@ -51,7 +51,7 @@ export const cardClass = cva({
 type Variants = VariantProps<typeof cardClass>;
 
 const cardBodyClass = cva({
-	base: 'bg-white h-full overflow-hidden rounded-sm p-2',
+	base: 'bg-white h-full overflow-hidden rounded-sm p-2 flex flex-col gap-2',
 });
 
 export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps> {
@@ -111,8 +111,8 @@ export const Card = ({
 			{...props}
 		>
 			<div className={cardBodyClass()}>
-				<p>{data?.name}</p>
-				<p className="text-sm text-neutral-600">{data?.description}</p>
+				<p className="text-sm font-bold leading-none tracking-tight">{data?.name}</p>
+				<p className="text-xs leading-tight text-neutral-600">{data?.description}</p>
 			</div>
 		</motion.div>
 	);

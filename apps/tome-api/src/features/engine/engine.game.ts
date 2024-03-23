@@ -195,14 +195,16 @@ export const createGameInstance = ({
 					if (card.colors.length !== 1) {
 						// if no color, cast to any stack
 						const stacks = card.colors.length > 0 ? card.colors : STACKS;
+						console.log('reqing action 2');
 						yield* actions.playerAction({
 							sides: [side],
 							onTimeout: noop,
-							timeoutMs: 10000,
+							timeoutMs: 100000,
 							action: {
 								type: 'select_spell_stack',
 								config: { availableStacks: stacks, min: 1, max: 1, from: 'self' },
 								onAction: function* ({ stacks, side }) {
+									console.log('picked stack');
 									const stack = stacks[0];
 									invariant(stack, 'Expected exactly one stack');
 									hand.splice(index, 1);
@@ -212,7 +214,6 @@ export const createGameInstance = ({
 								},
 							},
 						});
-						yield game;
 						return;
 					}
 					throw new Error(`Invalid cast ${card.name}`);

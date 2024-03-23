@@ -1,3 +1,4 @@
+import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
 import { GameAction, GameCard, GameIterationResponse, Side } from './engine.game';
 import { PlayerAction, playerAction } from './engine.turn.actions';
@@ -28,32 +29,40 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		timeoutMs: number;
 	}) {
 		const timesOutAt = Date.now() + params.timeoutMs;
-		const actionEntries = sides.map(side => [side, playerAction({ ...params, side })] as const);
+		const actionEntries = sides.reduce(
+			(acc, side) => {
+				const promise = playerAction({ ...params, side });
+				const action = {
+					config: params.action.config,
+					submit: promise.submitAction,
+					type: params.action.type,
+					timesOutAt,
+				} as GameAction;
+				acc[side] = {
+					promise,
+					action,
+				};
+				return acc;
+			},
+			{} as Record<TSide, { promise: ReturnType<typeof playerAction>; action: GameAction }>,
+		);
 
-		actionEntries.forEach(([side, action]) => {
-			const newAction = {
-				config: params.action.config,
-				submit: action.submitAction,
-				type: params.action.type,
-				timesOutAt,
-			} as GameAction;
-			game.actions[side] = newAction;
+		Object.keys(actionEntries).forEach(side => {
+			game.actions[side as TSide] = actionEntries[side as TSide].action;
 		});
-
 		yield game;
 
 		async function* yieldAsResolved(): AsyncGenerator<GameIterationResponse> {
-			const actionsLeft = actionEntries.map(([, action]) => action.completed);
-			if (!actionsLeft.length) {
-				yield game;
-				return;
-			}
+			const actionsLeft = objectEntries(actionEntries).map(([_, { promise }]) => promise.completed);
+			if (!actionsLeft.length) return yield game;
+
 			const finished = await Promise.race(actionsLeft);
-			delete game.actions[finished.side];
-			actionEntries.splice(
-				actionEntries.findIndex(([side]) => side === finished.side),
-				1,
-			);
+			// another action can have taken effect meanwhile
+			if (actionEntries[finished.side as TSide].action === game.actions[finished.side]) {
+				delete game.actions[finished.side];
+			}
+			delete actionEntries[finished.side as TSide];
+
 			yield game;
 			yield* yieldAsResolved();
 		}
