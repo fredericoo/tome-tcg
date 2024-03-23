@@ -126,7 +126,7 @@ const createGameRoom = () => {
 	const game = createGameInstance({
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
-		settings: { castTimeoutMs: 10000, spellTimeoutMs: 10000, startingCards: 2 },
+		settings: { castTimeoutMs: 10000, spellTimeoutMs: 10000, startingCards: 2, emptySlotAttack: 10 },
 	});
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },

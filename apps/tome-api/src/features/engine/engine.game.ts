@@ -104,16 +104,14 @@ const resolveFieldClash = (
 	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
 };
 
-const resolveSpellClash = (spells: Turn['spells']): Partial<Record<'won' | 'lost', Array<Turn['spells'][Side]>>> => {
-	if (!spells.sideA && !spells.sideB) return {};
-	if (!spells.sideA) return { won: [spells.sideB] };
-	if (!spells.sideB) return { won: [spells.sideA] };
+const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {
+	if (!spells.sideA && !spells.sideB) return { won: null };
+	if (!spells.sideA) return { won: 'sideB' };
+	if (!spells.sideB) return { won: 'sideA' };
 
-	if (spells.sideA.slot === spells.sideB.slot) return { lost: [spells.sideA, spells.sideB] };
-	if (winnerColorMap[spells.sideA.slot].includes(spells.sideB.slot))
-		return { won: [spells.sideA], lost: [spells.sideB] };
-	if (winnerColorMap[spells.sideB.slot].includes(spells.sideA.slot))
-		return { won: [spells.sideB], lost: [spells.sideA] };
+	if (spells.sideA.slot === spells.sideB.slot) return { won: null };
+	if (winnerColorMap[spells.sideA.slot].includes(spells.sideB.slot)) return { won: 'sideA' };
+	if (winnerColorMap[spells.sideB.slot].includes(spells.sideA.slot)) return { won: 'sideB' };
 
 	throw new Error(`Failed resolving winner spell between “${spells.sideA.slot}” and “${spells.sideB.slot}”`);
 };
@@ -123,7 +121,7 @@ export const createGameInstance = ({
 	settings,
 }: {
 	decks: Record<Side, DbCard[]>;
-	settings: { castTimeoutMs: number; spellTimeoutMs: number; startingCards: number };
+	settings: { castTimeoutMs: number; spellTimeoutMs: number; startingCards: number; emptySlotAttack: number };
 }) => {
 	const finishedTurns: Turn[] = [];
 	const board = initialiseGameBoard({ decks });
@@ -133,8 +131,8 @@ export const createGameInstance = ({
 		highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
 		arrows: [],
 	};
-	const actions = createHookActions(game);
 	const triggerHook = createTriggerHooks(game);
+	const actions = createHookActions(game);
 
 	const drawCard = (side: Side, turn: Pick<Turn, 'draws'>) => {
 		const draw = moveTopCard(board.players[side].drawPile, board.players[side].hand);
@@ -283,19 +281,21 @@ export const createGameInstance = ({
 			onTimeout: noop,
 		});
 
+		yield* triggerHook({ hookName: 'beforeCombat', context: { actions, game, turn } });
 		const spellClash = resolveSpellClash(turn.spells);
-		const wonCards = spellClash.won?.map(spell => spell?.card).filter(Boolean) ?? [];
-		const lostCards = spellClash.won?.map(spell => spell?.card).filter(Boolean) ?? [];
-		wonCards.forEach(card => game.highlights.positive.add(card.key));
-		lostCards.forEach(card => game.highlights.negative.add(card.key));
+		const damage =
+			spellClash.won ? turn.spells[spellClash.won]?.card?.attack ?? settings.emptySlotAttack : settings.emptySlotAttack;
+		if (spellClash.won && damage > 0) {
+			const losingSide = spellClash.won === 'sideA' ? 'sideB' : 'sideA';
+			yield* actions.damage({ side: losingSide, amount: damage });
+			yield* triggerHook({ hookName: 'onDamage', context: { actions, game, turn } });
+		}
 		yield game;
+		yield* triggerHook({ hookName: 'afterCombat', context: { actions, game, turn } });
 
-		// winner deals damage to loser
-
-		// remove highlights
-		wonCards.forEach(card => game.highlights.positive.delete(card.key));
-		lostCards.forEach(card => game.highlights.negative.delete(card.key));
-		yield game;
+		// end of turn
+		finishedTurns.push(turn);
+		yield* handleTurn();
 	}
 
 	return handleTurn();

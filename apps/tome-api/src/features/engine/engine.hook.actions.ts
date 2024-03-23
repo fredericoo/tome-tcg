@@ -19,6 +19,10 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		moveBottomCard(from, to);
 		yield game;
 	},
+	damage: function* ({ side, amount }: { side: Side; amount: number }) {
+		game.board.players[side].hp -= amount;
+		yield game;
+	},
 	playerAction: async function* <TSide extends Side, TAction extends PlayerAction>({
 		sides,
 		...params

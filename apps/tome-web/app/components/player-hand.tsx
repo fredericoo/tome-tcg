@@ -36,7 +36,8 @@ export function PlayerHand({ cardData, relative, side, onSelectFromHand }: Playe
 					// fan out the cards
 					const fanRatio = 2 * (relative === 'self' ? 1 : -1);
 					const angle = (index + 0.5 - side.hand.length / 2) * fanRatio;
-					const y = Math.cos(Math.abs(angle) / fanRatio) * -10 * fanRatio;
+					// the bigger the angle, the higher the y, in a circular fashion
+					const y = 128 * Math.sin(Math.abs(angle) * (Math.PI / 180)) * fanRatio;
 					return (
 						<li
 							className="transition-transform duration-300 ease-in-out"
