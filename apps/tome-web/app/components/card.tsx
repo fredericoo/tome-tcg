@@ -13,7 +13,7 @@ export const cardClass = cva({
 	variants: {
 		variant: {
 			placeholder: '',
-			card: 'outline outline-neutral-200/20 p-2',
+			card: 'outline outline-neutral-200/20 p-1.5',
 		},
 		face: {
 			back: 'bg-gradient-to-tr from-teal-900 to-teal-800',
@@ -53,7 +53,7 @@ export const cardClass = cva({
 type Variants = VariantProps<typeof cardClass>;
 
 const cardBodyClass = cva({
-	base: 'bg-white h-full overflow-hidden rounded-sm p-2',
+	base: 'bg-white h-full overflow-hidden rounded-sm',
 });
 
 type HoveredCardStore = {
@@ -119,8 +119,10 @@ export const Card = ({
 				>
 					<div className={cardBodyClass()}>
 						<div className="h-full w-full space-y-2 overflow-hidden">
-							<p className="text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
-							<p className="overflow-hidden text-left text-xs leading-tight text-neutral-600">{data.description}</p>
+							<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
+							<p className="overflow-hidden px-2 text-left text-xs leading-tight text-neutral-600">
+								{data.description}
+							</p>
 						</div>
 					</div>
 					{data.type === 'spell' && (
@@ -155,9 +157,11 @@ export const Card = ({
 			>
 				<div className={cardBodyClass()}>
 					<div className="h-full w-full space-y-2 overflow-hidden">
-						<p className="text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
+						<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
 						{size === 'md' && (
-							<p className="overflow-hidden text-left text-xs leading-tight text-neutral-600">{data.description}</p>
+							<p className="overflow-hidden px-1 text-left text-xs leading-tight text-neutral-600">
+								{data.description}
+							</p>
 						)}
 					</div>
 				</div>
