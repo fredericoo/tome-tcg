@@ -1,11 +1,12 @@
 import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
-import { GameAction, GameCard, GameIterationResponse, Side } from './engine.game';
-import { createTriggerHooks } from './engine.hooks';
+import { GameAction, GameCard, GameIterationResponse, Side, Turn } from './engine.game';
+import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const createHookActions = (game: GameIterationResponse) => ({
+	// TODO: how to discard _field_ cards, as they have no owner?
 	discard: function* ({ card, from, side }: { card: GameCard; from: GameCard[]; side: Side }) {
 		const cardToMove = removeCard(from, card);
 		if (!cardToMove) return;
@@ -20,16 +21,27 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		moveBottomCard(from, to);
 		yield game;
 	},
-	damage: async function* ({ side, amount }: { side: Side; amount: number }) {
+	healPlayer: function* ({ side, amount }: { side: Side; amount: number }) {
+		game.board.players[side].hp = Math.min(game.board.players[side].hp + amount, 100);
+		yield game;
+	},
+	damagePlayer: async function* ({ side, amount }: { side: Side; amount: number }) {
 		game.board.players[side].hp -= amount;
 		yield game;
 	},
-	draw: async function* ({ side }: { side: Side }) {
-		const actions = createHookActions(game);
-		const triggerHook = createTriggerHooks(game);
-		moveTopCard(game.board.players[side].drawPile, game.board.players[side].hand);
+	addTurnExtraDamage: async function* ({ side, amount, turn }: { side: Side; amount: number; turn: Partial<Turn> }) {
+		if (!turn.extraDamage) turn.extraDamage = { sideA: 0, sideB: 0 };
+		turn.extraDamage[side] += amount;
 		yield game;
-		yield* triggerHook({ hookName: 'onDraw', context: { actions, game } });
+	},
+	draw: async function* ({ sides }: { sides: Side[] }) {
+		const actions = createHookActions(game);
+		const { triggerTurnHook } = useTriggerHooks(game);
+		for (const side of sides) {
+			moveTopCard(game.board.players[side].drawPile, game.board.players[side].hand);
+			yield* triggerTurnHook({ hookName: 'onDraw', context: { actions, game } });
+		}
+		yield game;
 	},
 	playerAction: async function* <TSide extends Side, TAction extends PlayerAction>({
 		sides,

@@ -2,7 +2,7 @@ import { DistributiveOmit } from '../../lib/type-utils';
 import { invariant, noop, pill } from '../../lib/utils';
 import { Board, initialiseGameBoard, moveTopCard, topOf } from './engine.board';
 import { createHookActions } from './engine.hook.actions';
-import { TurnHooks, createTriggerHooks } from './engine.hooks';
+import { TurnHooks, useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
 
@@ -106,7 +106,7 @@ const resolveFieldClash = (
 	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
 };
 
-const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {
+export const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {
 	if (!spells.sideA && !spells.sideB) return { won: null };
 	if (!spells.sideA) return { won: 'sideB' };
 	if (!spells.sideB) return { won: 'sideA' };
@@ -133,7 +133,7 @@ export const createGameInstance = ({
 		highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
 		arrows: [],
 	};
-	const triggerHook = createTriggerHooks(game);
+	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = createHookActions(game);
 
 	const drawCard = (side: Side, turn: Pick<Turn, 'draws'>) => {
@@ -150,18 +150,17 @@ export const createGameInstance = ({
 		// if first turn, draw cards
 		if (finishedTurns.length === 0) {
 			for (let i = 0; i < settings.startingCards; i++) {
-				SIDES.forEach(side => drawCard(side, turn));
-				yield game;
+				yield* actions.draw({ sides: ['sideA', 'sideB'] });
 			}
 		}
 
-		yield* triggerHook({ hookName: 'beforeDraw', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'beforeDraw', context: { actions, game, turn } });
 		board.phase = 'draw';
 		yield game;
-		SIDES.forEach(side => drawCard(side, turn));
+		yield* actions.draw({ sides: ['sideA', 'sideB'] });
 		yield game;
 
-		yield* triggerHook({ hookName: 'beforeCast', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'beforeCast', context: { actions, game, turn } });
 		board.phase = 'cast';
 		yield game;
 
@@ -227,7 +226,7 @@ export const createGameInstance = ({
 			},
 		});
 
-		yield* triggerHook({ hookName: 'beforeReveal', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'beforeReveal', context: { actions, game, turn } });
 		board.phase = 'reveal';
 		yield game;
 
@@ -246,6 +245,7 @@ export const createGameInstance = ({
 							turn,
 							opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
 							ownerSide: side,
+							thisCard: card,
 						});
 					}
 				}
@@ -272,7 +272,7 @@ export const createGameInstance = ({
 			yield game;
 		}
 
-		yield* triggerHook({ hookName: 'beforeSpell', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game, turn } });
 		board.phase = 'spell';
 		yield game;
 
@@ -296,26 +296,43 @@ export const createGameInstance = ({
 			onTimeout: noop,
 		});
 
-		yield* triggerHook({ hookName: 'beforeCombat', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'beforeCombat', context: { actions, game, turn } });
 		const spellClash = resolveSpellClash(turn.spells);
-		const damage =
-			spellClash.won ? turn.spells[spellClash.won]?.card?.attack ?? settings.emptySlotAttack : settings.emptySlotAttack;
-		if (spellClash.won && damage > 0) {
+		if (spellClash.won) {
+			let damage = turn.spells[spellClash.won]?.card?.attack ?? settings.emptySlotAttack;
+			damage += turn.extraDamage[spellClash.won];
+			const healing = turn.spells[spellClash.won]?.card?.heal ?? 0;
+
 			const losingSide = spellClash.won === 'sideA' ? 'sideB' : 'sideA';
-			yield* actions.damage({ side: losingSide, amount: damage });
-			const cardDamageHook = turn.spells[spellClash.won]?.card?.effects.onDealDamage;
-			if (cardDamageHook) {
-				console.log(
-					pill('gray', turn.spells[spellClash.won]?.card?.name),
-					'’s effect triggered by',
-					pill('yellow', 'onDealDamage'),
-					'hook.',
-				);
-				yield* cardDamageHook({ actions, game, turn, ownerSide: spellClash.won, opponentSide: losingSide });
+			if (damage > 0) {
+				yield* actions.damagePlayer({ side: losingSide, amount: damage });
+				const cardToDealDamage = turn.spells[spellClash.won]?.card;
+				if (cardToDealDamage) {
+					const cardDamageHook = cardToDealDamage.effects.onDealDamage;
+					if (cardDamageHook) {
+						console.log(
+							pill('gray', turn.spells[spellClash.won]?.card?.name),
+							'’s effect triggered by',
+							pill('yellow', 'onDealDamage'),
+							'hook.',
+						);
+						yield* cardDamageHook({
+							actions,
+							game,
+							turn,
+							ownerSide: spellClash.won,
+							opponentSide: losingSide,
+							thisCard: cardToDealDamage,
+						});
+					}
+				}
+			}
+			if (healing > 0) {
+				yield* actions.healPlayer({ side: spellClash.won, amount: healing });
 			}
 		}
 		yield game;
-		yield* triggerHook({ hookName: 'afterCombat', context: { actions, game, turn } });
+		yield* triggerTurnHook({ hookName: 'afterCombat', context: { actions, game, turn } });
 
 		// end of turn
 		finishedTurns.push(turn);

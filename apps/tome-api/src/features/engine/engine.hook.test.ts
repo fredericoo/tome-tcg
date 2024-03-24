@@ -3,7 +3,7 @@ import { expect, mock, test } from 'bun:test';
 import { initialiseGameBoard } from './engine.board';
 import { SIDES, STACKS, Side, SpellStack } from './engine.game';
 import { createHookActions } from './engine.hook.actions';
-import { createTriggerHooks } from './engine.hooks';
+import { useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
 
 test('trigger all effects of fields and spells from both sides', async () => {
@@ -46,7 +46,7 @@ test('trigger all effects of fields and spells from both sides', async () => {
 	);
 
 	const actions = createHookActions(board);
-	const triggerHooks = createTriggerHooks(board);
+	const triggerHooks = useTriggerHooks(board);
 	const turn = initialiseTurn({ finishedTurns: [] });
 
 	const hooks = triggerHooks({ hookName: 'beforeCast', context: { board, actions, turn } });

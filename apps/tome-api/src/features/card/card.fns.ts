@@ -1,6 +1,7 @@
 import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
-import { DbCard, SIDES, STACKS, Side } from '../engine/engine.game';
+import { DbCard, SIDES, STACKS, Side, resolveSpellClash } from '../engine/engine.game';
+import { ACTIVATABLE_HOOKS } from '../engine/engine.hooks';
 
 export const deck: DbCard[] = [
 	{
@@ -98,7 +99,6 @@ export const deck: DbCard[] = [
 	},
 	{ id: '4', name: 'Great Sword', type: 'spell', colors: [], attack: 12, description: '', effects: {} },
 	{ id: '5', name: 'Sacred Water', type: 'spell', colors: ['blue'], attack: 10, heal: 5, description: '', effects: {} },
-	{ id: '6', name: 'Sacred Water', type: 'spell', colors: ['blue'], attack: 10, heal: 5, description: '', effects: {} },
 	{
 		id: '7',
 		type: 'field',
@@ -107,7 +107,7 @@ export const deck: DbCard[] = [
 		color: 'blue',
 		effects: {
 			afterCombat: async function* ({ game, turn }) {
-				if (turn.spells.sideA?.slot === 'blue' && turn.spells.sideB?.slot === 'blue') {
+				if (turn.spells?.sideA?.slot === 'blue' && turn.spells.sideB?.slot === 'blue') {
 					game.board.players.sideA.hp += 10;
 					game.board.players.sideB.hp += 10;
 					yield game;
@@ -225,13 +225,13 @@ export const deck: DbCard[] = [
 		id: '13',
 		type: 'field',
 		name: 'Unstable Ground',
-		description: 'If both players attack with the same spell colour, both take 10 damage.',
+		description: 'If both players attack with the same spell stack, both take 10 damage.',
 		color: null,
 		effects: {
 			afterCombat: async function* ({ turn, actions }) {
-				if (turn.spells.sideA?.slot === turn.spells.sideB?.slot) {
-					yield* actions.damage({ side: 'sideA', amount: 10 });
-					yield* actions.damage({ side: 'sideB', amount: 10 });
+				if (turn.spells?.sideA?.slot === turn.spells?.sideB?.slot) {
+					yield* actions.damagePlayer({ side: 'sideA', amount: 10 });
+					yield* actions.damagePlayer({ side: 'sideB', amount: 10 });
 				}
 			},
 		},
@@ -300,10 +300,10 @@ export const deck: DbCard[] = [
 		color: 'red',
 		effects: {
 			afterCombat: async function* ({ actions, turn }) {
-				if (turn.spells.sideA?.slot === 'red') {
+				if (turn.spells?.sideA?.slot === 'red') {
 					yield* actions.draw({ side: 'sideA' });
 				}
-				if (turn.spells.sideB?.slot === 'red') {
+				if (turn.spells?.sideB?.slot === 'red') {
 					yield* actions.draw({ side: 'sideB' });
 				}
 			},
@@ -317,10 +317,10 @@ export const deck: DbCard[] = [
 		color: 'blue',
 		effects: {
 			afterCombat: async function* ({ actions, turn }) {
-				if (turn.spells.sideA?.slot === 'blue') {
+				if (turn.spells?.sideA?.slot === 'blue') {
 					yield* actions.draw({ side: 'sideA' });
 				}
-				if (turn.spells.sideB?.slot === 'blue') {
+				if (turn.spells?.sideB?.slot === 'blue') {
 					yield* actions.draw({ side: 'sideB' });
 				}
 			},
@@ -334,10 +334,10 @@ export const deck: DbCard[] = [
 		color: 'green',
 		effects: {
 			afterCombat: async function* ({ actions, turn }) {
-				if (turn.spells.sideA?.slot === 'green') {
+				if (turn.spells?.sideA?.slot === 'green') {
 					yield* actions.draw({ side: 'sideA' });
 				}
-				if (turn.spells.sideB?.slot === 'green') {
+				if (turn.spells?.sideB?.slot === 'green') {
 					yield* actions.draw({ side: 'sideB' });
 				}
 			},
@@ -377,15 +377,13 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
 		effects: {
-			beforeCombat: async function* ({ game, turn }) {
+			beforeCombat: async function* ({ turn, actions }) {
 				for (const side of SIDES) {
-					const ownerSpell = turn.spells[side];
-					if (!ownerSpell) continue;
-					if (ownerSpell.card?.colors.includes('green')) {
-						turn.extraDamage[side] += 5;
+					const ownerSpell = turn.spells?.[side];
+					if (ownerSpell?.card?.colors.includes('green')) {
+						yield* actions.addTurnExtraDamage({ side, amount: 5, turn });
 					}
 				}
-				yield game;
 			},
 		},
 	},
@@ -397,5 +395,166 @@ export const deck: DbCard[] = [
 		attack: 10,
 		description: '5+X, where X is the attack of the card below this. (NOT IMPLEMENTED)',
 		effects: {},
+	},
+	{
+		id: '25',
+		name: 'Meteor shower',
+		type: 'field',
+		color: 'red',
+		description:
+			'Can only be cast on top of a GREEN field spell (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
+		effects: {
+			beforeCast: async function* ({ game, actions, thisCard }) {
+				for (const side of SIDES) {
+					const cardToDiscard = topOf(game.board.players[side].stacks.green);
+					if (cardToDiscard) {
+						yield* actions.discard({
+							card: cardToDiscard,
+							from: game.board.players[side].stacks.green,
+							side,
+						});
+					}
+				}
+				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+			},
+		},
+	},
+	{
+		id: '26',
+		name: 'Syphon Earth',
+		type: 'spell',
+		colors: ['red'],
+		attack: 7,
+		description: 'When this spell deals damage, activate the effect of your top GREEN card.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
+				const card = topOf(game.board.players[ownerSide].stacks.green);
+				if (!card) return;
+
+				for (const hook of ACTIVATABLE_HOOKS) {
+					if (!(hook in card.effects)) continue;
+					const effect = card.effects[hook];
+					if (!effect) continue;
+					yield* effect({ game, actions, ownerSide, opponentSide, turn, thisCard });
+				}
+			},
+		},
+	},
+	{
+		id: '27',
+		name: 'Syphon Water',
+		type: 'spell',
+		colors: ['green'],
+		attack: 7,
+		description: 'When this spell deals damage, activate the effect of your top BLUE card.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
+				const card = topOf(game.board.players[ownerSide].stacks.blue);
+				if (!card) return;
+
+				for (const hook of ACTIVATABLE_HOOKS) {
+					if (!(hook in card.effects)) continue;
+					const effect = card.effects[hook];
+					if (!effect) continue;
+					yield* effect({ game, actions, ownerSide, opponentSide, turn, thisCard });
+				}
+			},
+		},
+	},
+	{
+		id: '28',
+		name: 'Syphon Fire',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 7,
+		description: 'When this spell deals damage, activate the effect of your top RED card.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
+				const card = topOf(game.board.players[ownerSide].stacks.red);
+				if (!card) return;
+
+				for (const hook of ACTIVATABLE_HOOKS) {
+					if (!(hook in card.effects)) continue;
+					const effect = card.effects[hook];
+					if (!effect) continue;
+					yield* effect({ game, actions, ownerSide, opponentSide, turn, thisCard });
+				}
+			},
+		},
+	},
+	{
+		id: '29',
+		name: 'Wooden staff of healing',
+		type: 'spell',
+		colors: ['green'],
+		attack: 5,
+		heal: 8,
+		description: 'When this spell is beaten, discard it.',
+		effects: {
+			afterCombat: async function* ({ actions, game, thisCard, turn, opponentSide }) {
+				if (!turn.spells) return;
+				const { won } = resolveSpellClash(turn.spells);
+				const isBeaten = won === opponentSide;
+				if (isBeaten) yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+			},
+		},
+	},
+	{
+		id: '30',
+		name: 'Stomp',
+		type: 'spell',
+		attack: 11,
+		description: 'Whenever this spell deals damage, remove the top field effect from play.',
+		colors: ['green'],
+		effects: {
+			onDealDamage: async function* ({ actions, game }) {
+				const fieldEffect = topOf(game.board.field);
+				if (!fieldEffect) return;
+				yield* actions.discard({ card: fieldEffect, from: game.board.field, side: 'sideA' });
+			},
+		},
+	},
+	{
+		id: '31',
+		name: 'Arid desert',
+		type: 'field',
+		color: 'red',
+		description: 'BLUE cards cannot trigger effects. (NOT IMPLEMENTED)',
+		effects: {},
+	},
+	{
+		id: '32',
+		name: 'Flooded Valley',
+		type: 'field',
+		color: 'blue',
+		description: 'GREEN cards cannot trigger effects. (NOT IMPLEMENTED)',
+		effects: {},
+	},
+	{
+		id: '33',
+		name: 'Wet Woodlands',
+		type: 'field',
+		color: 'green',
+		description: 'RED cards cannot trigger effects. (NOT IMPLEMENTED)',
+		effects: {},
+	},
+	{
+		id: '34',
+		name: 'Ice Tendrill',
+		type: 'spell',
+		colors: ['green', 'blue'],
+		description:
+			'When this spell is placed in the GREEN stack, your spells will deal +10 damage this turn.. When this spell is placed in the BLUE stack, draw a card',
+		attack: 8,
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, turn, thisCard }) {
+				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) {
+					yield* actions.addTurnExtraDamage({ side: ownerSide, amount: 10, turn });
+				}
+				if (topOf(game.board.players[ownerSide].stacks.blue) === thisCard) {
+					yield* actions.draw({ side: ownerSide });
+				}
+			},
+		},
 	},
 ];
