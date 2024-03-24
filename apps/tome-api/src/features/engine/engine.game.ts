@@ -1,6 +1,6 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { invariant, noop, pill } from '../../lib/utils';
-import { Board, initialiseGameBoard, moveTopCard, topOf } from './engine.board';
+import { Board, initialiseGameBoard, topOf } from './engine.board';
 import { createHookActions } from './engine.hook.actions';
 import { TurnHooks, useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
@@ -136,13 +136,6 @@ export const createGameInstance = ({
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = createHookActions(game);
 
-	const drawCard = (side: Side, turn: Pick<Turn, 'draws'>) => {
-		const draw = moveTopCard(board.players[side].drawPile, board.players[side].hand);
-		if (draw.card) {
-			turn.draws[side].push(draw.card);
-		}
-	};
-
 	async function* handleTurn(): AsyncGenerator<GameIterationResponse> {
 		const turn = initialiseTurn({ finishedTurns });
 		yield game;
@@ -158,7 +151,6 @@ export const createGameInstance = ({
 		board.phase = 'draw';
 		yield game;
 		yield* actions.draw({ sides: ['sideA', 'sideB'] });
-		yield game;
 
 		yield* triggerTurnHook({ hookName: 'beforeCast', context: { actions, game, turn } });
 		board.phase = 'cast';
