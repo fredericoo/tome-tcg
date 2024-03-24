@@ -8,7 +8,7 @@ import { gameRoutes } from './features/game/game.routes';
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
-	.use(cors({ origin: ['localhost:5173', 'localhost:5173'], credentials: true, allowedHeaders: ['Content-Type'] }))
+	.use(cors({ origin: ['localhost:5173', '192.168.0.38:5173'], credentials: true, allowedHeaders: ['Content-Type'] }))
 	.use(authRoutes)
 	.use(gameRoutes)
 

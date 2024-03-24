@@ -127,7 +127,7 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 				<ActionProgressBar action={side.action} />
 			:	null}
 
-			{isSelectingStack && <div className="fixed inset-0 z-10 bg-neutral-900/50" />}
+			{isSelectingStack && <div className="pointer-events-none fixed inset-0 z-10 bg-neutral-900/50" />}
 			<ol aria-label="Stacks" className={clsx('flex gap-4 p-4')}>
 				{STACKS.map(stack => {
 					const canSelectStack = isSelectingStack && action.config.availableStacks.includes(stack);

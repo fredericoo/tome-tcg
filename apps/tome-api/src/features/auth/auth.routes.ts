@@ -86,7 +86,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			const session = await lucia.createSession(userId, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
 			cookie[sessionCookie.name]?.set({ value: sessionCookie.value, ...sessionCookie.attributes });
-			set.redirect = 'http://localhost:5173/';
+			set.redirect = 'http://192.168.0.38:5173/';
 			return;
 		},
 		{

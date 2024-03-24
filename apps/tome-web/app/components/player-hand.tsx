@@ -23,7 +23,7 @@ export function PlayerHand({ cardData, relative, side, action, onSelectFromHand 
 
 	return (
 		<>
-			{isSelectingFromHand && <div className="fixed inset-0 z-10 bg-neutral-900/50" />}
+			{isSelectingFromHand && <div className="pointer-events-none fixed inset-0 z-10 bg-neutral-900/50" />}
 			<ol
 				aria-label="Hand"
 				className={clsx('absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2', {

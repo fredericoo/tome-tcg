@@ -197,12 +197,12 @@ export const deck: DbCard[] = [
 							onAction: function* ({ stacks }) {
 								const stack = stacks[0];
 								invariant(stack, 'Stack not found');
-								const cardToDiscard = topOf(game.board.players.sideA.stacks[stack]);
+								const cardToDiscard = topOf(game.board.players[side].stacks[stack]);
 								if (cardToDiscard) {
 									yield* actions.discard({
 										card: cardToDiscard,
-										from: game.board.players.sideA.stacks[stack],
-										side: 'sideA',
+										from: game.board.players[side].stacks[stack],
+										side: side,
 									});
 								}
 							},
