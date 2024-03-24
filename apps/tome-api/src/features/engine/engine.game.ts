@@ -163,7 +163,7 @@ export const createGameInstance = ({
 			onTimeout: noop,
 			action: {
 				type: 'select_from_hand',
-				config: { type: 'any', min: 1, max: 1, from: 'self' },
+				config: { type: 'any', min: 1, max: 1, from: 'self', message: 'Select a card to cast' },
 				onAction: async function* ({ side, cardKeys }) {
 					const cardKey = cardKeys[0];
 					invariant(cardKey !== undefined, 'No card key provided');
@@ -200,7 +200,13 @@ export const createGameInstance = ({
 							timeoutMs: 100000,
 							action: {
 								type: 'select_spell_stack',
-								config: { availableStacks: stacks, min: 1, max: 1, from: 'self' },
+								config: {
+									availableStacks: stacks,
+									min: 1,
+									max: 1,
+									from: 'self',
+									message: `Select a stack to cast “${card.name}” to.`,
+								},
 								onAction: function* ({ stacks, side }) {
 									const stack = stacks[0];
 									invariant(stack, 'Expected exactly one stack');
@@ -226,9 +232,6 @@ export const createGameInstance = ({
 		for (const side of SIDES) {
 			for (const stack of STACKS) {
 				const castCards = turn.casts[side][stack];
-				board.players[side].stacks[stack].push(...castCards);
-				board.players[side].casting[stack] = undefined;
-				yield game;
 				for (const card of castCards) {
 					if (card.effects.onReveal) {
 						yield* card.effects.onReveal({
@@ -241,9 +244,26 @@ export const createGameInstance = ({
 						});
 					}
 				}
+				board.players[side].stacks[stack].push(...castCards);
+				board.players[side].casting[stack] = undefined;
+				yield game;
 			}
 		}
 
+		// trigger onReveal for field cards
+		for (const side of SIDES) {
+			const fieldCard = turn.casts[side].field[0];
+			if (fieldCard && fieldCard.effects.onReveal) {
+				yield* fieldCard.effects.onReveal({
+					actions,
+					game,
+					turn,
+					opponentSide: undefined,
+					ownerSide: undefined,
+					thisCard: fieldCard,
+				});
+			}
+		}
 		/** Field card resolution */
 		const fieldClash = resolveFieldClash(board.players);
 		// only resolve if there was a clash
@@ -257,10 +277,38 @@ export const createGameInstance = ({
 				game.highlights.negative.add(fieldClash.lost.card.key);
 				board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
 				board.players[fieldClash.lost.side].casting.field = undefined;
+				yield game;
 			}
-			yield game;
-			if (fieldClash.won) game.highlights.positive.delete(fieldClash.won.card.key);
-			if (fieldClash.lost) game.highlights.positive.delete(fieldClash.lost.card.key);
+			if (fieldClash.won) {
+				game.highlights.positive.delete(fieldClash.won.card.key);
+				const wonEffect = fieldClash.won.card.effects.onClashWin;
+				if (wonEffect)
+					yield* wonEffect({
+						actions,
+						game,
+						ownerSide: undefined,
+						opponentSide: undefined,
+						thisCard: fieldClash.won.card,
+						loserCard: fieldClash.lost?.card,
+						turn,
+						winnerSide: fieldClash.won.side,
+					});
+			}
+			if (fieldClash.lost) {
+				game.highlights.positive.delete(fieldClash.lost.card.key);
+				const lostEffect = fieldClash.lost.card.effects.onClashLose;
+				if (lostEffect)
+					yield* lostEffect({
+						actions,
+						game,
+						ownerSide: undefined,
+						opponentSide: undefined,
+						thisCard: fieldClash.lost.card,
+						winnerCard: fieldClash.won?.card,
+						turn,
+						loserSide: fieldClash.lost.side,
+					});
+			}
 			yield game;
 		}
 
@@ -272,7 +320,13 @@ export const createGameInstance = ({
 			sides: ['sideA', 'sideB'],
 			action: {
 				type: 'select_spell_stack',
-				config: { availableStacks: STACKS, min: 1, max: 1, from: 'self' },
+				config: {
+					availableStacks: STACKS,
+					min: 1,
+					max: 1,
+					from: 'self',
+					message: 'Select a stack to attack with spell',
+				},
 				onAction: function* ({ stacks, side }) {
 					const stack = stacks[0];
 					invariant(stack, 'Expected exactly one stack');

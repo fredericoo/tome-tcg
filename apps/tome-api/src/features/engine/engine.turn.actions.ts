@@ -3,7 +3,7 @@ import { GameCard, GameIterationResponse, Side, SpellStack } from './engine.game
 export type PlayerActionMap = {
 	select_from_hand: {
 		type: 'select_from_hand';
-		config: { type: GameCard['type'] | 'any'; from: 'self' | 'opponent'; min: number; max: number };
+		config: { type: GameCard['type'] | 'any'; from: 'self' | 'opponent'; min: number; max: number; message: string };
 		onAction: (params: {
 			side: Side;
 			cardKeys: number[];
@@ -11,7 +11,7 @@ export type PlayerActionMap = {
 	};
 	select_spell_stack: {
 		type: 'select_spell_stack';
-		config: { availableStacks: SpellStack[]; from: 'self' | 'opponent'; min: number; max: number };
+		config: { availableStacks: SpellStack[]; from: 'self' | 'opponent'; min: number; max: number; message: string };
 		onAction: (params: {
 			side: Side;
 			stacks: SpellStack[];

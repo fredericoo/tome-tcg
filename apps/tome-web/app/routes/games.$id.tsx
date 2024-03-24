@@ -93,7 +93,8 @@ const stackClass = cva({
 
 const ActionProgressBar = ({ action }: { action: GameAction }) => {
 	if (!action) return null;
-	const durationMs = action.timesOutAt - action.requestedAt;
+	const now = Date.now();
+	const durationMs = action.timesOutAt - now;
 
 	// return seconds remaining
 	return (
@@ -126,16 +127,17 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 			:	null}
 
 			{isSelectingStack && <div className="fixed inset-0 z-10 bg-neutral-900/50" />}
-			<ol aria-label="Stacks" className={clsx('flex gap-4 p-4', { 'z-20': isSelectingStack })}>
+			<ol aria-label="Stacks" className={clsx('flex gap-4 p-4')}>
 				{STACKS.map(stack => {
+					const canSelectStack = isSelectingStack && action.config.availableStacks.includes(stack);
 					const casting = side.casting[stack];
 					return (
 						<li key={stack}>
 							<button
-								disabled={!isSelectingStack}
+								disabled={!canSelectStack}
 								aria-label={stack}
 								onClick={
-									isSelectingStack ?
+									canSelectStack ?
 										() => {
 											flushSync(() =>
 												setSelectedStacks(set => {
@@ -155,7 +157,11 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 										}
 									:	undefined
 								}
-								className={stackClass({ stack, interactive: isSelectingStack })}
+								className={stackClass({
+									stack,
+									interactive: canSelectStack,
+									className: clsx({ 'relative z-20': canSelectStack }),
+								})}
 							>
 								{casting && (
 									<div className="absolute translate-y-1/2">
@@ -191,22 +197,18 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 };
 
 type HighlightedCardsStore = {
-	highlightedCards: SanitisedIteration['board']['highlights'] | undefined;
+	highlightedCards: SanitisedIteration['board']['highlights'];
 	setHighlightedCards: (highlights: SanitisedIteration['board']['highlights'] | undefined) => void;
 };
-const useHighlightedCardsStore = create<HighlightedCardsStore>(() => ({
-	highlightedCards: undefined,
-	setHighlightedCards: () => {},
+export const useHighlightedCardsStore = create<HighlightedCardsStore>(set => ({
+	highlightedCards: {},
+	setHighlightedCards: highlights => set({ highlightedCards: highlights }),
 }));
-export const useCardHighlight = (cardKey: number) => {
-	return useHighlightedCardsStore(state => state.highlightedCards?.[cardKey]);
-};
 
 export default function Page() {
 	const { game, cards } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData, error } = useGameSub(game.id.toString());
-	const setHighlightedCards = useHighlightedCardsStore(state => state.setHighlightedCards);
-	setHighlightedCards(latestData?.board.highlights);
+
 	const playerSide = latestData?.board[latestData.side];
 	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
 	const castingField = [latestData?.board.sideA.casting.field, latestData?.board.sideB.casting.field].filter(Boolean);
@@ -257,6 +259,14 @@ export default function Page() {
 					cardData={cards}
 					side={playerSide}
 				/>
+			)}
+
+			{playerSide?.action?.config.message && (
+				<div className="pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center p-4">
+					<p className="font-lg font-bold text-white [text-shadow:0px_1px_0_black]">
+						{playerSide?.action.config.message}
+					</p>
+				</div>
 			)}
 		</div>
 	);

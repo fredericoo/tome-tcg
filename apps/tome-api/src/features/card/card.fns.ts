@@ -19,7 +19,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any' },
+						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -50,7 +50,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any' },
+						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -81,7 +81,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any' },
+						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -187,7 +187,13 @@ export const deck: DbCard[] = [
 					return actions.playerAction({
 						action: {
 							type: 'select_spell_stack',
-							config: { min: 1, max: 1, from: 'self', availableStacks: stacksWithCards },
+							config: {
+								min: 1,
+								max: 1,
+								from: 'self',
+								availableStacks: stacksWithCards,
+								message: 'Discard the top from a stack',
+							},
 							onAction: function* ({ stacks }) {
 								const stack = stacks[0];
 								invariant(stack, 'Stack not found');
@@ -237,13 +243,13 @@ export const deck: DbCard[] = [
 		attack: 6,
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game, opponentSide }) {
+			onDealDamage: async function* ({ actions, game, opponentSide, ownerSide }) {
 				if (game.board.players[opponentSide].hand.length === 0) return;
 				yield* actions.playerAction({
-					sides: [opponentSide],
+					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'opponent', max: 1, min: 1, type: 'any' },
+						config: { from: 'opponent', max: 1, min: 1, type: 'any', message: 'Discard from opponent’s hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[opponentSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -466,7 +472,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green', 'blue'],
 		description:
-			'When this spell is placed in the GREEN stack, your spells will deal +10 damage this turn.. When this spell is placed in the BLUE stack, draw a card',
+			'When this spell is placed in the GREEN stack, your spells will deal +10 damage this turn. When this spell is placed in the BLUE stack, draw a card',
 		attack: 8,
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, turn, thisCard }) {
@@ -578,6 +584,86 @@ export const deck: DbCard[] = [
 	{ id: '44', name: 'Earth Spike', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
 	{ id: '45', name: 'Metal Bullet', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
 	{ id: '46', name: 'Steel Sword', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
+	{
+		id: '47',
+		name: 'Necromancy',
+		type: 'spell',
+		attack: 5,
+		colors: ['green', 'red'],
+		description:
+			'If this spell is used in combat, prevents any damage from being caused to you this turn, then discard it.',
+		effects: {
+			beforeCombat: async function* ({ actions, turn, ownerSide, thisCard, opponentSide }) {
+				const ownerSpell = turn.spells?.[ownerSide];
+				if (ownerSpell?.card !== thisCard) return;
+				yield* actions.addTurnExtraDamage({ side: opponentSide, amount: -999, turn });
+			},
+			afterCombat: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '48',
+		name: 'Windy valley',
+		type: 'field',
+		color: 'green',
+		description:
+			'Green spells have +5 attack. If this field effect fails to be placed, also removes the field effect who overtook it.',
+		effects: {
+			beforeCombat: async function* ({ turn, actions }) {
+				for (const side of SIDES) {
+					const attackingSpell = turn.spells?.[side];
+					if (!attackingSpell) continue;
+					const card = attackingSpell.card;
+					if (!card?.colors.includes('green')) continue;
+					yield* actions.addTurnExtraDamage({ side, amount: 5, turn });
+				}
+			},
+			onClashLose: async function* ({ actions, game, winnerCard }) {
+				if (!winnerCard) return;
+				yield* actions.discard({ card: winnerCard, from: game.board.field, side: 'sideA' });
+			},
+		},
+	},
+	{
+		id: '49',
+		name: 'Fired Up',
+		type: 'field',
+		color: 'red',
+		description:
+			'Each player’s damage is increased by 5X, where X is the number of active spells they own with the word “Fire” in their title, and this card.',
+		effects: {
+			beforeCombat: async function* ({ game, turn, actions }) {
+				for (const side of SIDES) {
+					const activeSpells = STACKS.map(stack => game.board.players[side].stacks[stack])
+						.map(topOf)
+						.filter(Boolean);
+					const fireSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('fire'));
+					const extraDamage = 5 * (fireSpells.length + 1);
+					yield* actions.addTurnExtraDamage({ side, amount: extraDamage, turn });
+				}
+			},
+		},
+	},
+	{
+		id: '50',
+		name: 'Nature’s Bounty',
+		type: 'field',
+		color: 'green',
+		description:
+			'At the beggining of each turn, each player heals 2X HP, where X is the number of active spells they own with the name “Wood” in their title.',
+		effects: {
+			beforeDraw: async function* ({ game, actions }) {
+				for (const side of SIDES) {
+					const activeSpells = STACKS.map(stack => game.board.players[side].stacks[stack])
+						.map(topOf)
+						.filter(Boolean);
+					const woodSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('wood'));
+					const healAmount = 2 * woodSpells.length;
+					yield* actions.healPlayer({ side, amount: healAmount });
+				}
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [

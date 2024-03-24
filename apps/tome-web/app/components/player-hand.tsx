@@ -27,17 +27,18 @@ export function PlayerHand({ cardData, relative, side, action, onSelectFromHand 
 			<ol
 				aria-label="Hand"
 				className={clsx('absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2', {
-					'bottom-0 translate-y-1/4': relative === 'self',
+					'bottom-0': relative === 'self',
 					'top-0 -translate-y-1/4': relative === 'opponent',
 					'z-20': isSelectingFromHand,
 				})}
 			>
 				{side.hand.map((cardRef, index) => {
 					// fan out the cards
-					const fanRatio = 2 * (relative === 'self' ? 1 : -1);
+					const multiplier = relative === 'self' ? 1 : -1;
+					const fanRatio = 0.5 * multiplier;
 					const angle = (index + 0.5 - side.hand.length / 2) * fanRatio;
 					// the bigger the angle, the higher the y, in a circular fashion
-					const y = 128 * Math.sin(Math.abs(angle) * (Math.PI / 180)) * fanRatio;
+					const y = Math.abs(angle) * fanRatio * 10;
 					return (
 						<li
 							className="transition-transform duration-300 ease-in-out"
@@ -69,7 +70,7 @@ export function PlayerHand({ cardData, relative, side, action, onSelectFromHand 
 										}
 									:	undefined
 								}
-								size={relative === 'self' ? 'md' : 'sm'}
+								size="sm"
 								layoutId={cardRef.key}
 								data={cardRef.id ? cardData[cardRef.id] : undefined}
 							/>

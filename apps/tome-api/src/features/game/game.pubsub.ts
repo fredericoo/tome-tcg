@@ -90,15 +90,14 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			},
 		},
 	};
-	originalIteration.highlights.effect.forEach(cardKey => {
-		iteration.board.highlights[cardKey] = 'effect';
-	});
-	originalIteration.highlights.positive.forEach(cardKey => {
-		iteration.board.highlights[cardKey] = 'positive';
-	});
-	originalIteration.highlights.negative.forEach(cardKey => {
-		iteration.board.highlights[cardKey] = 'negative';
-	});
+
+	const highlightTypes = ['effect', 'positive', 'negative'] as const;
+	for (const type of highlightTypes) {
+		for (const cardKey of originalIteration.highlights[type]) {
+			iteration.board.highlights[cardKey] = type;
+		}
+	}
+
 	SIDES.forEach(side => {
 		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
 		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
