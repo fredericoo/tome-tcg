@@ -20,7 +20,7 @@ import type {
 	SelectStackMessageSchema,
 } from '../../../tome-api/src/features/game/game.pubsub';
 import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
-import { invariant } from '../../../tome-api/src/lib/utils';
+import { exhaustive, invariant } from '../../../tome-api/src/lib/utils';
 import { AnimatedNumber } from '../components/animated-number';
 import { Card, CardProps, cardClass } from '../components/card';
 import { PlayerHand } from '../components/player-hand';
@@ -42,9 +42,11 @@ export const clientLoader = (async ({ params }) => {
 	if (error) {
 		switch (error.status) {
 			case 404:
-				return redirect('/games');
+				return redirect('/');
+			case 401:
+				return redirect(`${import.meta.env.VITE_API_URL}/auth/github`);
 			default:
-				throw error.value;
+				throw exhaustive(error);
 		}
 	}
 	return data;

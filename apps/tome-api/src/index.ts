@@ -6,6 +6,7 @@ import { match } from 'ts-pattern';
 import { UnauthorisedError } from './features/auth/auth.errors';
 import { authRoutes } from './features/auth/auth.routes';
 import { gameRoutes } from './features/game/game.routes';
+import { userRoutes } from './features/user/user.routes';
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
@@ -19,6 +20,7 @@ const app = new Elysia()
 			allowedHeaders: ['Content-Type'],
 		}),
 	)
+	.use(userRoutes)
 	.use(authRoutes)
 	.use(gameRoutes)
 

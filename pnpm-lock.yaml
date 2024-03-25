@@ -124,6 +124,9 @@ importers:
       framer-motion:
         specifier: ^11.0.14
         version: 11.0.14(react-dom@18.2.0)(react@18.2.0)
+      idb:
+        specifier: ^8.0.0
+        version: 8.0.0
       lucide-react:
         specifier: ^0.363.0
         version: 0.363.0(react@18.2.0)
@@ -133,6 +136,12 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
+      react-router-typesafe:
+        specifier: ^1.4.4
+        version: 1.4.4(react-router-dom@6.22.3)(react@18.2.0)(typescript@5.3.3)
+      swr-loader:
+        specifier: ^0.3.2
+        version: 0.3.2(react-router-dom@6.22.3)(react@18.2.0)(typescript@5.3.3)(zustand@4.5.2)
       zustand:
         specifier: ^4.5.2
         version: 4.5.2(@types/react@18.2.66)(react@18.2.0)
@@ -6036,6 +6045,10 @@ packages:
       postcss: 8.4.36
     dev: true
 
+  /idb@8.0.0:
+    resolution: {integrity: sha512-l//qvlAKGmQO31Qn7xdzagVPPaHTxXx199MhrAFuVBTPqydcPYBWjkrbv4Y0ktB+GmWOiwHl237UUOrLmQxLvw==}
+    dev: false
+
   /ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
     dev: true
@@ -8391,6 +8404,18 @@ packages:
       react-router: 6.22.3(react@18.2.0)
     dev: false
 
+  /react-router-typesafe@1.4.4(react-router-dom@6.22.3)(react@18.2.0)(typescript@5.3.3):
+    resolution: {integrity: sha512-XYYwRabe7UoEBZ229Jeg2U4dfU3XvUToX9FTUkJjzDSN+2B4fAIeEKsr961PsA/xJ5bSCd7LwDf0A1deniAdRw==}
+    peerDependencies:
+      react: '>= 17'
+      react-router-dom: '>= 6.4.0'
+      typescript: '>= 4.9'
+    dependencies:
+      react: 18.2.0
+      react-router-dom: 6.22.3(react-dom@18.2.0)(react@18.2.0)
+      typescript: 5.3.3
+    dev: false
+
   /react-router@6.22.3(react@18.2.0):
     resolution: {integrity: sha512-dr2eb3Mj5zK2YISHK++foM9w4eBnO23eKnZEDs7c880P6oKbrjz/Svg9+nxqtHQK+oMW4OtjZca0RqPglXxguQ==}
     engines: {node: '>=14.0.0'}
@@ -9188,6 +9213,20 @@ packages:
       lower-case: 1.1.4
       upper-case: 1.1.3
     dev: true
+
+  /swr-loader@0.3.2(react-router-dom@6.22.3)(react@18.2.0)(typescript@5.3.3)(zustand@4.5.2):
+    resolution: {integrity: sha512-O/nI1OcOcNHk/utnrDixEVqaYqHkhubUD6ju1SYCBhSVI8AezmoR8wRplAS8/vGqt6tRcCyyGixNIljEctZ+Ow==}
+    peerDependencies:
+      react: '>= 17'
+      react-router-dom: '>= 6.4.0'
+      typescript: '>= 4.9'
+      zustand: '>= 4'
+    dependencies:
+      react: 18.2.0
+      react-router-dom: 6.22.3(react-dom@18.2.0)(react@18.2.0)
+      typescript: 5.3.3
+      zustand: 4.5.2(@types/react@18.2.66)(react@18.2.0)
+    dev: false
 
   /table@6.8.1:
     resolution: {integrity: sha512-Y4X9zqrCftUhMeH2EptSSERdVKt/nEdijTOacGD/97EKjhQ/Qs8RTlEGABSJNNN8lac9kheH+af7yAkEWlgneA==}
