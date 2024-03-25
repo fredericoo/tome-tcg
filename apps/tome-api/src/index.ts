@@ -1,6 +1,7 @@
 import { cors } from '@elysiajs/cors';
 import chalk from 'chalk';
 import { Elysia } from 'elysia';
+import { match } from 'ts-pattern';
 
 import { UnauthorisedError } from './features/auth/auth.errors';
 import { authRoutes } from './features/auth/auth.routes';
@@ -8,7 +9,16 @@ import { gameRoutes } from './features/game/game.routes';
 
 const app = new Elysia()
 	.error({ UnauthorisedError })
-	.use(cors({ origin: ['localhost:5173', '192.168.0.38:5173'], credentials: true, allowedHeaders: ['Content-Type'] }))
+	.use(
+		cors({
+			origin: match(process.env.NODE_ENV)
+				.with('development', () => ['localhost:5173', '192.168.0.38:5173'])
+				.with('production', () => [process.env.ALLOWED_ORIGIN].filter(Boolean))
+				.otherwise(() => []),
+			credentials: true,
+			allowedHeaders: ['Content-Type'],
+		}),
+	)
 	.use(authRoutes)
 	.use(gameRoutes)
 
