@@ -11,7 +11,6 @@ COPY docker-entrypoint .
 COPY turbo.json .
 
 # Packages used by the app
-COPY packages/core ./packages/core
 COPY packages/eslint-config-custom ./packages/eslint-config-custom
 COPY packages/tsconfig ./packages/tsconfig
 
