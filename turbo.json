@@ -10,7 +10,7 @@
 		"start": {
 			"dependsOn": ["^build"],
 			"outputs": ["dist/**"],
-			"env": ["DATABASE_URL", "PORT"]
+			"env": ["DATABASE_URL", "PORT", "AUTH_REDIRECT_URL"]
 		},
 		"test": {
 			"dependsOn": ["^build"],
