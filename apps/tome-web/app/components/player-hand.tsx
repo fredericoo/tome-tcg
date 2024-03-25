@@ -42,7 +42,7 @@ export function PlayerHand({ cardData, relative, side, action, onSelectFromHand 
 					return (
 						<li
 							className="transition-transform duration-300 ease-in-out"
-							style={{ marginInline: '-10px', transform: `rotate(${angle}deg) translateY(${y}px)` }}
+							style={{ marginInline: '-5px', transform: `rotate(${angle}deg) translateY(${y}px)` }}
 							key={cardRef.key}
 						>
 							<Card

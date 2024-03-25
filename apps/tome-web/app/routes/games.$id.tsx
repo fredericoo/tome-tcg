@@ -75,7 +75,7 @@ const CardPile = ({ cards, cardData, last = 5, size = 'md' }: CardPileProps) => 
 					aria-label="Cards in pile"
 					className="absolute -right-1 -top-1 inline-block rounded-full bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-50"
 				>
-					{cards.length}
+					×{cards.length}
 				</p>
 			)}
 		</div>
@@ -92,14 +92,14 @@ const stackClass = cva({
 	},
 });
 
-const ActionProgressBar = ({ action }: { action: GameAction }) => {
-	if (!action) return null;
+const ActionProgressBar = ({ action }: { action?: GameAction }) => {
+	if (!action) return <div className="relative h-1 w-full bg-neutral-200"></div>;
 	const now = Date.now();
 	const durationMs = action.timesOutAt - now;
 
 	// return seconds remaining
 	return (
-		<div className="absolute h-1 w-full bg-neutral-300">
+		<div className="relative h-1 w-full bg-neutral-300">
 			<div
 				style={{ animationDuration: `${durationMs}ms` }}
 				className="animate-to-zero-width absolute h-full rounded-full bg-teal-600"
@@ -122,13 +122,23 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 	if (selectedStacks.size > 0 && action?.type !== 'select_spell_stack') setSelectedStacks(new Set());
 
 	return (
-		<div className={clsx('flex flex-col items-center', { 'flex-col-reverse': relative === 'opponent' })}>
-			{side.action ?
-				<ActionProgressBar action={side.action} />
-			:	null}
+		<div className={clsx('flex flex-col items-center gap-2', { 'flex-col-reverse': relative === 'opponent' })}>
+			<ActionProgressBar action={side.action} />
+
+			<div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 ring-1 ring-neutral-900/20">
+				<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path
+						d="M1.35248 4.90532C1.35248 2.94498 2.936 1.35248 4.89346 1.35248C6.25769 1.35248 6.86058 1.92336 7.50002 2.93545C8.13946 1.92336 8.74235 1.35248 10.1066 1.35248C12.064 1.35248 13.6476 2.94498 13.6476 4.90532C13.6476 6.74041 12.6013 8.50508 11.4008 9.96927C10.2636 11.3562 8.92194 12.5508 8.00601 13.3664C7.94645 13.4194 7.88869 13.4709 7.83291 13.5206C7.64324 13.6899 7.3568 13.6899 7.16713 13.5206C7.11135 13.4709 7.05359 13.4194 6.99403 13.3664C6.0781 12.5508 4.73641 11.3562 3.59926 9.96927C2.39872 8.50508 1.35248 6.74041 1.35248 4.90532Z"
+						fill="currentColor"
+						fillRule="evenodd"
+						clipRule="evenodd"
+					></path>
+				</svg>
+				<AnimatedNumber className="text-md font-bold tracking-tight">{side.hp}</AnimatedNumber>
+			</div>
 
 			{isSelectingStack && <div className="pointer-events-none fixed inset-0 z-10 bg-neutral-900/50" />}
-			<ol aria-label="Stacks" className={clsx('flex gap-4 p-4')}>
+			<ol aria-label="Stacks" className={clsx('flex gap-4 px-4')}>
 				{STACKS.map(stack => {
 					const canSelectStack = isSelectingStack && action.config.availableStacks.includes(stack);
 					const casting = side.casting[stack];
@@ -182,18 +192,6 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 					'items-end': relative === 'self',
 				})}
 			>
-				<div className="z-10 flex items-center gap-2 rounded-full bg-white px-4 py-2 ring-1 ring-neutral-900/20">
-					<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path
-							d="M1.35248 4.90532C1.35248 2.94498 2.936 1.35248 4.89346 1.35248C6.25769 1.35248 6.86058 1.92336 7.50002 2.93545C8.13946 1.92336 8.74235 1.35248 10.1066 1.35248C12.064 1.35248 13.6476 2.94498 13.6476 4.90532C13.6476 6.74041 12.6013 8.50508 11.4008 9.96927C10.2636 11.3562 8.92194 12.5508 8.00601 13.3664C7.94645 13.4194 7.88869 13.4709 7.83291 13.5206C7.64324 13.6899 7.3568 13.6899 7.16713 13.5206C7.11135 13.4709 7.05359 13.4194 6.99403 13.3664C6.0781 12.5508 4.73641 11.3562 3.59926 9.96927C2.39872 8.50508 1.35248 6.74041 1.35248 4.90532Z"
-							fill="currentColor"
-							fillRule="evenodd"
-							clipRule="evenodd"
-						></path>
-					</svg>
-					<AnimatedNumber className="text-lg font-bold tracking-tight">{side.hp}</AnimatedNumber>
-				</div>
-
 				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={2} size="sm" />
 			</div>
 
@@ -217,13 +215,30 @@ export const useHighlightedCardsStore = create<HighlightedCardsStore>(set => ({
 	setHighlightedCards: highlights => set({ highlightedCards: highlights }),
 }));
 
+const fieldClass = cva({
+	base: 'flex flex-grow items-center justify-center',
+	variants: {
+		active: {
+			red: 'bg-red-100',
+			green: 'bg-green-100',
+			blue: 'bg-blue-100',
+			none: 'bg-neutral-200',
+		},
+	},
+	defaultVariants: {
+		active: 'none',
+	},
+});
 export default function Page() {
 	const { game, cards } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData, error } = useGameSub(game.id.toString());
 
 	const playerSide = latestData?.board[latestData.side];
 	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
-	const castingField = [latestData?.board.sideA.casting.field, latestData?.board.sideB.casting.field].filter(Boolean);
+
+	const activeFieldCard = latestData?.board.field.at(-1);
+	const activeFieldCardData = activeFieldCard?.id ? cards[activeFieldCard.id] : undefined;
+	const activeColor = activeFieldCardData?.type === 'field' ? activeFieldCardData.color ?? undefined : undefined;
 
 	return (
 		<div className="relative flex h-screen w-full flex-col overflow-hidden bg-neutral-100">
@@ -245,19 +260,30 @@ export default function Page() {
 				{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
 			</nav>
 
-			<p className="text-center text-xs">Phase: {latestData?.board.phase}</p>
-			<section className="flex flex-grow justify-center">
+			<section className={fieldClass({ active: activeColor })}>
 				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={2} size="sm" />
-				{castingField && (
-					<div className="absolute translate-y-1/2">
-						{castingField.map(castingCard => (
-							<Card
-								key={castingCard.key}
-								size="sm"
-								layoutId={castingCard.key}
-								data={castingCard.id ? cards[castingCard.id] : undefined}
-							/>
-						))}
+				{latestData?.board.sideA.casting.field && (
+					<div className="absolute -translate-x-1/2">
+						<Card
+							key={latestData.board.sideA.casting.field.key}
+							size="sm"
+							layoutId={latestData.board.sideA.casting.field.key}
+							data={
+								latestData.board.sideA.casting.field.id ? cards[latestData.board.sideA.casting.field.id] : undefined
+							}
+						/>
+					</div>
+				)}
+				{latestData?.board.sideB.casting.field && (
+					<div className="absolute translate-x-1/2">
+						<Card
+							key={latestData.board.sideB.casting.field.key}
+							size="sm"
+							layoutId={latestData.board.sideB.casting.field.key}
+							data={
+								latestData.board.sideB.casting.field.id ? cards[latestData.board.sideB.casting.field.id] : undefined
+							}
+						/>
 					</div>
 				)}
 			</section>

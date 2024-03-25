@@ -219,7 +219,46 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-
+	{
+		id: '12',
+		type: 'spell',
+		name: 'Overgrown root',
+		description: '4X attack, where X is the number of cards in this stack. (NOT IMPLEMENTED)',
+		attack: 15,
+		colors: ['green'],
+		effects: {
+			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
+				const isUsedInCombat = turn.spells?.[ownerSide]?.card === thisCard;
+				if (!isUsedInCombat) return;
+				const stack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!stack) return;
+				const attack = 4 * game.board.players[ownerSide].stacks[stack].length;
+				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: attack, turn });
+			},
+		},
+	},
+	{
+		id: '15',
+		type: 'spell',
+		name: 'Sword-breaker',
+		colors: ['red'],
+		attack: 5,
+		description: 'If this spell is beaten, discard the card that beat it. (NOT IMPLEMENTED)',
+		effects: {
+			onClashLose: async function* ({ actions, game, winnerCard, opponentSide }) {
+				if (!winnerCard) return;
+				const stackToDiscardFrom = STACKS.find(stack =>
+					game.board.players[opponentSide].stacks[stack].includes(winnerCard),
+				);
+				if (!stackToDiscardFrom) return;
+				yield* actions.discard({
+					card: winnerCard,
+					from: game.board.players[opponentSide].stacks[stackToDiscardFrom],
+					side: opponentSide,
+				});
+			},
+		},
+	},
 	{
 		id: '13',
 		type: 'field',
@@ -346,7 +385,27 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-
+	{
+		id: '24',
+		name: 'Augmentation Device',
+		type: 'spell',
+		colors: [],
+		attack: 0,
+		description: 'When used in combat increases damage by 5+X, where X is the attack of the card below this.',
+		effects: {
+			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
+				const isUsedInCombat = turn.spells?.[ownerSide]?.card === thisCard;
+				if (!isUsedInCombat) return;
+				const stack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!stack) return;
+				const cardBelow = game.board.players[ownerSide].stacks[stack].find(
+					(_, index) => game.board.players[ownerSide].stacks[stack][index + 1] === thisCard,
+				);
+				if (!cardBelow) return;
+				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: 5 + cardBelow.attack, turn });
+			},
+		},
+	},
 	{
 		id: '25',
 		name: 'Meteor shower',
@@ -668,24 +727,6 @@ export const deck: DbCard[] = [
 
 export const notImplementedCards: DbCard[] = [
 	{
-		id: '12',
-		type: 'spell',
-		name: 'Overgrown root',
-		description: '4X attack, where X is the number of cards in this stack. (NOT IMPLEMENTED)',
-		attack: 15,
-		colors: ['green'],
-		effects: {},
-	},
-	{
-		id: '15',
-		type: 'spell',
-		name: 'Sword-breaker',
-		colors: ['red'],
-		attack: 5,
-		description: 'If this spell is beaten, discard the card that beat it. (NOT IMPLEMENTED)',
-		effects: {},
-	},
-	{
 		id: '31',
 		name: 'Arid desert',
 		type: 'field',
@@ -734,15 +775,6 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Tome of nature',
 		description: 'Green field effects are triggered twice (NOT IMPLEMENTED)',
 		attack: 12,
-		effects: {},
-	},
-	{
-		id: '24',
-		name: 'Augmentation Device',
-		type: 'spell',
-		colors: [],
-		attack: 10,
-		description: '5+X, where X is the attack of the card below this. (NOT IMPLEMENTED)',
 		effects: {},
 	},
 ];

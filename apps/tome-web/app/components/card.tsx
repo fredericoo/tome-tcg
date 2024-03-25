@@ -53,7 +53,13 @@ export const cardClass = cva({
 type Variants = VariantProps<typeof cardClass>;
 
 const cardBodyClass = cva({
-	base: 'bg-white h-full overflow-hidden rounded-sm',
+	base: 'h-full overflow-hidden rounded-sm',
+	variants: {
+		type: {
+			spell: 'bg-white',
+			field: 'text-white',
+		},
+	},
 });
 
 type HoveredCardStore = {
@@ -104,7 +110,11 @@ export const Card = ({
 		return [data.colors[0], data.colors[1] ?? data.colors[0]];
 	})();
 	return (
-		<div className="relative" onMouseEnter={() => setHovered(layoutId)} onMouseLeave={() => setHovered(null)}>
+		<div
+			className={clsx('relative', { 'z-50': isHovered })}
+			onMouseEnter={() => setHovered(layoutId)}
+			onMouseLeave={() => setHovered(null)}
+		>
 			{isHovered && (
 				<div
 					className={cardClass({
@@ -114,15 +124,13 @@ export const Card = ({
 						highlight,
 						color1: color1 ?? 'neutral',
 						color2: color2 ?? color1 ?? 'neutral',
-						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 z-30 shadow-xl',
+						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 shadow-xl',
 					})}
 				>
-					<div className={cardBodyClass()}>
+					<div className={cardBodyClass({ type: data.type })}>
 						<div className="h-full w-full space-y-2 overflow-hidden">
 							<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
-							<p className="overflow-hidden px-2 text-left text-xs leading-tight text-neutral-600">
-								{data.description}
-							</p>
+							<p className="overflow-hidden px-2 text-left text-xs leading-tight opacity-60">{data.description}</p>
 						</div>
 					</div>
 					{data.type === 'spell' && (
@@ -155,13 +163,11 @@ export const Card = ({
 				animate={{ rotate: 0 }}
 				{...props}
 			>
-				<div className={cardBodyClass()}>
+				<div className={cardBodyClass({ type: data.type })}>
 					<div className="h-full w-full space-y-2 overflow-hidden">
 						<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
 						{size === 'md' && (
-							<p className="overflow-hidden px-1 text-left text-xs leading-tight text-neutral-600">
-								{data.description}
-							</p>
+							<p className="overflow-hidden px-1 text-left text-xs leading-tight opacity-60">{data.description}</p>
 						)}
 					</div>
 				</div>
