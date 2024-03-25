@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'bun:test';
 
 import { initialiseGameBoard } from './engine.board';
-import { SIDES, STACKS, Side, SpellStack } from './engine.game';
+import { SIDES, STACKS, Side, SpellStack, initialiseGame } from './engine.game';
 import { createHookActions } from './engine.hook.actions';
 import { useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
@@ -9,17 +9,17 @@ import { initialiseTurn } from './engine.turn';
 test('trigger all effects of fields and spells from both sides', async () => {
 	const effect = mock((ownerSide: undefined | [Side, SpellStack]) => ownerSide);
 
-	const board = initialiseGameBoard({ decks: { sideA: [], sideB: [] } });
-	board.field.push({
+	const game = initialiseGame(initialiseGameBoard({ decks: { sideA: [], sideB: [] } }));
+	game.board.field.push({
 		name: 'Field',
 		key: 1,
 		type: 'field',
 		description: '',
 		color: 'blue',
 		effects: {
-			beforeCast: async function* () {
+			beforeCast: async function* ({ game }) {
 				effect(undefined);
-				yield { board };
+				yield game;
 			},
 		},
 		id: '',
@@ -27,7 +27,7 @@ test('trigger all effects of fields and spells from both sides', async () => {
 
 	SIDES.map(side =>
 		STACKS.map(stack => {
-			board.players[side].stacks[stack].push({
+			game.board.players[side].stacks[stack].push({
 				name: 'Spell',
 				key: 1,
 				type: 'spell',
@@ -35,9 +35,9 @@ test('trigger all effects of fields and spells from both sides', async () => {
 				description: '',
 				colors: [stack],
 				effects: {
-					beforeCast: async function* ({ ownerSide }) {
+					beforeCast: async function* ({ ownerSide, game }) {
 						effect([ownerSide, stack]);
-						yield { board };
+						yield game;
 					},
 				},
 				id: '',
@@ -45,11 +45,11 @@ test('trigger all effects of fields and spells from both sides', async () => {
 		}),
 	);
 
-	const actions = createHookActions(board);
-	const triggerHooks = useTriggerHooks(board);
+	const actions = createHookActions(game);
+	const { triggerTurnHook } = useTriggerHooks(game);
 	const turn = initialiseTurn({ finishedTurns: [] });
 
-	const hooks = triggerHooks({ hookName: 'beforeCast', context: { board, actions, turn } });
+	const hooks = triggerTurnHook({ hookName: 'beforeCast', context: { game, actions, turn } });
 	// wait until the generator is done
 	for await (const _ of hooks) void 0;
 

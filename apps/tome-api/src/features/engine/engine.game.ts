@@ -118,6 +118,13 @@ export const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } 
 	throw new Error(`Failed resolving winner spell between “${spells.sideA.slot}” and “${spells.sideB.slot}”`);
 };
 
+export const initialiseGame = (board: Board): GameIterationResponse => ({
+	board,
+	actions: {},
+	highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
+	arrows: [],
+});
+
 export const createGameInstance = ({
 	decks,
 	settings,
@@ -127,12 +134,7 @@ export const createGameInstance = ({
 }) => {
 	const finishedTurns: Turn[] = [];
 	const board = initialiseGameBoard({ decks });
-	const game: GameIterationResponse = {
-		board,
-		actions: {},
-		highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
-		arrows: [],
-	};
+	const game = initialiseGame(board);
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = createHookActions(game);
 
