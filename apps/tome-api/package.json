@@ -6,6 +6,7 @@
 		"test:watch": "bun test src/ --watch",
 		"dev": "bun run --watch src/index.ts",
 		"start": "bun run src/index.ts",
+		"check": "eslint src --fix --max-warnings 0",
 		"db:migrate:create": "drizzle-kit generate:sqlite",
 		"db:migrate:run": "bun run src/db/migrate.ts",
 		"db:migrate": "bun run db:migrate:create && bun run db:migrate:run",

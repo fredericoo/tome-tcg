@@ -16,13 +16,11 @@ COPY packages/eslint-config-custom ./packages/eslint-config-custom
 COPY packages/tsconfig ./packages/tsconfig
 
 # TODO: dont copy the whole app
-COPY apps/tine-api ./apps/tome-api
+COPY apps/tome-api ./apps/tome-api
 
 RUN bunx pnpm install
 
 ENV NODE_ENV production
-ENV DATABASE_URL="file:///mnt/tome_staging/data.db"
-
 
 WORKDIR /app/apps/tome-api
 
