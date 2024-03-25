@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
 import { invariant, noop } from '../../lib/utils';
-import { initialiseGameBoard } from './engine.board';
+import { createGameBoard } from './engine.board';
 import { GameCard, initialiseGame } from './engine.game';
-import { createHookActions } from './engine.hook.actions';
+import { useGameActions } from './engine.hook.actions';
 
 let cardId = 0;
 const createCard = (name?: string): GameCard => {
@@ -21,9 +21,9 @@ const createCard = (name?: string): GameCard => {
 
 describe('hook actions', () => {
 	test('can discard top card from deck', () => {
-		const game = initialiseGame(initialiseGameBoard({ decks: { sideA: [createCard()], sideB: [] } }));
+		const game = initialiseGame(createGameBoard({ decks: { sideA: [createCard()], sideB: [] } }));
 
-		const actions = createHookActions(game);
+		const actions = useGameActions(game);
 
 		const iter = actions.moveTopCard(game.board.players.sideA.drawPile, game.board.players.sideA.discardPile);
 
@@ -37,9 +37,9 @@ describe('hook actions', () => {
 	test('can wait for player action to be taken', async () => {
 		const cardDb = [createCard('Starting'), createCard('Hand')];
 
-		const game = initialiseGame(initialiseGameBoard({ decks: { sideA: cardDb.slice(0, 1), sideB: [] } }));
+		const game = initialiseGame(createGameBoard({ decks: { sideA: cardDb.slice(0, 1), sideB: [] } }));
 		const selectedCards: GameCard[] = [];
-		const actions = createHookActions(game);
+		const actions = useGameActions(game);
 
 		const iter = actions.playerAction({
 			sides: ['sideA'],

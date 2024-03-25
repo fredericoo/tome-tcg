@@ -41,7 +41,7 @@ export const moveBottomCard = (from: GameCard[], to: GameCard[]) => {
 
 export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
 
-export const initialiseGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: DbCard[] } }): Board => {
+export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: DbCard[] } }): Board => {
 	let cardIndex = 0;
 	const initialiseBoardSide = (deck: DbCard[], side: Side): Board['players'][Side] => {
 		const boardSide = {

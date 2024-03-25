@@ -1,15 +1,15 @@
 import { expect, mock, test } from 'bun:test';
 
-import { initialiseGameBoard } from './engine.board';
+import { createGameBoard } from './engine.board';
 import { SIDES, STACKS, Side, SpellStack, initialiseGame } from './engine.game';
-import { createHookActions } from './engine.hook.actions';
+import { useGameActions } from './engine.hook.actions';
 import { useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
 
 test('trigger all effects of fields and spells from both sides', async () => {
 	const effect = mock((ownerSide: undefined | [Side, SpellStack]) => ownerSide);
 
-	const game = initialiseGame(initialiseGameBoard({ decks: { sideA: [], sideB: [] } }));
+	const game = initialiseGame(createGameBoard({ decks: { sideA: [], sideB: [] } }));
 	game.board.field.push({
 		name: 'Field',
 		key: 1,
@@ -45,7 +45,7 @@ test('trigger all effects of fields and spells from both sides', async () => {
 		}),
 	);
 
-	const actions = createHookActions(game);
+	const actions = useGameActions(game);
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const turn = initialiseTurn({ finishedTurns: [] });
 

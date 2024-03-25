@@ -5,7 +5,7 @@ import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
-export const createHookActions = (game: GameIterationResponse) => ({
+export const useGameActions = (game: GameIterationResponse) => ({
 	// TODO: how to discard _field_ cards, as they have no owner?
 	discard: function* ({ card, from, side }: { card: GameCard; from: GameCard[]; side: Side }) {
 		const cardToMove = removeCard(from, card);
@@ -35,7 +35,7 @@ export const createHookActions = (game: GameIterationResponse) => ({
 		yield game;
 	},
 	draw: async function* ({ sides }: { sides: Side[] }) {
-		const actions = createHookActions(game);
+		const actions = useGameActions(game);
 		const { triggerTurnHook } = useTriggerHooks(game);
 		for (const side of sides) {
 			moveTopCard(game.board.players[side].drawPile, game.board.players[side].hand);
@@ -97,4 +97,4 @@ export const createHookActions = (game: GameIterationResponse) => ({
 	},
 });
 
-export type HookActions = ReturnType<typeof createHookActions>;
+export type HookActions = ReturnType<typeof useGameActions>;
