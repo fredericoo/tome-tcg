@@ -39,6 +39,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 		github_oauth_state?.set({
 			value: state,
 			path: '/',
+			domain: process.env.AUTH_COOKIE_DOMAIN,
 			secure: process.env.NODE_ENV === 'production',
 			httpOnly: true,
 			maxAge: 60 * 10,
@@ -71,7 +72,11 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			if (existingUser) {
 				const session = await lucia.createSession(existingUser.id, {});
 				const sessionCookie = lucia.createSessionCookie(session.id);
-				cookie[sessionCookie.name]?.set({ value: sessionCookie.value, ...sessionCookie.attributes });
+				cookie[sessionCookie.name]?.set({
+					value: sessionCookie.value,
+					domain: process.env.AUTH_COOKIE_DOMAIN,
+					...sessionCookie.attributes,
+				});
 				set.redirect = '/';
 				return;
 			}

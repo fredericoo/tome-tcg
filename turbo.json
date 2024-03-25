@@ -10,7 +10,7 @@
 		"start": {
 			"dependsOn": ["^build"],
 			"outputs": ["dist/**"],
-			"env": ["DATABASE_URL", "PORT", "AUTH_REDIRECT_URL"]
+			"env": ["DATABASE_URL", "PORT", "AUTH_REDIRECT_URL", "AUTH_COOKIE_DOMAIN"]
 		},
 		"test": {
 			"dependsOn": ["^build"],
