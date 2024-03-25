@@ -101,7 +101,7 @@ export const resolveFieldClash = (
 	if (winnerColorMap[cardB.color] === cardA.color)
 		return { won: { side: 'sideB', card: cardB }, lost: { side: 'sideA', card: cardA } };
 
-	throw new Error(`Failed resolving winner field between “${cardA.name}” and “${cardB.name}”`);
+	return {};
 };
 
 export const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {
