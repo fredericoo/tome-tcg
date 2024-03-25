@@ -4,6 +4,8 @@ import type { Session, User } from 'lucia';
 
 import { lucia } from './auth';
 
+const removePort = (host: string) => host.replace(/:\d+$/, '');
+
 export const withUser = new Elysia({ name: 'with-user' }).resolve(
 	{
 		as: 'global',
@@ -19,7 +21,8 @@ export const withUser = new Elysia({ name: 'with-user' }).resolve(
 			const originHeader = context.request.headers.get('Origin');
 			// NOTE: You may need to use `X-Forwarded-Host` instead
 			const hostHeader = context.request.headers.get('Host');
-			if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [hostHeader])) {
+
+			if (!originHeader || !hostHeader || !verifyRequestOrigin(removePort(originHeader), [removePort(hostHeader)])) {
 				return {
 					user: null,
 					session: null,
