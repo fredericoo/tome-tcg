@@ -19,7 +19,8 @@ export function verifyRequestOrigin(origin: string, allowedDomains: string[]) {
 		} else {
 			host = safeURL(removePortIfLocalDev('https://' + domain))?.host ?? null;
 		}
-		if (host && originHost.includes(host)) return true;
+		console.log('@@@@@@@@@@@@@@@@@@@@', host, originHost);
+		if (host && host.includes(originHost)) return true;
 	}
 	return false;
 }
