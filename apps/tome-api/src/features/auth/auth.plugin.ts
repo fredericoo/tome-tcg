@@ -1,10 +1,39 @@
 import { Elysia } from 'elysia';
-import { verifyRequestOrigin } from 'lucia';
 import type { Session, User } from 'lucia';
 
 import { lucia } from './auth';
 
-const removePort = (host: string) => host.replace(/:\d+$/, '');
+/** Own implementation of `oslo`’s function of the same name.
+ *  Changes:
+ *  - We allow different ports in development mode
+ *  - We allow the the allowed domain to be a subdomain of the origin
+ */
+export function verifyRequestOrigin(origin: string, allowedDomains: string[]) {
+	if (!origin || allowedDomains.length === 0) return false;
+	const originHost = safeURL(removePortIfLocalDev(origin))?.host ?? null;
+	if (!originHost) return false;
+	for (const domain of allowedDomains) {
+		let host;
+		if (domain.startsWith('http://') || domain.startsWith('https://')) {
+			host = safeURL(removePortIfLocalDev(domain))?.host ?? null;
+		} else {
+			host = safeURL(removePortIfLocalDev('https://' + domain))?.host ?? null;
+		}
+		if (host && originHost.includes(host)) return true;
+	}
+	return false;
+}
+function removePortIfLocalDev(host: string) {
+	if (process.env.NODE_ENV !== 'development') return host;
+	return host.replace(/:\d+$/, '');
+}
+function safeURL(url: string) {
+	try {
+		return new URL(url);
+	} catch {
+		return null;
+	}
+}
 
 export const withUser = new Elysia({ name: 'with-user' }).resolve(
 	{
@@ -22,7 +51,7 @@ export const withUser = new Elysia({ name: 'with-user' }).resolve(
 			// NOTE: You may need to use `X-Forwarded-Host` instead
 			const hostHeader = context.request.headers.get('Host');
 
-			if (!originHeader || !hostHeader || !verifyRequestOrigin(removePort(originHeader), [removePort(hostHeader)])) {
+			if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [hostHeader])) {
 				return {
 					user: null,
 					session: null,

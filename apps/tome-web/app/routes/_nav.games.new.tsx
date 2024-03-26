@@ -2,6 +2,7 @@ import { Form, useSubmit } from '@remix-run/react';
 import { ActionFunction, LoaderFunction, defer, redirect, useActionData, useLoaderData } from 'react-router-typesafe';
 import { SWR } from 'swr-loader/react';
 
+import { UserAvatar } from '../components/user-avatar';
 import { api } from '../lib/api';
 import { swr } from '../lib/cache';
 
@@ -53,11 +54,12 @@ export default function Page() {
 			<Form method="POST">
 				<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
 					{users => (
-						<ul>
+						<ul className="flex flex-col gap-4">
 							{users?.data.map(user => (
 								<li key={user.id}>
-									<button name="opponent_id" value={user.id}>
-										{user.username}
+									<button name="opponent_id" value={user.id} className="flex items-center gap-2">
+										<UserAvatar user={user} />
+										<span>{user.username}</span>
 									</button>
 								</li>
 							))}
