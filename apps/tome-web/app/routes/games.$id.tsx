@@ -6,6 +6,7 @@ import { ComponentPropsWithoutRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { create } from 'zustand';
 
+import { Board } from '../../../tome-api/src/features/engine/engine.board';
 import {
 	type DbCard,
 	GameAction,
@@ -30,6 +31,8 @@ import { useGameSub } from '../lib/game.utils';
 export const meta: MetaFunction = () => {
 	return [{ title: 'Games' }, { name: 'description', content: ':)' }];
 };
+
+const PHASES: Array<Board['phase']> = ['draw', 'cast', 'reveal', 'spell', 'combat'];
 
 type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;
 
@@ -254,6 +257,7 @@ export default function Page() {
 			</nav>
 
 			<section className={fieldClass({ active: activeColor })}>
+				<div className="flex-1" />
 				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={2} size="sm" />
 				{latestData?.board.sideA.casting.field && (
 					<div className="absolute -translate-x-1/2">
@@ -279,6 +283,22 @@ export default function Page() {
 						/>
 					</div>
 				)}
+				<ol aria-label="Turn phases" className="flex flex-1 flex-col items-end px-4">
+					{PHASES.map(phase => {
+						const isCurrent = phase === latestData?.board.phase;
+						return (
+							<li
+								className={clsx('font-bold transition-all', {
+									'text-2xl': isCurrent,
+									'text-md opacity-60': !isCurrent,
+								})}
+								key={phase}
+							>
+								{phase}
+							</li>
+						);
+					})}
+				</ol>
 			</section>
 
 			{playerSide && (

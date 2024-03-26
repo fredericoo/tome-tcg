@@ -1,5 +1,5 @@
-import { invariant, noop, pill } from '../../lib/utils';
-import { topOf } from './engine.board';
+import { delay, invariant, noop, pill } from '../../lib/utils';
+import { Board, topOf } from './engine.board';
 import {
 	GameIterationResponse,
 	GameSettings,
@@ -37,6 +37,12 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	const turn = initialiseTurn({ finishedTurns });
 	yield game;
 
+	async function* setPhase(phase: Board['phase']) {
+		game.board.phase = phase;
+		yield game;
+		await delay(settings.phaseDelayMs);
+	}
+
 	// if first turn, draw cards
 	if (finishedTurns.length === 0) {
 		for (let i = 0; i < settings.startingCards; i++) {
@@ -45,14 +51,11 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeDraw', context: { actions, game, turn } });
-	game.board.phase = 'draw';
-	yield game;
+	yield* setPhase('draw');
 	yield* actions.draw({ sides: ['sideA', 'sideB'] });
 
 	yield* triggerTurnHook({ hookName: 'beforeCast', context: { actions, game, turn } });
-	game.board.phase = 'cast';
-	yield game;
-
+	yield* setPhase('cast');
 	// Spooky cast from hand action with multi-threading state LOL
 	yield* actions.playerAction({
 		sides: ['sideA', 'sideB'],
@@ -122,8 +125,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	});
 
 	yield* triggerTurnHook({ hookName: 'beforeReveal', context: { actions, game, turn } });
-	game.board.phase = 'reveal';
-	yield game;
+	yield* setPhase('reveal');
 
 	// Reveals spells cast and moves them into the slots
 	for (const side of SIDES) {
@@ -210,8 +212,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game, turn } });
-	game.board.phase = 'spell';
-	yield game;
+	yield* setPhase('spell');
 
 	yield* actions.playerAction({
 		sides: ['sideA', 'sideB'],
@@ -240,6 +241,8 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	});
 
 	yield* triggerTurnHook({ hookName: 'beforeCombat', context: { actions, game, turn } });
+	yield* setPhase('combat');
+
 	const spellClash = resolveSpellClash(turn.spells);
 	if (spellClash.won) {
 		let damage = turn.spells[spellClash.won]?.card?.attack ?? settings.emptySlotAttack;

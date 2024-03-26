@@ -128,6 +128,8 @@ export type GameSettings = {
 	spellTimeoutMs: number;
 	startingCards: number;
 	emptySlotAttack: number;
+	/** Delay after declaring a new turn phase */
+	phaseDelayMs: number;
 };
 
 export const createGameInstance = ({ decks, settings }: { decks: Record<Side, DbCard[]>; settings: GameSettings }) => {
