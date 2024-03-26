@@ -41,7 +41,8 @@ export type CompressedCombatStackItem = DistributiveOmit<CombatStackItem, 'sourc
 export type SanitisedIteration = {
 	side: Side;
 	board: {
-		combatStack: CompressedCombatStackItem[];
+		attackStacks?: Record<Side, SpellStack | null>;
+		combatStack?: CompressedCombatStackItem[];
 		phase: Board['phase'];
 		field: PubSubCard[];
 		highlights: Record<string, 'effect' | 'negative' | 'positive'>;
@@ -100,12 +101,14 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		side: playerSide,
 		board: {
 			combatStack:
-				originalIteration.turn?.combatStack.map(item => ({
-					target: item.target,
-					value: item.value,
-					type: item.type,
-					sourceKey: item.source?.key ?? null,
-				})) ?? [],
+				originalIteration.board.phase === 'damage' ?
+					originalIteration.turn?.combatStack.map(item => ({
+						target: item.target,
+						value: item.value,
+						type: item.type,
+						sourceKey: item.source?.key ?? null,
+					})) ?? []
+				:	undefined,
 			highlights: {},
 			field: originalIteration.board.field.map(showCard),
 			phase: originalIteration.board.phase,
@@ -163,6 +166,13 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		}
 		iteration.board[side].action = originalIteration.actions[side];
 	});
+
+	if (originalIteration.board.phase === 'combat') {
+		iteration.board.attackStacks = {
+			sideA: originalIteration.turn?.sideA.spellAttack?.slot ?? null,
+			sideB: originalIteration.turn?.sideB.spellAttack?.slot ?? null,
+		};
+	}
 	return iteration;
 };
 

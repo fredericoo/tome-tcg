@@ -133,6 +133,7 @@ export const Card = ({ card, className, size, interactive, highlight: highlightO
 				</div>
 			)}
 			<motion.div
+				id={`card-${card.key}`}
 				key={card.key}
 				layoutId={card.key.toString()}
 				layout="preserve-aspect"

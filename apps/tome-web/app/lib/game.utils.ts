@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { SanitisedIteration } from '../../../tome-api/src/features/game/game.pubsub';
-import { useHighlightedCardsStore } from '../routes/games.$id';
+import { useCombatStackStore, useHighlightedCardsStore } from '../routes/games.$id';
 import { api } from './api';
 
 type Subscription = ReturnType<ReturnType<(typeof api)['games']>['pubsub']['subscribe']>;
@@ -32,6 +32,7 @@ export const useGameSub = (gameId: string) => {
 				const latestData = data as SanitisedIteration;
 				if (latestData.board.highlights) {
 					useHighlightedCardsStore.getState().setHighlightedCards(latestData.board.highlights);
+					useCombatStackStore.getState().setCombatStack(latestData.board.combatStack);
 				}
 				setLatestData(latestData);
 			}

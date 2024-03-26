@@ -2,10 +2,12 @@ import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import clsx from 'clsx';
 import { cva } from 'cva';
+import { AnimationSequence, animate } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
 import { Board } from '../../../tome-api/src/features/engine/engine.board';
-import type { SanitisedIteration } from '../../../tome-api/src/features/game/game.pubsub';
+import type { CompressedCombatStackItem, SanitisedIteration } from '../../../tome-api/src/features/game/game.pubsub';
 import { Card, isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
 import { PlayerSide } from '../components/game/player-side';
@@ -36,6 +38,15 @@ type HighlightedCardsStore = {
 export const useHighlightedCardsStore = create<HighlightedCardsStore>(set => ({
 	highlightedCards: {},
 	setHighlightedCards: highlights => set({ highlightedCards: highlights }),
+}));
+
+type CombatStackStore = {
+	combatStack: CompressedCombatStackItem[] | undefined;
+	setCombatStack: (stack: CompressedCombatStackItem[] | undefined) => void;
+};
+export const useCombatStackStore = create<CombatStackStore>(set => ({
+	combatStack: undefined,
+	setCombatStack: stack => set({ combatStack: stack }),
 }));
 
 const fieldClass = cva({
@@ -80,8 +91,8 @@ const MiddleSection = ({ latestData }: { latestData: SanitisedIteration | undefi
 					return (
 						<li
 							className={clsx('font-bold transition-all', {
-								'text-2xl': isCurrent,
-								'text-md opacity-60': !isCurrent,
+								'text-xl': isCurrent,
+								'text-xs opacity-60': !isCurrent,
 							})}
 							key={phase}
 						>
@@ -93,24 +104,82 @@ const MiddleSection = ({ latestData }: { latestData: SanitisedIteration | undefi
 		</section>
 	);
 };
+function usePrevious<T>(value: T) {
+	const ref = useRef<T>();
+	useEffect(() => {
+		ref.current = value;
+	}, [value]);
+	return ref.current;
+}
+
+const CombatStackAnimation = () => {
+	const combatStack = useCombatStackStore(s => s.combatStack);
+	const previous = usePrevious(combatStack);
+
+	useEffect(() => {
+		if (combatStack && combatStack.length > 0) {
+			if (combatStack.length === previous?.length) return;
+			// animate the card to the target
+			console.log(combatStack, previous);
+
+			animate(
+				combatStack
+					.flatMap(combat => {
+						if (!combat.sourceKey) return undefined;
+						const card = document.querySelector(`#card-${combat.sourceKey}`);
+						const target = document.querySelector(`#${combat.target}-hp`);
+						if (!card || !target) return [];
+						const seq: AnimationSequence = [
+							[
+								card,
+								{
+									x: target.getBoundingClientRect().left - card.getBoundingClientRect().left,
+									y: target.getBoundingClientRect().top - card.getBoundingClientRect().top,
+								},
+							],
+							[
+								card,
+								{
+									x: 0,
+									y: 0,
+								},
+							],
+						];
+						return seq;
+					})
+					.filter(Boolean),
+			);
+		}
+	}, [combatStack, previous]);
+
+	return null;
+};
 
 export default function Page() {
 	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData, error } = useGameSub(game.id.toString());
 
-	const playerSide = latestData?.board[latestData.side];
-	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
+	const playerSide = latestData?.side;
+	const playerBoard = playerSide ? latestData?.board[playerSide] : undefined;
+	const opponentSide =
+		latestData ?
+			latestData.side === 'sideA' ?
+				'sideB'
+			:	'sideA'
+		:	undefined;
+	const opponentBoard = opponentSide ? latestData?.board[opponentSide] : undefined;
 
 	return (
 		<CardDataProvider value={cardData}>
+			<CombatStackAnimation />
 			<div className="relative flex h-screen w-full flex-col overflow-hidden bg-neutral-100">
-				{playerSide?.action?.config.message && (
+				{playerBoard?.action && (
 					<div className="animate-fade-in pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center bg-neutral-900/50 p-4">
 						<p
-							key={playerSide?.action.config.message}
+							key={playerBoard.action.config.message}
 							className="animate-action font-lg font-bold text-white [text-shadow:0px_1px_0_black]"
 						>
-							{playerSide?.action.config.message}
+							{playerBoard.action.config.message}
 						</p>
 					</div>
 				)}
@@ -121,25 +190,29 @@ export default function Page() {
 					{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
 				</nav>
 
-				{opponentSide && (
+				{opponentBoard && opponentSide && (
 					<PlayerSide
-						action={playerSide?.action}
+						side={opponentSide}
+						action={playerBoard?.action}
 						onSelectFromHand={payload => sub?.send(payload)}
 						onSelectStack={payload => sub?.send(payload)}
 						relative="opponent"
-						side={opponentSide}
+						attackingWithStack={latestData?.board.attackStacks?.[opponentSide]}
+						boardSide={opponentBoard}
 					/>
 				)}
 
 				<MiddleSection latestData={latestData} />
 
-				{playerSide && (
+				{playerBoard && playerSide && (
 					<PlayerSide
-						action={playerSide?.action}
+						side={playerSide}
+						action={playerBoard?.action}
 						onSelectFromHand={payload => sub?.send(payload)}
 						onSelectStack={payload => sub?.send(payload)}
 						relative="self"
-						side={playerSide}
+						attackingWithStack={latestData?.board.attackStacks?.[playerSide]}
+						boardSide={playerBoard}
 					/>
 				)}
 			</div>

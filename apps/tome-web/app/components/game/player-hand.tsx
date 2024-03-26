@@ -26,11 +26,14 @@ export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerH
 		<>
 			<ol
 				aria-label="Hand"
-				className={clsx('absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2', {
-					'bottom-0': relative === 'self',
-					'top-0 -translate-y-1/4': relative === 'opponent',
-					'z-20': isSelectingFromHand,
-				})}
+				className={clsx(
+					'group absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2 transition-transform',
+					{
+						'bottom-0 translate-y-1/4 hover:translate-y-0': relative === 'self',
+						'top-0 -translate-y-1/4': relative === 'opponent',
+						'z-20 translate-y-0': isSelectingFromHand,
+					},
+				)}
 			>
 				{side.hand.map((cardRef, index) => {
 					// fan out the cards
@@ -41,8 +44,8 @@ export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerH
 					const y = Math.abs(angle) * fanRatio * 10;
 					return (
 						<li
-							className="transition-transform duration-300 ease-in-out"
-							style={{ marginInline: '-5px', transform: `rotate(${angle}deg) translateY(${y}px)` }}
+							className="-mx-2 transition-all duration-300 ease-in-out group-hover:-mx-1"
+							style={{ transform: `rotate(${angle}deg) translateY(${y}px)` }}
 							key={cardRef.key}
 						>
 							<Card
