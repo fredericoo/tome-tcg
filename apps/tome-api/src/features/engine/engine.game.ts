@@ -81,27 +81,25 @@ const winnerColorMap: Record<SpellColor, SpellColor> = {
 	red: 'green',
 };
 
-export const resolveFieldClash = (
-	players: Board['players'],
-): Partial<Record<'won' | 'lost', { side: Side; card: FieldCard }>> => {
-	const [cardA, cardB] = [players.sideA.casting.field, players.sideB.casting.field];
+export const resolveFieldClash = ({
+	cardA,
+	cardB,
+}: Record<'cardA' | 'cardB', FieldCard | undefined>): { won: Side | null } => {
 	// vs no card
-	if (!cardA && !cardB) return {};
-	if (!cardA) return { won: { side: 'sideB', card: cardB! } };
-	if (!cardB) return { won: { side: 'sideA', card: cardA } };
+	if (!cardA && !cardB) return { won: null };
+	if (!cardA) return { won: 'sideB' };
+	if (!cardB) return { won: 'sideA' };
 
 	// vs neutral
-	if (!cardA.color && !cardB.color) return {};
-	if (!cardB.color) return { won: { side: 'sideA', card: cardA }, lost: { side: 'sideB', card: cardB } };
-	if (!cardA.color) return { won: { side: 'sideB', card: cardA }, lost: { side: 'sideA', card: cardB } };
+	if (!cardA.color && !cardB.color) return { won: null };
+	if (!cardB.color) return { won: 'sideA' };
+	if (!cardA.color) return { won: 'sideB' };
 
 	// vs card
-	if (winnerColorMap[cardA.color] === cardB.color)
-		return { won: { side: 'sideA', card: cardA }, lost: { side: 'sideB', card: cardB } };
-	if (winnerColorMap[cardB.color] === cardA.color)
-		return { won: { side: 'sideB', card: cardB }, lost: { side: 'sideA', card: cardA } };
+	if (winnerColorMap[cardA.color] === cardB.color) return { won: 'sideB' };
+	if (winnerColorMap[cardB.color] === cardA.color) return { won: 'sideA' };
 
-	return {};
+	return { won: null };
 };
 
 export const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {

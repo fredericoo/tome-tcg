@@ -17,13 +17,32 @@ export const getTurnCastCards = (casts: Turn['casts']) =>
 		Boolean,
 	);
 
-export const initialiseTurn = ({ finishedTurns }: { finishedTurns: Turn[] }): Turn => ({
-	draws: { sideA: [], sideB: [] },
-	casts: { sideA: { blue: [], green: [], red: [], field: [] }, sideB: { blue: [], green: [], red: [], field: [] } },
+export const initialiseTurn = ({
 	finishedTurns,
-	spells: { sideA: undefined, sideB: undefined },
-	extraDamage: { sideA: 0, sideB: 0 },
-});
+	game,
+	settings,
+}: {
+	finishedTurns: Turn[];
+	game: GameIterationResponse;
+	settings: Pick<GameSettings, 'phaseDelayMs'>;
+}) => {
+	const turn: Turn = {
+		draws: { sideA: [], sideB: [] },
+		casts: { sideA: { blue: [], green: [], red: [], field: [] }, sideB: { blue: [], green: [], red: [], field: [] } },
+		finishedTurns,
+		spells: { sideA: undefined, sideB: undefined },
+		extraDamage: { sideA: 0, sideB: 0 },
+	};
+
+	return {
+		turn,
+		setPhase: async function* setPhase(phase: Board['phase']) {
+			game.board.phase = phase;
+			yield game;
+			await delay(settings.phaseDelayMs);
+		},
+	};
+};
 
 type HandleTurnParmas = {
 	game: GameIterationResponse;
@@ -34,14 +53,8 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	const { game, finishedTurns, settings } = params;
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = useGameActions(game);
-	const turn = initialiseTurn({ finishedTurns });
+	const { turn, setPhase } = initialiseTurn({ finishedTurns, game, settings });
 	yield game;
-
-	async function* setPhase(phase: Board['phase']) {
-		game.board.phase = phase;
-		yield game;
-		await delay(settings.phaseDelayMs);
-	}
 
 	// if first turn, draw cards
 	if (finishedTurns.length === 0) {
@@ -164,50 +177,53 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		}
 	}
 	/** Field card resolution */
-	const fieldClash = resolveFieldClash(game.board.players);
+	const fieldClash = resolveFieldClash({
+		cardA: game.board.players.sideA.casting.field,
+		cardB: game.board.players.sideB.casting.field,
+	});
 	// only resolve if there was a clash
-	if (fieldClash.lost || fieldClash.won) {
-		if (fieldClash.won) {
-			game.highlights.positive.add(fieldClash.won.card.key);
-			game.board.field.push(fieldClash.won.card);
-			game.board.players[fieldClash.won.side].casting.field = undefined;
+	if (fieldClash.won !== null) {
+		const winnerSide = fieldClash.won;
+		const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
+		const winnerCard = game.board.players[winnerSide].casting.field;
+		const loserCard = game.board.players[loserSide].casting.field;
+		if (winnerCard) {
+			game.highlights.positive.add(winnerCard.key);
+			game.board.field.push(winnerCard);
+			game.board.players[winnerSide].casting.field = undefined;
 		}
-		if (fieldClash.lost) {
-			game.highlights.negative.add(fieldClash.lost.card.key);
-			game.board.players[fieldClash.lost.side].discardPile.push(fieldClash.lost.card);
-			game.board.players[fieldClash.lost.side].casting.field = undefined;
-			yield game;
+		if (loserCard) {
+			game.highlights.negative.add(loserCard.key);
+			game.board.players[loserSide].discardPile.push(loserCard);
+			game.board.players[loserSide].casting.field = undefined;
 		}
-		if (fieldClash.won) {
-			game.highlights.positive.delete(fieldClash.won.card.key);
-			const wonEffect = fieldClash.won.card.effects.onClashWin;
-			if (wonEffect)
-				yield* wonEffect({
-					actions,
-					game,
-					ownerSide: undefined,
-					opponentSide: undefined,
-					thisCard: fieldClash.won.card,
-					loserCard: fieldClash.lost?.card,
-					turn,
-					winnerSide: fieldClash.won.side,
-				});
-		}
-		if (fieldClash.lost) {
-			game.highlights.positive.delete(fieldClash.lost.card.key);
-			const lostEffect = fieldClash.lost.card.effects.onClashLose;
-			if (lostEffect)
-				yield* lostEffect({
-					actions,
-					game,
-					ownerSide: undefined,
-					opponentSide: undefined,
-					thisCard: fieldClash.lost.card,
-					winnerCard: fieldClash.won?.card,
-					turn,
-					loserSide: fieldClash.lost.side,
-				});
-		}
+		yield game;
+
+		const winnerEffect = winnerCard?.effects.onClashWin;
+		const loserEffect = loserCard?.effects.onClashLose;
+		if (winnerEffect)
+			yield* winnerEffect({
+				actions,
+				game,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: winnerCard,
+				loserCard,
+				turn,
+				winnerSide,
+			});
+
+		if (loserEffect)
+			yield* loserEffect({
+				actions,
+				game,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: loserCard,
+				winnerCard,
+				turn,
+				loserSide: loserSide,
+			});
 		yield game;
 	}
 
