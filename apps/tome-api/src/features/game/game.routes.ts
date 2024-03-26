@@ -28,6 +28,7 @@ export const gameRoutes = new Elysia({ prefix: '/games' })
 		'/',
 		async ({ user, body }) => {
 			if (!user) return error('Unauthorized', 'You must be logged in to create a game.');
+			if (user.id === body.opponentId) return error('Bad Request', 'You cannot play against yourself');
 
 			const createdGame = await db
 				.insert(games)

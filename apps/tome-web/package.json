@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.0.0",
+    "@radix-ui/react-avatar": "^1.0.4",
     "@remix-run/node": "^2.8.1",
     "@remix-run/react": "^2.8.1",
     "clsx": "^2.1.0",
@@ -23,6 +24,7 @@
     "react-dom": "^18.2.0",
     "react-router-typesafe": "^1.4.4",
     "swr-loader": "^0.3.2",
+    "ts-pattern": "^5.0.8",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

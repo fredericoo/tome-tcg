@@ -223,8 +223,8 @@ export const deck: DbCard[] = [
 		id: '12',
 		type: 'spell',
 		name: 'Overgrown root',
-		description: '4X attack, where X is the number of cards in this stack. (NOT IMPLEMENTED)',
-		attack: 15,
+		description: '4X attack, where X is the number of cards in this stack.',
+		attack: 0,
 		colors: ['green'],
 		effects: {
 			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
@@ -243,7 +243,7 @@ export const deck: DbCard[] = [
 		name: 'Sword-breaker',
 		colors: ['red'],
 		attack: 5,
-		description: 'If this spell is beaten, discard the card that beat it. (NOT IMPLEMENTED)',
+		description: 'If this spell is beaten, discard the card that beat it.',
 		effects: {
 			onClashLose: async function* ({ actions, game, winnerCard, opponentSide }) {
 				if (!winnerCard) return;

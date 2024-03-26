@@ -1,5 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 
+import { GenericErrorBoundary } from './components/generic-error-boundary';
 import './index.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
 	return <Outlet />;
 }
+
+export const ErrorBoundary = GenericErrorBoundary;
 
 export function HydrateFallback() {
 	return <p>Loading...</p>;
