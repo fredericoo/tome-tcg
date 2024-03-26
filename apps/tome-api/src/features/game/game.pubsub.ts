@@ -181,8 +181,8 @@ const createGameRoom = () => {
 		// Mock decks for testing
 		decks: { sideA: deck, sideB: deck },
 		settings: {
-			castTimeoutMs: 6000,
-			spellTimeoutMs: 6000,
+			castTimeoutMs: 60000,
+			spellTimeoutMs: 60000,
 			startingCards: 2,
 			emptySlotAttack: 10,
 			phaseDelayMs: 1000,
