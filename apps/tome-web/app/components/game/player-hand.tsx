@@ -2,10 +2,13 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { type Side } from '../../../tome-api/src/features/engine/engine.game';
-import type { SanitisedIteration, SelectFromHandMessageSchema } from '../../../tome-api/src/features/game/game.pubsub';
-import { invariant } from '../../../tome-api/src/lib/utils';
-import { Card } from '../components/card';
+import { type Side } from '../../../../tome-api/src/features/engine/engine.game';
+import type {
+	SanitisedIteration,
+	SelectFromHandMessageSchema,
+} from '../../../../tome-api/src/features/game/game.pubsub';
+import { invariant } from '../../../../tome-api/src/lib/utils';
+import { Card } from './card';
 
 interface PlayerHandProps {
 	side: SanitisedIteration['board'][Side];
@@ -21,7 +24,6 @@ export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerH
 
 	return (
 		<>
-			{isSelectingFromHand && <div className="pointer-events-none fixed inset-0 z-10 bg-neutral-900/50" />}
 			<ol
 				aria-label="Hand"
 				className={clsx('absolute left-1/2 flex flex-grow -translate-x-1/2  justify-center p-2', {

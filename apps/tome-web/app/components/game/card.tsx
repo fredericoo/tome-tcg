@@ -4,9 +4,9 @@ import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 import { create } from 'zustand';
 
-import type { PubSubCard, PubSubShownCard } from '../../../tome-api/src/features/game/game.pubsub';
-import { useCardData } from '../lib/card-data';
-import { useHighlightedCardsStore } from '../routes/games.$id';
+import type { PubSubCard, PubSubShownCard } from '../../../../tome-api/src/features/game/game.pubsub';
+import { useCardData } from '../../lib/card-data';
+import { useHighlightedCardsStore } from '../../routes/games.$id';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 

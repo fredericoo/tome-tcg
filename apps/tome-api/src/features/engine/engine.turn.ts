@@ -162,9 +162,9 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			}
 			game.board.players[side].stacks[stack].push(...castCards);
 			game.board.players[side].casting[stack] = undefined;
-			yield game;
 		}
 	}
+	yield game;
 
 	// trigger onReveal for field cards
 	for (const side of SIDES) {
@@ -230,6 +230,9 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				loserSide: loserSide,
 			});
 		yield game;
+
+		game.highlights.positive.clear();
+		game.highlights.negative.clear();
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game, turn } });
@@ -244,7 +247,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				min: 1,
 				max: 1,
 				from: 'self',
-				message: 'Select a stack to attack with spell',
+				message: 'Cast a spell from a stack.',
 			},
 			onAction: function* ({ stacks, side }) {
 				const stack = stacks[0];
@@ -331,87 +334,87 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		}
 
 		yield* triggerTurnHook({ hookName: 'afterDamage', context: { actions, game, turn } });
-
-		// end of turn
-		finishedTurns.push(turn);
-		yield* handleTurn(params);
 	}
 
-	async function* resolveCombatDamage(
-		actions: ReturnType<typeof useGameActions>,
-		combatItem: CombatStackItem & { type: 'damage' },
-		game: GameIterationResponse,
-		turn: Turn,
-	) {
-		yield* actions.damagePlayer({ side: combatItem.target, amount: combatItem.value });
-		switch (combatItem.source?.type) {
-			case 'field': {
+	// end of turn
+	finishedTurns.push(turn);
+	yield* handleTurn(params);
+}
+
+async function* resolveCombatDamage(
+	actions: ReturnType<typeof useGameActions>,
+	combatItem: CombatStackItem & { type: 'damage' },
+	game: GameIterationResponse,
+	turn: Turn,
+) {
+	yield* actions.damagePlayer({ side: combatItem.target, amount: combatItem.value });
+	switch (combatItem.source?.type) {
+		case 'field': {
+			const onDamage = combatItem.source.effects.onDealDamage;
+			if (!onDamage) break;
+			yield* onDamage({
+				actions,
+				game,
+				turn,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: combatItem.source,
+			});
+			break;
+		}
+		case 'spell':
+			{
 				const onDamage = combatItem.source.effects.onDealDamage;
 				if (!onDamage) break;
 				yield* onDamage({
 					actions,
 					game,
 					turn,
-					ownerSide: undefined,
-					opponentSide: undefined,
+					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
+					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
 				});
-				break;
 			}
-			case 'spell':
-				{
-					const onDamage = combatItem.source.effects.onDealDamage;
-					if (!onDamage) break;
-					yield* onDamage({
-						actions,
-						game,
-						turn,
-						ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
-						opponentSide: combatItem.target,
-						thisCard: combatItem.source,
-					});
-				}
-				break;
-			default:
-		}
+			break;
+		default:
 	}
+}
 
-	async function* resolveCombatHealing(
-		actions: ReturnType<typeof useGameActions>,
-		combatItem: CombatStackItem & { type: 'heal' },
-		game: GameIterationResponse,
-		turn: Turn,
-	) {
-		yield* actions.healPlayer({ side: combatItem.target, amount: combatItem.value });
-		switch (combatItem.source?.type) {
-			case 'field': {
+async function* resolveCombatHealing(
+	actions: ReturnType<typeof useGameActions>,
+	combatItem: CombatStackItem & { type: 'heal' },
+	game: GameIterationResponse,
+	turn: Turn,
+) {
+	yield* actions.healPlayer({ side: combatItem.target, amount: combatItem.value });
+	switch (combatItem.source?.type) {
+		case 'field': {
+			const onHeal = combatItem.source.effects.onHeal;
+			if (!onHeal) break;
+			yield* onHeal({
+				actions,
+				game,
+				turn,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: combatItem.source,
+			});
+			break;
+		}
+		case 'spell':
+			{
 				const onHeal = combatItem.source.effects.onHeal;
 				if (!onHeal) break;
 				yield* onHeal({
 					actions,
 					game,
 					turn,
-					ownerSide: undefined,
-					opponentSide: undefined,
+					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
+					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
 				});
-				break;
 			}
-			case 'spell':
-				{
-					const onHeal = combatItem.source.effects.onHeal;
-					if (!onHeal) break;
-					yield* onHeal({
-						actions,
-						game,
-						turn,
-						ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
-						opponentSide: combatItem.target,
-						thisCard: combatItem.source,
-					});
-				}
-				break;
-			default:
-		}
+			break;
+		default:
 	}
 }
