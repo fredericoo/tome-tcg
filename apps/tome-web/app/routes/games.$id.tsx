@@ -7,34 +7,26 @@ import { flushSync } from 'react-dom';
 import { create } from 'zustand';
 
 import { Board } from '../../../tome-api/src/features/engine/engine.board';
-import {
-	type DbCard,
-	GameAction,
-	STACKS,
-	type Side,
-	SpellStack,
-} from '../../../tome-api/src/features/engine/engine.game';
+import { GameAction, STACKS, type Side, SpellStack } from '../../../tome-api/src/features/engine/engine.game';
 import type {
 	PubSubCard,
 	SanitisedIteration,
 	SelectFromHandMessageSchema,
 	SelectStackMessageSchema,
 } from '../../../tome-api/src/features/game/game.pubsub';
-import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { invariant } from '../../../tome-api/src/lib/utils';
 import { AnimatedNumber } from '../components/animated-number';
-import { Card, CardProps, cardClass } from '../components/card';
+import { Card, CardProps, cardClass, isShownCard } from '../components/card';
 import { PlayerHand } from '../components/player-hand';
 import { api } from '../lib/api';
+import { CardDataProvider, useCardData } from '../lib/card-data';
 import { useGameSub } from '../lib/game.utils';
 
 export const meta: MetaFunction = () => {
 	return [{ title: 'Games' }, { name: 'description', content: ':)' }];
 };
 
-const PHASES: Array<Board['phase']> = ['draw', 'cast', 'reveal', 'spell', 'combat'];
-
-type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;
+const PHASES: Array<Board['phase']> = ['draw', 'cast', 'reveal', 'spell', 'combat', 'damage'];
 
 export const clientLoader = (async ({ params }) => {
 	const gameId = params.id;
@@ -48,12 +40,11 @@ export const clientLoader = (async ({ params }) => {
 
 interface CardPileProps extends ComponentPropsWithoutRef<'div'> {
 	cards: PubSubCard[];
-	cardData: CardData;
 	last: number;
 	size: CardProps['size'];
 }
 
-const CardPile = ({ cards, cardData, last = 5, size = 'md' }: CardPileProps) => {
+const CardPile = ({ cards, last = 5, size = 'md' }: CardPileProps) => {
 	return (
 		<div className="relative">
 			<ol className={cardClass({ size, variant: 'placeholder', className: 'grid' })}>
@@ -61,7 +52,7 @@ const CardPile = ({ cards, cardData, last = 5, size = 'md' }: CardPileProps) => 
 					// we only add the last N cards onto the dom to avoid excessive dom nodes
 					cards.slice(-last).map(cardRef => (
 						<li className="col-end-1 row-end-1" key={cardRef.key}>
-							<Card size={size} layoutId={cardRef.key} data={cardRef.id ? cardData[cardRef.id] : undefined} />
+							<Card size={size} card={cardRef} />
 						</li>
 					))
 				}
@@ -106,13 +97,12 @@ const ActionProgressBar = ({ action }: { action?: GameAction }) => {
 interface PlayerSideProps {
 	action: SanitisedIteration['board'][Side]['action'] | undefined;
 	side: SanitisedIteration['board'][Side];
-	cardData: Record<string, DistributiveOmit<DbCard, 'effects'>>;
 	relative: 'opponent' | 'self';
 	onSelectFromHand: (params: SelectFromHandMessageSchema) => void;
 	onSelectStack: (params: SelectStackMessageSchema) => void;
 }
 
-const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSelectStack }: PlayerSideProps) => {
+const PlayerSide = ({ action, side, relative, onSelectFromHand, onSelectStack }: PlayerSideProps) => {
 	const isSelectingStack = action?.type === 'select_spell_stack' && action?.config.from === relative;
 	const [selectedStacks, setSelectedStacks] = useState<Set<SpellStack>>(new Set());
 	if (selectedStacks.size > 0 && action?.type !== 'select_spell_stack') setSelectedStacks(new Set());
@@ -172,10 +162,10 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 							>
 								{casting && (
 									<div className="absolute translate-y-1/2">
-										<Card size="sm" layoutId={casting.key} data={casting.id ? cardData[casting.id] : undefined} />
+										<Card size="sm" card={casting} />
 									</div>
 								)}
-								<CardPile cardData={cardData} cards={side.stacks[stack]} last={2} size="sm" />
+								<CardPile cards={side.stacks[stack]} last={2} size="sm" />
 							</button>
 						</li>
 					);
@@ -188,16 +178,10 @@ const PlayerSide = ({ action, side, cardData, relative, onSelectFromHand, onSele
 					'items-end': relative === 'self',
 				})}
 			>
-				<CardPile aria-label="Draw pile" cardData={cardData} cards={side.drawPile} last={2} size="sm" />
+				<CardPile aria-label="Draw pile" cards={side.drawPile} last={2} size="sm" />
 			</div>
 
-			<PlayerHand
-				side={side}
-				cardData={cardData}
-				action={action}
-				onSelectFromHand={onSelectFromHand}
-				relative={relative}
-			/>
+			<PlayerHand side={side} action={action} onSelectFromHand={onSelectFromHand} relative={relative} />
 		</div>
 	);
 };
@@ -225,100 +209,95 @@ const fieldClass = cva({
 		active: 'none',
 	},
 });
+
+const MiddleSection = ({ latestData }: { latestData: SanitisedIteration | undefined }) => {
+	const cardData = useCardData();
+	const activeFieldCard = latestData?.board.field.at(-1);
+	const activeFieldCardData =
+		activeFieldCard && isShownCard(activeFieldCard) ? cardData[activeFieldCard.id] : undefined;
+	const activeColor = activeFieldCardData?.type === 'field' ? activeFieldCardData.color ?? undefined : undefined;
+
+	return (
+		<section className={fieldClass({ active: activeColor })}>
+			<div className="flex-1" />
+			<CardPile cards={latestData?.board.field ?? []} last={2} size="sm" />
+			{latestData?.board.sideA.casting.field && (
+				<div className="absolute -translate-x-1/2">
+					<Card key={latestData.board.sideA.casting.field.key} size="sm" card={latestData.board.sideA.casting.field} />
+				</div>
+			)}
+			{latestData?.board.sideB.casting.field && (
+				<div className="absolute translate-x-1/2">
+					<Card key={latestData.board.sideB.casting.field.key} size="sm" card={latestData.board.sideB.casting.field} />
+				</div>
+			)}
+			<ol aria-label="Turn phases" className="flex flex-1 flex-col items-end px-4">
+				{PHASES.map(phase => {
+					const isCurrent = phase === latestData?.board.phase;
+					return (
+						<li
+							className={clsx('font-bold transition-all', {
+								'text-2xl': isCurrent,
+								'text-md opacity-60': !isCurrent,
+							})}
+							key={phase}
+						>
+							{phase}
+						</li>
+					);
+				})}
+			</ol>
+		</section>
+	);
+};
+
 export default function Page() {
-	const { game, cards } = useLoaderData<typeof clientLoader>();
+	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub, latestData, error } = useGameSub(game.id.toString());
 
 	const playerSide = latestData?.board[latestData.side];
 	const opponentSide = latestData?.board[latestData.side === 'sideA' ? 'sideB' : 'sideA'];
 
-	const activeFieldCard = latestData?.board.field.at(-1);
-	const activeFieldCardData = activeFieldCard?.id ? cards[activeFieldCard.id] : undefined;
-	const activeColor = activeFieldCardData?.type === 'field' ? activeFieldCardData.color ?? undefined : undefined;
-
 	return (
-		<div className="relative flex h-screen w-full flex-col overflow-hidden bg-neutral-100">
-			{opponentSide && (
-				<PlayerSide
-					action={playerSide?.action}
-					onSelectFromHand={payload => sub?.send(payload)}
-					onSelectStack={payload => sub?.send(payload)}
-					relative="opponent"
-					cardData={cards}
-					side={opponentSide}
-				/>
-			)}
+		<CardDataProvider value={cardData}>
+			<div className="relative flex h-screen w-full flex-col overflow-hidden bg-neutral-100">
+				<nav className="absolute left-2 top-2 rounded-lg bg-white px-4 py-2 text-center shadow-lg">
+					<span>status: {status}</span>
+					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
+					{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
+					{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
+				</nav>
 
-			<nav className="absolute left-2 top-2 rounded-lg bg-white px-4 py-2 text-center shadow-lg">
-				<span>status: {status}</span>
-				{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
-				{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
-				{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
-			</nav>
+				{opponentSide && (
+					<PlayerSide
+						action={playerSide?.action}
+						onSelectFromHand={payload => sub?.send(payload)}
+						onSelectStack={payload => sub?.send(payload)}
+						relative="opponent"
+						side={opponentSide}
+					/>
+				)}
 
-			<section className={fieldClass({ active: activeColor })}>
-				<div className="flex-1" />
-				<CardPile cards={latestData?.board.field ?? []} cardData={cards} last={2} size="sm" />
-				{latestData?.board.sideA.casting.field && (
-					<div className="absolute -translate-x-1/2">
-						<Card
-							key={latestData.board.sideA.casting.field.key}
-							size="sm"
-							layoutId={latestData.board.sideA.casting.field.key}
-							data={
-								latestData.board.sideA.casting.field.id ? cards[latestData.board.sideA.casting.field.id] : undefined
-							}
-						/>
+				<MiddleSection latestData={latestData} />
+
+				{playerSide && (
+					<PlayerSide
+						action={playerSide?.action}
+						onSelectFromHand={payload => sub?.send(payload)}
+						onSelectStack={payload => sub?.send(payload)}
+						relative="self"
+						side={playerSide}
+					/>
+				)}
+
+				{playerSide?.action?.config.message && (
+					<div className="pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center p-4">
+						<p className="font-lg font-bold text-white [text-shadow:0px_1px_0_black]">
+							{playerSide?.action.config.message}
+						</p>
 					</div>
 				)}
-				{latestData?.board.sideB.casting.field && (
-					<div className="absolute translate-x-1/2">
-						<Card
-							key={latestData.board.sideB.casting.field.key}
-							size="sm"
-							layoutId={latestData.board.sideB.casting.field.key}
-							data={
-								latestData.board.sideB.casting.field.id ? cards[latestData.board.sideB.casting.field.id] : undefined
-							}
-						/>
-					</div>
-				)}
-				<ol aria-label="Turn phases" className="flex flex-1 flex-col items-end px-4">
-					{PHASES.map(phase => {
-						const isCurrent = phase === latestData?.board.phase;
-						return (
-							<li
-								className={clsx('font-bold transition-all', {
-									'text-2xl': isCurrent,
-									'text-md opacity-60': !isCurrent,
-								})}
-								key={phase}
-							>
-								{phase}
-							</li>
-						);
-					})}
-				</ol>
-			</section>
-
-			{playerSide && (
-				<PlayerSide
-					action={playerSide?.action}
-					onSelectFromHand={payload => sub?.send(payload)}
-					onSelectStack={payload => sub?.send(payload)}
-					relative="self"
-					cardData={cards}
-					side={playerSide}
-				/>
-			)}
-
-			{playerSide?.action?.config.message && (
-				<div className="pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center p-4">
-					<p className="font-lg font-bold text-white [text-shadow:0px_1px_0_black]">
-						{playerSide?.action.config.message}
-					</p>
-				</div>
-			)}
-		</div>
+			</div>
+		</CardDataProvider>
 	);
 }

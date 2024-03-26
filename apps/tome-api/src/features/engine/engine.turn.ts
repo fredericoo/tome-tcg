@@ -1,10 +1,13 @@
-import { delay, invariant, noop, pill } from '../../lib/utils';
+import { delay, exhaustive, invariant, noop } from '../../lib/utils';
+import { resolveCombatValue } from '../card/card.fns.utils';
 import { Board, topOf } from './engine.board';
 import {
+	CombatStackItem,
 	GameIterationResponse,
 	GameSettings,
 	SIDES,
 	STACKS,
+	Side,
 	Turn,
 	resolveFieldClash,
 	resolveSpellClash,
@@ -12,10 +15,11 @@ import {
 import { useGameActions } from './engine.hook.actions';
 import { useTriggerHooks } from './engine.hooks';
 
-export const getTurnCastCards = (casts: Turn['casts']) =>
-	[casts.sideA.field, casts.sideB.field, ...SIDES.flatMap(side => STACKS.flatMap(stack => casts[side][stack]))].filter(
-		Boolean,
-	);
+const initialiseTurnSide = (): Turn[Side] => ({
+	draws: [],
+	casts: { blue: [], green: [], red: [], field: [] },
+	spellAttack: undefined,
+});
 
 export const initialiseTurn = ({
 	finishedTurns,
@@ -27,11 +31,10 @@ export const initialiseTurn = ({
 	settings: Pick<GameSettings, 'phaseDelayMs'>;
 }) => {
 	const turn: Turn = {
-		draws: { sideA: [], sideB: [] },
-		casts: { sideA: { blue: [], green: [], red: [], field: [] }, sideB: { blue: [], green: [], red: [], field: [] } },
 		finishedTurns,
-		spells: { sideA: undefined, sideB: undefined },
-		extraDamage: { sideA: 0, sideB: 0 },
+		combatStack: [],
+		sideA: initialiseTurnSide(),
+		sideB: initialiseTurnSide(),
 	};
 
 	return {
@@ -54,6 +57,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = useGameActions(game);
 	const { turn, setPhase } = initialiseTurn({ finishedTurns, game, settings });
+	game.turn = turn;
 	yield game;
 
 	// if first turn, draw cards
@@ -89,7 +93,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				if (card.type === 'field') {
 					hand.splice(index, 1);
 					game.board.players[side].casting.field = card;
-					turn.casts[side].field.push(card);
+					turn[side].casts.field.push(card);
 					return;
 				}
 
@@ -99,7 +103,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					invariant(stack, `Card “${card.name}” has undefined color`);
 					hand.splice(index, 1);
 					game.board.players[side].casting[stack] = card;
-					turn.casts[side][stack].push(card);
+					turn[side].casts[stack].push(card);
 					yield game;
 					return;
 				}
@@ -125,7 +129,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 								invariant(stack, 'Expected exactly one stack');
 								hand.splice(index, 1);
 								game.board.players[side].casting[stack] = card;
-								turn.casts[side][stack].push(card);
+								turn[side].casts[stack].push(card);
 								yield game;
 							},
 						},
@@ -143,7 +147,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	// Reveals spells cast and moves them into the slots
 	for (const side of SIDES) {
 		for (const stack of STACKS) {
-			const castCards = turn.casts[side][stack];
+			const castCards = turn[side].casts[stack];
 			for (const card of castCards) {
 				if (card.effects.onReveal) {
 					yield* card.effects.onReveal({
@@ -164,16 +168,17 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 
 	// trigger onReveal for field cards
 	for (const side of SIDES) {
-		const fieldCard = turn.casts[side].field[0];
-		if (fieldCard && fieldCard.effects.onReveal) {
-			yield* fieldCard.effects.onReveal({
-				actions,
-				game,
-				turn,
-				opponentSide: undefined,
-				ownerSide: undefined,
-				thisCard: fieldCard,
-			});
+		for (const fieldCard of turn[side].casts.field) {
+			if (fieldCard.effects.onReveal) {
+				yield* fieldCard.effects.onReveal({
+					actions,
+					game,
+					turn,
+					opponentSide: undefined,
+					ownerSide: undefined,
+					thisCard: fieldCard,
+				});
+			}
 		}
 	}
 	/** Field card resolution */
@@ -245,7 +250,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				const stack = stacks[0];
 				invariant(stack, 'Expected exactly one stack');
 				const cardToUse = topOf(game.board.players[side].stacks[stack]);
-				turn.spells[side] = {
+				turn[side].spellAttack = {
 					slot: stack,
 					card: cardToUse ?? null,
 				};
@@ -256,47 +261,157 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		onTimeout: noop,
 	});
 
+	/**
+	 *  COMBAT PHASE
+	 *  - Resolve spell clash
+	 *  - Calculates damage
+	 */
 	yield* triggerTurnHook({ hookName: 'beforeCombat', context: { actions, game, turn } });
 	yield* setPhase('combat');
+	const spellClash = resolveSpellClash({ spellA: turn.sideA.spellAttack, spellB: turn.sideB.spellAttack });
 
-	const spellClash = resolveSpellClash(turn.spells);
 	if (spellClash.won) {
-		let damage = turn.spells[spellClash.won]?.card?.attack ?? settings.emptySlotAttack;
-		damage += turn.extraDamage[spellClash.won];
-		const healing = turn.spells[spellClash.won]?.card?.heal ?? 0;
+		const winnerSide = spellClash.won;
+		const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
+		const winnerCard = turn[winnerSide].spellAttack?.card ?? null;
 
-		const losingSide = spellClash.won === 'sideA' ? 'sideB' : 'sideA';
-		if (damage > 0) {
-			yield* actions.damagePlayer({ side: losingSide, amount: damage });
-			const cardToDealDamage = turn.spells[spellClash.won]?.card;
-			if (cardToDealDamage) {
-				const cardDamageHook = cardToDealDamage.effects.onDealDamage;
-				if (cardDamageHook) {
-					console.log(
-						pill('gray', turn.spells[spellClash.won]?.card?.name),
-						'’s effect triggered by',
-						pill('yellow', 'onDealDamage'),
-						'hook.',
-					);
-					yield* cardDamageHook({
+		const damageFromCard =
+			winnerCard?.attack ?
+				resolveCombatValue(winnerCard.attack, {
+					game,
+					opponentSide: loserSide,
+					ownerSide: winnerSide,
+					thisCard: winnerCard,
+				})
+			:	settings.emptySlotAttack;
+		if (damageFromCard > 0) {
+			turn.combatStack.push({
+				source: winnerCard,
+				target: loserSide,
+				type: 'damage',
+				value: damageFromCard,
+			});
+		}
+		const healFromCard =
+			winnerCard?.heal ?
+				resolveCombatValue(winnerCard.heal, {
+					game,
+					opponentSide: loserSide,
+					ownerSide: winnerSide,
+					thisCard: winnerCard,
+				})
+			:	0;
+		if (healFromCard > 0) {
+			turn.combatStack.push({
+				source: winnerCard,
+				target: winnerSide,
+				type: 'heal',
+				value: healFromCard,
+			});
+		}
+		yield game;
+
+		/**
+		 * DAMAGE PHASE
+		 * - resolve combat stacks
+		 * - trigger hooks for damage */
+		yield* triggerTurnHook({ hookName: 'beforeDamage', context: { actions, game, turn } });
+		yield* setPhase('damage');
+		for (const combatItem of turn.combatStack) {
+			switch (combatItem.type) {
+				case 'damage':
+					yield* resolveCombatDamage(actions, combatItem, game, turn);
+					break;
+				case 'heal':
+					yield* resolveCombatHealing(actions, combatItem, game, turn);
+					break;
+				default:
+					exhaustive(combatItem);
+			}
+		}
+
+		yield* triggerTurnHook({ hookName: 'afterDamage', context: { actions, game, turn } });
+
+		// end of turn
+		finishedTurns.push(turn);
+		yield* handleTurn(params);
+	}
+
+	async function* resolveCombatDamage(
+		actions: ReturnType<typeof useGameActions>,
+		combatItem: CombatStackItem & { type: 'damage' },
+		game: GameIterationResponse,
+		turn: Turn,
+	) {
+		yield* actions.damagePlayer({ side: combatItem.target, amount: combatItem.value });
+		switch (combatItem.source?.type) {
+			case 'field': {
+				const onDamage = combatItem.source.effects.onDealDamage;
+				if (!onDamage) break;
+				yield* onDamage({
+					actions,
+					game,
+					turn,
+					ownerSide: undefined,
+					opponentSide: undefined,
+					thisCard: combatItem.source,
+				});
+				break;
+			}
+			case 'spell':
+				{
+					const onDamage = combatItem.source.effects.onDealDamage;
+					if (!onDamage) break;
+					yield* onDamage({
 						actions,
 						game,
 						turn,
-						ownerSide: spellClash.won,
-						opponentSide: losingSide,
-						thisCard: cardToDealDamage,
+						ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
+						opponentSide: combatItem.target,
+						thisCard: combatItem.source,
 					});
 				}
-			}
-		}
-		if (healing > 0) {
-			yield* actions.healPlayer({ side: spellClash.won, amount: healing });
+				break;
+			default:
 		}
 	}
-	yield game;
-	yield* triggerTurnHook({ hookName: 'afterCombat', context: { actions, game, turn } });
 
-	// end of turn
-	finishedTurns.push(turn);
-	yield* handleTurn(params);
+	async function* resolveCombatHealing(
+		actions: ReturnType<typeof useGameActions>,
+		combatItem: CombatStackItem & { type: 'heal' },
+		game: GameIterationResponse,
+		turn: Turn,
+	) {
+		yield* actions.healPlayer({ side: combatItem.target, amount: combatItem.value });
+		switch (combatItem.source?.type) {
+			case 'field': {
+				const onHeal = combatItem.source.effects.onHeal;
+				if (!onHeal) break;
+				yield* onHeal({
+					actions,
+					game,
+					turn,
+					ownerSide: undefined,
+					opponentSide: undefined,
+					thisCard: combatItem.source,
+				});
+				break;
+			}
+			case 'spell':
+				{
+					const onHeal = combatItem.source.effects.onHeal;
+					if (!onHeal) break;
+					yield* onHeal({
+						actions,
+						game,
+						turn,
+						ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
+						opponentSide: combatItem.target,
+						thisCard: combatItem.source,
+					});
+				}
+				break;
+			default:
+		}
+	}
 }

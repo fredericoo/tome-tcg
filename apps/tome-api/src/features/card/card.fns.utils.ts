@@ -1,14 +1,14 @@
-import { STACKS } from '../engine/engine.game';
+import { CombatValue, DynamicCombatValue, STACKS } from '../engine/engine.game';
 import { TurnHooks } from '../engine/engine.hooks';
 
-export const removeIfUsedInCombat: TurnHooks<true>['afterCombat'] = async function* removeIfUsedInCombat({
+export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async function* removeIfUsedInCombat({
 	actions,
 	game,
 	thisCard,
 	ownerSide,
 	turn,
 }) {
-	const isUsedInCombat = turn.spells?.[ownerSide]?.card === thisCard;
+	const isUsedInCombat = turn[ownerSide].spellAttack?.card === thisCard;
 	if (!isUsedInCombat) return;
 	const thisCardStack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 	if (!thisCardStack) return;
@@ -18,3 +18,6 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterCombat'] = async functi
 		side: ownerSide,
 	});
 };
+
+export const resolveCombatValue = (combatValue: CombatValue, params: Parameters<DynamicCombatValue['getValue']>[0]) =>
+	typeof combatValue === 'object' ? combatValue.getValue(params) : combatValue;

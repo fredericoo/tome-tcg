@@ -6,7 +6,6 @@ import { HookActions } from './engine.hook.actions';
 /** Hooks that can be activated on demand by other cards. */
 export const ACTIVATABLE_HOOKS = [
 	'beforeCombat',
-	'afterCombat',
 	'beforeCast',
 	'beforeDraw',
 	'beforeReveal',
@@ -19,7 +18,7 @@ export const ACTIVATABLE_HOOKS = [
 export type TurnHooks<THasOwner extends boolean = false> = {
 	// TODO: implement these
 	onDiscard: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -34,7 +33,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onReveal: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -42,7 +41,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onDealDamage: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -50,7 +49,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onHeal: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -58,7 +57,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onClashLose: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -68,7 +67,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		loserSide: Side;
 	}) => AsyncGenerator<GameIterationResponse>;
 	onClashWin: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -78,7 +77,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		winnerSide: Side;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeDraw: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -86,7 +85,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCast: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -94,7 +93,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeReveal: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -102,7 +101,7 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeSpell: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
@@ -110,15 +109,23 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
 	beforeCombat: (params: {
-		turn: Partial<Turn>;
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIterationResponse>;
-	afterCombat: (params: {
-		turn: Partial<Turn>;
+	beforeDamage: (params: {
+		turn: Turn;
+		game: GameIterationResponse;
+		actions: HookActions;
+		ownerSide: THasOwner extends true ? Side : undefined;
+		opponentSide: THasOwner extends true ? Side : undefined;
+		thisCard: THasOwner extends true ? SpellCard : FieldCard;
+	}) => AsyncGenerator<GameIterationResponse>;
+	afterDamage: (params: {
+		turn: Turn;
 		game: GameIterationResponse;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;

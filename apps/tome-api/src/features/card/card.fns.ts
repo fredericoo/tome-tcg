@@ -1,8 +1,8 @@
 import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
-import { DbCard, SIDES, STACKS, Side, resolveSpellClash } from '../engine/engine.game';
+import { DbCard, SIDES, STACKS, Side } from '../engine/engine.game';
 import { ACTIVATABLE_HOOKS } from '../engine/engine.hooks';
-import { removeIfUsedInCombat } from './card.fns.utils';
+import { removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
 
 export const deck: DbCard[] = [
 	{
@@ -104,14 +104,15 @@ export const deck: DbCard[] = [
 		id: '7',
 		type: 'field',
 		name: 'Sacred Pool',
-		description: 'If both players cast spells from the blue stack during combat, heals both wizards for 10 HP.',
+		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
 		color: 'blue',
 		effects: {
-			afterCombat: async function* ({ game, turn }) {
-				if (turn.spells?.sideA?.slot === 'blue' && turn.spells.sideB?.slot === 'blue') {
-					game.board.players.sideA.hp += 10;
-					game.board.players.sideB.hp += 10;
-					yield game;
+			beforeDamage: async function* ({ game, turn, thisCard }) {
+				for (const side of SIDES) {
+					if (turn[side].spellAttack?.slot === 'blue') {
+						turn.combatStack.push({ source: thisCard, target: side, type: 'heal', value: 10 });
+						yield game;
+					}
 				}
 			},
 		},
@@ -224,18 +225,16 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		name: 'Overgrown root',
 		description: '4X attack, where X is the number of cards in this stack.',
-		attack: 0,
-		colors: ['green'],
-		effects: {
-			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
-				const isUsedInCombat = turn.spells?.[ownerSide]?.card === thisCard;
-				if (!isUsedInCombat) return;
+		attack: {
+			label: '6X',
+			getValue({ game, ownerSide, thisCard }) {
 				const stack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
-				if (!stack) return;
-				const attack = 4 * game.board.players[ownerSide].stacks[stack].length;
-				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: attack, turn });
+				if (!stack) return 6;
+				return 6 * game.board.players[ownerSide].stacks[stack].length;
 			},
 		},
+		colors: ['green'],
+		effects: {},
 	},
 	{
 		id: '15',
@@ -266,10 +265,11 @@ export const deck: DbCard[] = [
 		description: 'If both players attack with the same spell stack, both take 10 damage.',
 		color: null,
 		effects: {
-			afterCombat: async function* ({ turn, actions }) {
-				if (turn.spells?.sideA?.slot === turn.spells?.sideB?.slot) {
-					yield* actions.damagePlayer({ side: 'sideA', amount: 10 });
-					yield* actions.damagePlayer({ side: 'sideB', amount: 10 });
+			beforeDamage: async function* ({ turn, thisCard, game }) {
+				if (turn.sideA.spellAttack?.slot === turn.sideB.spellAttack?.slot) {
+					turn.combatStack.push({ source: thisCard, target: 'sideA', type: 'damage', value: 10 });
+					turn.combatStack.push({ source: thisCard, target: 'sideB', type: 'damage', value: 10 });
+					yield game;
 				}
 			},
 		},
@@ -313,7 +313,7 @@ export const deck: DbCard[] = [
 		color: 'red',
 		description: 'After combat, the player who has the least HP draws one card.',
 		effects: {
-			afterCombat: async function* ({ game, actions }) {
+			afterDamage: async function* ({ game, actions }) {
 				const playerA = game.board.players.sideA;
 				const playerB = game.board.players.sideB;
 				if (playerA.hp === playerB.hp) return;
@@ -329,10 +329,10 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a red spell, draw 1 card',
 		color: 'red',
 		effects: {
-			afterCombat: async function* ({ actions, turn }) {
+			beforeDamage: async function* ({ actions, turn }) {
 				const drawingSides: Side[] = [];
-				if (turn.spells?.sideA?.slot === 'red') drawingSides.push('sideA');
-				if (turn.spells?.sideB?.slot === 'red') drawingSides.push('sideB');
+				if (turn.sideA.spellAttack?.slot === 'red') drawingSides.push('sideA');
+				if (turn.sideB.spellAttack?.slot === 'red') drawingSides.push('sideB');
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -344,10 +344,10 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a blue spell, draw 1 card',
 		color: 'blue',
 		effects: {
-			afterCombat: async function* ({ actions, turn }) {
+			beforeDamage: async function* ({ actions, turn }) {
 				const drawingSides: Side[] = [];
-				if (turn.spells?.sideA?.slot === 'blue') drawingSides.push('sideA');
-				if (turn.spells?.sideB?.slot === 'blue') drawingSides.push('sideB');
+				if (turn.sideA.spellAttack?.slot === 'blue') drawingSides.push('sideA');
+				if (turn.sideB.spellAttack?.slot === 'blue') drawingSides.push('sideB');
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -359,10 +359,10 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a green spell, draw 1 card',
 		color: 'green',
 		effects: {
-			afterCombat: async function* ({ actions, turn }) {
+			beforeDamage: async function* ({ actions, turn }) {
 				const drawingSides: Side[] = [];
-				if (turn.spells?.sideA?.slot === 'green') drawingSides.push('sideA');
-				if (turn.spells?.sideB?.slot === 'green') drawingSides.push('sideB');
+				if (turn.sideA.spellAttack?.slot === 'green') drawingSides.push('sideA');
+				if (turn.sideB.spellAttack?.slot === 'green') drawingSides.push('sideB');
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -375,13 +375,15 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
 		effects: {
-			beforeCombat: async function* ({ turn, actions }) {
-				for (const side of SIDES) {
-					const ownerSpell = turn.spells?.[side];
-					if (ownerSpell?.card?.colors.includes('green')) {
-						yield* actions.addTurnExtraDamage({ side, amount: 5, turn });
-					}
+			beforeCombat: async function* ({ turn, game }) {
+				for (const combat of turn.combatStack) {
+					if (!combat.source) continue;
+					if (combat.source.type !== 'spell') continue;
+					if (combat.type !== 'damage') continue;
+					if (!combat.source.colors.includes('green')) continue;
+					combat.value += 5;
 				}
+				yield game;
 			},
 		},
 	},
@@ -390,21 +392,21 @@ export const deck: DbCard[] = [
 		name: 'Augmentation Device',
 		type: 'spell',
 		colors: [],
-		attack: 0,
-		description: 'When used in combat increases damage by 5+X, where X is the attack of the card below this.',
-		effects: {
-			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
-				const isUsedInCombat = turn.spells?.[ownerSide]?.card === thisCard;
-				if (!isUsedInCombat) return;
+		attack: {
+			label: '5+X',
+			getValue(params) {
+				const { game, ownerSide, thisCard } = params;
 				const stack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
-				if (!stack) return;
+				if (!stack) return 5;
 				const cardBelow = game.board.players[ownerSide].stacks[stack].find(
 					(_, index) => game.board.players[ownerSide].stacks[stack][index + 1] === thisCard,
 				);
-				if (!cardBelow) return;
-				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: 5 + cardBelow.attack, turn });
+				if (!cardBelow) return 5;
+				return resolveCombatValue(cardBelow.attack, params) + 5;
 			},
 		},
+		description: 'Where X is the attack of the card below this.',
+		effects: {},
 	},
 	{
 		id: '25',
@@ -501,11 +503,10 @@ export const deck: DbCard[] = [
 		heal: 8,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
-			afterCombat: async function* ({ actions, game, thisCard, turn, opponentSide }) {
-				if (!turn.spells) return;
-				const { won } = resolveSpellClash(turn.spells);
-				const isBeaten = won === opponentSide;
-				if (isBeaten) yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+			onClashLose: async function* ({ actions, game, winnerCard, loserSide }) {
+				const winnerSide = loserSide === 'sideA' ? 'sideB' : 'sideA';
+				if (!winnerCard) return;
+				yield* actions.discard({ card: winnerCard, from: game.board.field, side: winnerSide });
 			},
 		},
 	},
@@ -531,13 +532,18 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green', 'blue'],
 		description:
-			'When this spell is placed in the GREEN stack, your spells will deal +10 damage this turn. When this spell is placed in the BLUE stack, draw a card',
-		attack: 8,
-		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, turn, thisCard }) {
+			'When this spell is placed in the GREEN stack, this card has +10 Attack. When this spell is placed in the BLUE stack, draw a card',
+		attack: {
+			label: '8',
+			getValue({ game, ownerSide, thisCard }) {
 				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) {
-					yield* actions.addTurnExtraDamage({ side: ownerSide, amount: 10, turn });
+					return 18;
 				}
+				return 8;
+			},
+		},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (topOf(game.board.players[ownerSide].stacks.blue) === thisCard) {
 					yield* actions.draw({ sides: [ownerSide] });
 				}
@@ -549,46 +555,52 @@ export const deck: DbCard[] = [
 		name: 'Solo Burning',
 		type: 'spell',
 		colors: ['red'],
-		attack: 10,
-		description: 'If this is the only card in your RED slot, +10 to attack',
-		effects: {
-			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
+		attack: {
+			label: '10',
+			getValue({ game, ownerSide, thisCard }) {
 				const redStack = game.board.players[ownerSide].stacks.red;
 				if (redStack.length === 1 && topOf(redStack) === thisCard) {
-					yield* actions.addTurnExtraDamage({ side: ownerSide, amount: 10, turn });
+					return 20;
 				}
+				return 10;
 			},
 		},
+		description: 'If this is the only card in your RED slot, this card has +10 attack',
+		effects: {},
 	},
 	{
 		id: '36',
 		name: 'Magnetic force',
 		type: 'spell',
 		colors: ['red', 'blue'],
-		attack: 0,
-		description:
-			'X Attack, where X is the sum of the two other spell slots attacks. When this spell deals damage, discard it.',
-		effects: {
-			beforeCombat: async function* ({ game, actions, turn, ownerSide, thisCard }) {
-				const ownerSpell = turn.spells?.[ownerSide];
-				if (!ownerSpell) return;
-				if (ownerSpell.card !== thisCard) return;
+		attack: {
+			label: 'X',
+			getValue({ game, ownerSide, opponentSide, thisCard }) {
+				const thisStack = STACKS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return 0;
 
-				const otherSpells = STACKS.filter(stack => stack !== ownerSpell.slot)
+				const otherSpells = STACKS.filter(stack => stack !== thisStack)
 					.map(stack => game.board.players[ownerSide].stacks[stack])
 					.filter(Boolean)
 					.map(topOf)
 					.filter(Boolean);
 
-				const attackSum = otherSpells.reduce((acc, spell) => acc + spell.attack, 0);
-				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: attackSum, turn });
+				const attackSum = otherSpells.reduce(
+					(acc, spell) => acc + resolveCombatValue(spell.attack, { game, opponentSide, ownerSide, thisCard }),
+					0,
+				);
+				return attackSum;
 			},
+		},
+		description:
+			'X Attack, where X is the sum of the two other spell slots attacks. When this spell deals damage, discard it.',
+		effects: {
 			onDealDamage: async function* ({ actions, game, thisCard, ownerSide }) {
-				const thisCardStack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
-				if (!thisCardStack) return;
+				const thisStack = STACKS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return;
 				yield* actions.discard({
 					card: thisCard,
-					from: game.board.players[ownerSide].stacks[thisCardStack],
+					from: game.board.players[ownerSide].stacks[thisStack],
 					side: ownerSide,
 				});
 			},
@@ -604,13 +616,17 @@ export const deck: DbCard[] = [
 			'If this spell is chosen as an attack, any damage caused during combat is nulled. Remove this card from play after used in combat.',
 		colors: ['blue'],
 		effects: {
-			beforeCombat: async function* ({ actions, turn, ownerSide, opponentSide, thisCard }) {
-				const ownerSpell = turn.spells?.[ownerSide];
+			beforeDamage: async function* ({ game, turn, ownerSide, thisCard }) {
+				const ownerSpell = turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
-				yield* actions.addTurnExtraDamage({ side: ownerSide, amount: -999, turn });
-				yield* actions.addTurnExtraDamage({ side: opponentSide, amount: -999, turn });
+				for (const combat of turn.combatStack) {
+					if (combat.type === 'damage') {
+						combat.value = 0;
+					}
+				}
+				yield game;
 			},
-			afterCombat: removeIfUsedInCombat,
+			afterDamage: removeIfUsedInCombat,
 		},
 	},
 	{
@@ -622,16 +638,16 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is chosen as an attack, any damage caused during combat is doubled. Remove this card from play after used in combat.',
 		effects: {
-			beforeCombat: async function* ({ actions, turn, ownerSide, thisCard }) {
-				const ownerSpell = turn.spells?.[ownerSide];
+			beforeDamage: async function* ({ game, turn, ownerSide, thisCard }) {
+				const ownerSpell = turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
-				for (const side of SIDES) {
-					const damageFromCard = turn.spells?.[side]?.card?.attack ?? 0;
-					const damageFromExtra = turn.extraDamage?.[side] ?? 0;
-					yield* actions.addTurnExtraDamage({ side, amount: damageFromCard + damageFromExtra, turn });
+				for (const combat of turn.combatStack) {
+					if (combat.type !== 'damage') continue;
+					combat.value *= 2;
 				}
+				yield game;
 			},
-			afterCombat: removeIfUsedInCombat,
+			afterDamage: removeIfUsedInCombat,
 		},
 	},
 	{ id: '39', name: 'Fireball', type: 'spell', attack: 10, colors: ['red'], description: '', effects: {} },
@@ -652,12 +668,17 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is used in combat, prevents any damage from being caused to you this turn, then discard it.',
 		effects: {
-			beforeCombat: async function* ({ actions, turn, ownerSide, thisCard, opponentSide }) {
-				const ownerSpell = turn.spells?.[ownerSide];
+			beforeCombat: async function* ({ game, turn, ownerSide, thisCard }) {
+				const ownerSpell = turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
-				yield* actions.addTurnExtraDamage({ side: opponentSide, amount: -999, turn });
+				for (const combat of turn.combatStack) {
+					if (combat.type === 'damage' && combat.target === ownerSide) {
+						combat.value = 0;
+					}
+				}
+				yield game;
 			},
-			afterCombat: removeIfUsedInCombat,
+			afterDamage: removeIfUsedInCombat,
 		},
 	},
 	{
@@ -668,14 +689,15 @@ export const deck: DbCard[] = [
 		description:
 			'Green spells have +5 attack. If this field effect fails to be placed, also removes the field effect who overtook it.',
 		effects: {
-			beforeCombat: async function* ({ turn, actions }) {
-				for (const side of SIDES) {
-					const attackingSpell = turn.spells?.[side];
-					if (!attackingSpell) continue;
-					const card = attackingSpell.card;
-					if (!card?.colors.includes('green')) continue;
-					yield* actions.addTurnExtraDamage({ side, amount: 5, turn });
+			beforeCombat: async function* ({ turn, game }) {
+				for (const combat of turn.combatStack) {
+					if (!combat.source) continue;
+					if (combat.source.type !== 'spell') continue;
+					if (combat.type !== 'damage') continue;
+					if (!combat.source.colors.includes('green')) continue;
+					combat.value += 5;
 				}
+				yield game;
 			},
 			onClashLose: async function* ({ actions, game, winnerCard }) {
 				if (!winnerCard) return;
@@ -691,15 +713,20 @@ export const deck: DbCard[] = [
 		description:
 			'Each player’s damage is increased by 5X, where X is the number of active spells they own with the word “Fire” in their title, and this card.',
 		effects: {
-			beforeCombat: async function* ({ game, turn, actions }) {
+			beforeCombat: async function* ({ game, turn }) {
 				for (const side of SIDES) {
 					const activeSpells = STACKS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
 						.filter(Boolean);
 					const fireSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('fire'));
 					const extraDamage = 5 * (fireSpells.length + 1);
-					yield* actions.addTurnExtraDamage({ side, amount: extraDamage, turn });
+					for (const combat of turn.combatStack) {
+						if (combat.target !== side) {
+							combat.value += extraDamage;
+						}
+					}
 				}
+				yield game;
 			},
 		},
 	},

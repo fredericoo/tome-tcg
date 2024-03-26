@@ -16,12 +16,28 @@ type BaseCard = {
 	description: string;
 };
 
+export type DynamicCombatValue = {
+	label: string;
+	getValue: ({
+		game,
+		ownerSide,
+		opponentSide,
+		thisCard,
+	}: {
+		game: GameIterationResponse;
+		ownerSide: Side;
+		opponentSide: Side;
+		thisCard: SpellCard;
+	}) => number;
+};
+
+export type CombatValue = number | DynamicCombatValue;
 export interface SpellCard extends BaseCard {
 	type: 'spell';
 	name: string;
 	colors: SpellColor[];
-	attack: number;
-	heal?: number;
+	attack: CombatValue;
+	heal?: CombatValue;
 	effects: Partial<TurnHooks<true>>;
 }
 
@@ -51,6 +67,7 @@ export type GameAction = {
 }[keyof PlayerActionMap];
 
 export type GameIterationResponse = {
+	turn: Turn | undefined;
 	board: Board;
 	/** Highlighted card keys */
 	highlights: {
@@ -67,13 +84,29 @@ export type GameIterationResponse = {
 	};
 };
 
-export type Turn = {
-	finishedTurns: Turn[];
-	draws: Record<Side, GameCard[]>;
-	casts: Record<Side, Record<SpellStack, SpellCard[]> & { field: FieldCard[] }>;
-	spells: Record<Side, { slot: SpellStack; card: SpellCard | null } | undefined>;
-	extraDamage: Record<Side, number>;
-};
+export type CombatStackItem =
+	| {
+			source: GameCard | null;
+			value: number;
+			type: 'damage';
+			target: Side;
+	  }
+	| {
+			source: GameCard | null;
+			value: number;
+			type: 'heal';
+			target: Side;
+	  };
+
+type SpellAttack = { slot: SpellStack; card: SpellCard | null };
+export type Turn = { finishedTurns: Turn[]; combatStack: CombatStackItem[] } & Record<
+	Side,
+	{
+		draws: GameCard[];
+		casts: Record<SpellStack, SpellCard[]> & { field: FieldCard[] };
+		spellAttack: SpellAttack | undefined;
+	}
+>;
 
 const winnerColorMap: Record<SpellColor, SpellColor> = {
 	blue: 'red',
@@ -102,20 +135,29 @@ export const resolveFieldClash = ({
 	return { won: null };
 };
 
-export const resolveSpellClash = (spells: Turn['spells']): { won: Side | null } => {
-	if (!spells.sideA && !spells.sideB) return { won: null };
-	if (!spells.sideA) return { won: 'sideB' };
-	if (!spells.sideB) return { won: 'sideA' };
+export const resolveSpellClash = ({
+	spellA,
+	spellB,
+}: {
+	spellA?: SpellAttack;
+	spellB?: SpellAttack;
+}): { won: Side | null } => {
+	// vs no spell
+	if (!spellA && !spellB) return { won: null };
+	if (!spellA) return { won: 'sideB' };
+	if (!spellB) return { won: 'sideA' };
 
-	if (spells.sideA.slot === spells.sideB.slot) return { won: null };
-	if (winnerColorMap[spells.sideA.slot].includes(spells.sideB.slot)) return { won: 'sideA' };
-	if (winnerColorMap[spells.sideB.slot].includes(spells.sideA.slot)) return { won: 'sideB' };
+	// vs spell
+	if (spellA.slot === spellB.slot) return { won: null };
+	if (winnerColorMap[spellA.slot].includes(spellB.slot)) return { won: 'sideA' };
+	if (winnerColorMap[spellB.slot].includes(spellA.slot)) return { won: 'sideB' };
 
-	throw new Error(`Failed resolving winner spell between “${spells.sideA.slot}” and “${spells.sideB.slot}”`);
+	return { won: null };
 };
 
 export const initialiseGame = (board: Board): GameIterationResponse => ({
 	board,
+	turn: undefined,
 	actions: {},
 	highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
 	arrows: [],

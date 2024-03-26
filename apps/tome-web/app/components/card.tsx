@@ -4,9 +4,11 @@ import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 import { create } from 'zustand';
 
-import { DbCard } from '../../../tome-api/src/features/engine/engine.game';
-import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
+import type { PubSubCard, PubSubShownCard } from '../../../tome-api/src/features/game/game.pubsub';
+import { useCardData } from '../lib/card-data';
 import { useHighlightedCardsStore } from '../routes/games.$id';
+
+export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 
 export const cardClass = cva({
 	base: 'aspect-[63/88] rounded-lg select-none transition-shadow',
@@ -72,33 +74,25 @@ const useHoveredCard = create<HoveredCardStore>(set => ({
 }));
 
 export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps> {
-	layoutId: number;
-	data?: DistributiveOmit<DbCard, 'effects'>;
+	card: PubSubCard;
 	size: Variants['size'];
 	interactive?: boolean;
 	highlight?: Variants['highlight'];
 }
 
-export const Card = ({
-	layoutId,
-	data,
-	className,
-	size,
-	interactive,
-	highlight: highlightOverride,
-	...props
-}: CardProps) => {
-	const isHovered = useHoveredCard(s => s.hoveredCard === layoutId);
+export const Card = ({ card, className, size, interactive, highlight: highlightOverride, ...props }: CardProps) => {
+	const cardData = useCardData();
+	const data = isShownCard(card) ? cardData[card.id] : undefined;
+	const isHovered = useHoveredCard(s => s.hoveredCard === card.key);
 	const setHovered = useHoveredCard(s => s.setHoveredCard);
-	const pubsubHighlight = useHighlightedCardsStore(s => s.highlightedCards[layoutId]);
+	const pubsubHighlight = useHighlightedCardsStore(s => s.highlightedCards[card.key]);
 	const highlight = highlightOverride || pubsubHighlight;
-	const key = layoutId.toString();
 
 	if (!data)
 		return (
 			<motion.div
-				layoutId={key}
-				key={key}
+				layoutId={card.key.toString()}
+				key={card.key}
 				layout="preserve-aspect"
 				className={cardClass({ face: 'back', size, className, interactive, highlight })}
 				{...props}
@@ -109,10 +103,11 @@ export const Card = ({
 		if (data.type === 'field') return [data.color, data.color];
 		return [data.colors[0], data.colors[1] ?? data.colors[0]];
 	})();
+
 	return (
 		<div
 			className={clsx('relative', { 'z-50': isHovered })}
-			onMouseEnter={() => setHovered(layoutId)}
+			onMouseEnter={() => setHovered(card.key)}
 			onMouseLeave={() => setHovered(null)}
 		>
 			{isHovered && (
@@ -133,23 +128,13 @@ export const Card = ({
 							<p className="overflow-hidden px-2 text-left text-xs leading-tight opacity-60">{data.description}</p>
 						</div>
 					</div>
-					{data.type === 'spell' && (
-						<>
-							<div className="absolute bottom-1 right-1 rounded-full bg-white px-2 py-1 text-xs ring-2 ring-neutral-900/20">
-								{data.attack === 0 ? 'X' : data.attack}
-							</div>
-							{data.heal ?
-								<div className="absolute bottom-1 left-1 rounded-full bg-white px-2 py-1 text-xs text-green-500 ring-2 ring-green-600/80">
-									+{data.heal} HP
-								</div>
-							:	null}
-						</>
-					)}
+					<CardAttack card={card} />
+					<CardHeal card={card} />
 				</div>
 			)}
 			<motion.div
-				key={key}
-				layoutId={key}
+				key={card.key}
+				layoutId={card.key.toString()}
 				layout="preserve-aspect"
 				className={cardClass({
 					face: 'front',
@@ -171,19 +156,32 @@ export const Card = ({
 						)}
 					</div>
 				</div>
-				{data.type === 'spell' && (
-					<>
-						<div className="absolute bottom-1 right-1 rounded-full bg-white px-2 py-1 text-xs ring-2 ring-neutral-900/20">
-							{data.attack === 0 ? 'X' : data.attack}
-						</div>
-						{data.heal ?
-							<div className="absolute bottom-1 left-1 rounded-full bg-white px-2 py-1 text-xs text-green-500 ring-2 ring-green-600/80">
-								+{data.heal} HP
-							</div>
-						:	null}
-					</>
-				)}
+				<CardAttack card={card} />
+				<CardHeal card={card} />
 			</motion.div>
+		</div>
+	);
+};
+
+const CardAttack = ({ card }: { card: PubSubCard }) => {
+	if (!isShownCard(card)) return null;
+	if (card.type === 'field') return null;
+
+	return (
+		<div className="absolute bottom-1 right-1 rounded-full bg-white px-2 py-1 text-xs ring-2 ring-neutral-900/20">
+			{card.attack}
+		</div>
+	);
+};
+
+const CardHeal = ({ card }: { card: PubSubCard }) => {
+	if (!isShownCard(card)) return null;
+	if (card.type === 'field') return null;
+	if (card.heal === undefined) return null;
+
+	return (
+		<div className="absolute bottom-1 left-1 rounded-full bg-white px-2 py-1 text-xs text-green-500 ring-2 ring-green-600/80">
+			+{card.heal} HP
 		</div>
 	);
 };

@@ -1,6 +1,6 @@
 import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
-import { GameAction, GameCard, GameIterationResponse, Side, Turn } from './engine.game';
+import { GameAction, GameCard, GameIterationResponse, Side } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
@@ -27,11 +27,6 @@ export const useGameActions = (game: GameIterationResponse) => ({
 	},
 	damagePlayer: async function* ({ side, amount }: { side: Side; amount: number }) {
 		game.board.players[side].hp -= amount;
-		yield game;
-	},
-	addTurnExtraDamage: async function* ({ side, amount, turn }: { side: Side; amount: number; turn: Partial<Turn> }) {
-		if (!turn.extraDamage) turn.extraDamage = { sideA: 0, sideB: 0 };
-		turn.extraDamage[side] += amount;
 		yield game;
 	},
 	draw: async function* ({ sides }: { sides: Side[] }) {

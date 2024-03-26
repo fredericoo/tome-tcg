@@ -2,21 +2,19 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { type DbCard, type Side } from '../../../tome-api/src/features/engine/engine.game';
+import { type Side } from '../../../tome-api/src/features/engine/engine.game';
 import type { SanitisedIteration, SelectFromHandMessageSchema } from '../../../tome-api/src/features/game/game.pubsub';
-import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 import { invariant } from '../../../tome-api/src/lib/utils';
 import { Card } from '../components/card';
 
 interface PlayerHandProps {
 	side: SanitisedIteration['board'][Side];
 	action: SanitisedIteration['board'][Side]['action'] | null;
-	cardData: Record<string, DistributiveOmit<DbCard, 'effects'>>;
 	relative: 'opponent' | 'self';
 	onSelectFromHand: (params: SelectFromHandMessageSchema) => void;
 }
 
-export function PlayerHand({ cardData, relative, side, action, onSelectFromHand }: PlayerHandProps) {
+export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerHandProps) {
 	const isSelectingFromHand = action?.type === 'select_from_hand' && action.config.from === relative;
 	const [cardKeysSelectedFromHand, setCardKeysSelectedFromHand] = useState<Set<number>>(new Set());
 	if (cardKeysSelectedFromHand.size > 0 && action?.type !== 'select_from_hand') setCardKeysSelectedFromHand(new Set());
@@ -71,8 +69,7 @@ export function PlayerHand({ cardData, relative, side, action, onSelectFromHand 
 									:	undefined
 								}
 								size="sm"
-								layoutId={cardRef.key}
-								data={cardRef.id ? cardData[cardRef.id] : undefined}
+								card={cardRef}
 							/>
 						</li>
 					);

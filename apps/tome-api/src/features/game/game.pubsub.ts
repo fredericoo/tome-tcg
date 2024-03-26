@@ -2,11 +2,15 @@ import { Value } from '@sinclair/typebox/value';
 import chalk from 'chalk';
 import { Elysia, Static, t } from 'elysia';
 
+import { DistributiveOmit } from '../../lib/type-utils';
 import { delay } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
+import { resolveCombatValue } from '../card/card.fns.utils';
 import { Board } from '../engine/engine.board';
 import {
+	CombatStackItem,
+	DynamicCombatValue,
 	GameAction,
 	GameCard,
 	GameIterationResponse,
@@ -27,11 +31,17 @@ type GameRoomState = {
 };
 
 /** Card info that gets sent over the websockets connection */
-export type PubSubCard = { key: number; id?: string };
+export type PubSubHiddenCard = { key: number };
+export type PubSubShownFieldCard = PubSubHiddenCard & { id: string; type: 'field' };
+export type PubSubShownSpellCard = PubSubHiddenCard & { id: string; type: 'spell'; attack: number; heal?: number };
+export type PubSubShownCard = PubSubShownFieldCard | PubSubShownSpellCard;
+export type PubSubCard = PubSubHiddenCard | PubSubShownCard;
 
+export type CompressedCombatStackItem = DistributiveOmit<CombatStackItem, 'source'> & { sourceKey: number | null };
 export type SanitisedIteration = {
 	side: Side;
 	board: {
+		combatStack: CompressedCombatStackItem[];
 		phase: Board['phase'];
 		field: PubSubCard[];
 		highlights: Record<string, 'effect' | 'negative' | 'positive'>;
@@ -51,16 +61,51 @@ export type SanitisedIteration = {
 
 export type PubSubError = { error: string };
 
-const hideCard = (card: GameCard): PubSubCard => ({ key: card.key });
-const showCard = (card: GameCard): PubSubCard => ({ key: card.key, id: card.id });
+const createCardActions = (params: Omit<Parameters<DynamicCombatValue['getValue']>[0], 'thisCard'>) => {
+	return {
+		hideCard: (card: GameCard): PubSubHiddenCard => ({ key: card.key }),
+		showCard: (card: GameCard): PubSubShownCard => {
+			switch (card.type) {
+				case 'field':
+					return {
+						key: card.key,
+						id: card.id,
+						type: card.type,
+					};
+				case 'spell':
+					return {
+						key: card.key,
+						id: card.id,
+						type: card.type,
+						attack: resolveCombatValue(card.attack, { ...params, thisCard: card }),
+						heal: card.heal ? resolveCombatValue(card.heal, { ...params, thisCard: card }) : undefined,
+					};
+			}
+		},
+	};
+};
+
 /**
  * Clears data that’s not supposed to make it to end users.
  * E.g.: Deck cards are never supposed to be sent to the client.
  */
 const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationResponse) => {
+	const { hideCard, showCard } = createCardActions({
+		game: originalIteration,
+		ownerSide: playerSide,
+		opponentSide: playerSide === 'sideA' ? 'sideB' : 'sideA',
+	});
+
 	const iteration: SanitisedIteration = {
 		side: playerSide,
 		board: {
+			combatStack:
+				originalIteration.turn?.combatStack.map(item => ({
+					target: item.target,
+					value: item.value,
+					type: item.type,
+					sourceKey: item.source?.key ?? null,
+				})) ?? [],
 			highlights: {},
 			field: originalIteration.board.field.map(showCard),
 			phase: originalIteration.board.phase,
