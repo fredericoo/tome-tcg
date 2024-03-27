@@ -569,12 +569,12 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green', 'blue'],
 		description:
-			'When this spell is placed in the GREEN stack, this card has +10 Attack. When this spell is placed in the BLUE stack, draw a card',
+			'When this spell is placed in the GREEN stack, this card has +5 Attack. When this spell is placed in the BLUE stack, draw a card',
 		attack: {
 			label: '8',
 			getValue({ game, ownerSide, thisCard }) {
 				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) {
-					return 18;
+					return 13;
 				}
 				return 8;
 			},
