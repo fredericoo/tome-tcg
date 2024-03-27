@@ -203,7 +203,7 @@ export const deck: DbCard[] = [
 		id: '11',
 		type: 'field',
 		name: 'Void Space',
-		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it.',
+		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
 		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, game }) {
@@ -243,6 +243,10 @@ export const deck: DbCard[] = [
 				if (ownerDiscard) yield* ownerDiscard;
 				const opponentDiscard = selectStackAndDiscard('sideB');
 				if (opponentDiscard) yield* opponentDiscard;
+				const topFieldCard = topOf(game.board.field);
+				if (topFieldCard) {
+					yield* actions.discard({ card: topFieldCard, from: game.board.field, side: 'sideA' });
+				}
 			},
 		},
 	},
