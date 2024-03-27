@@ -11,7 +11,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'blue'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or RED spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -51,7 +51,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 RED or GREEN spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -90,7 +90,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['blue', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or GREEN spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
