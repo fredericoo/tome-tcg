@@ -830,6 +830,56 @@ export const deck: DbCard[] = [
 			}
 		},
 	},
+	{
+		id: '58',
+		name: 'Fire Starter',
+		type: 'spell',
+		colors: ['red'],
+		attack: 8,
+		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
+		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'green' || fieldToDiscard?.color === null) {
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+				}
+			},
+		},
+	},
+	{
+		id: '59',
+		name: 'Extinguishing Spray',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 8,
+		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a RED or NEUTRAL [FIELD] spell to the discard pile.',
+		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'red' || fieldToDiscard?.color === null) {
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+				}
+			},
+		},
+	},
+	{
+		id: '60',
+		name: 'Parched Earth',
+		type: 'spell',
+		colors: ['green'],
+		attack: 8,
+		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'blue' || fieldToDiscard?.color === null) {
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+				}
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -925,33 +975,6 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: null,
 		description: 'Spells have no effects',
-		effects: {},
-	},
-	{
-		id: '58',
-		name: 'Fire Starter',
-		type: 'spell',
-		colors: ['red'],
-		attack: 5,
-		description: 'After a successful attack, you may send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
-		effects: {},
-	},
-	{
-		id: '59',
-		name: 'Extinguishing Spray',
-		type: 'spell',
-		colors: ['blue'],
-		attack: 5,
-		description: 'After a successful attack, you may send a RED or NEUTRAL [FIELD] spell to the discard pile.',
-		effects: {},
-	},
-	{
-		id: '60',
-		name: 'Parched Earth',
-		type: 'spell',
-		colors: ['green'],
-		attack: 5,
-		description: 'After a successful attack, you may send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
 		effects: {},
 	},
 	{
