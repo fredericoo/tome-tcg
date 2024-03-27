@@ -11,7 +11,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'blue'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or RED spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -19,7 +19,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
+						config: { from: 'self', max: 1, min: 1, type: 'spell', colors: ['red', 'blue'], message: 'Discard a BLUE or RED spell from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -42,7 +42,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 RED or GREEN spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -50,7 +50,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
+						config: { from: 'self', max: 1, min: 1, type: 'spell', colors: ['red', 'green'], message: 'Discard a RED or GREEN spell from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
@@ -73,7 +73,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['blue', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or GREEN spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -81,7 +81,7 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
+						config: { from: 'self', max: 1, min: 1, type: 'spell', colors: ['blue', 'green'], message: 'Discard a BLUE or GREEN spell from your hand' },
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
