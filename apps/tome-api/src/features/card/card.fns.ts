@@ -920,6 +920,41 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+	{
+		id: '63',
+		name: 'Cannon Fire',
+		type: 'spell',
+		colors: ['red'],
+		attack: 25,
+		description:
+			'When this spell is used in combat, select a card from your hand and discard it. If you don’t have cards to discard, discard Cannon Fire instead.',
+		effects: {
+			beforeCombat: async function* ({ game, actions, ownerSide, thisCard }) {
+				if (game.board.players[ownerSide].hand.length === 0) {
+					yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+					return;
+				}
+				yield* actions.playerAction({
+					sides: [ownerSide],
+					action: {
+						type: 'select_from_hand',
+						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
+						onAction: function* ({ cardKeys }) {
+							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
+							invariant(cardToDiscard, 'Card to discard not found');
+							yield* actions.discard({
+								card: cardToDiscard,
+								from: game.board.players[ownerSide].hand,
+								side: ownerSide,
+							});
+						},
+					},
+					timeoutMs: 10000,
+					onTimeout: noop,
+				});
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -1015,16 +1050,6 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: null,
 		description: 'Spells have no effects',
-		effects: {},
-	},
-	{
-		id: '63',
-		name: 'Cannon Fire',
-		type: 'spell',
-		colors: ['red'],
-		attack: 16,
-		description:
-			'When this spell is used in combat, select a card from your hand and discard it. If you don’t have cards to discard, discard Cannon Fire instead.',
 		effects: {},
 	},
 	{
