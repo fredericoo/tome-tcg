@@ -461,7 +461,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Earth',
 		type: 'spell',
 		colors: ['red'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top GREEN card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
@@ -482,7 +482,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Water',
 		type: 'spell',
 		colors: ['green'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top BLUE card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
@@ -503,7 +503,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Fire',
 		type: 'spell',
 		colors: ['blue'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top RED card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, turn, thisCard }) {
