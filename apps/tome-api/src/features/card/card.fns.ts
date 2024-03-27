@@ -230,7 +230,7 @@ export const deck: DbCard[] = [
 		id: '12',
 		type: 'spell',
 		name: 'Overgrown root',
-		description: '4X attack, where X is the number of cards in this stack.',
+		description: '6X attack, where X is the number of cards in this stack.',
 		attack: {
 			label: '6X',
 			getValue({ game, ownerSide, thisCard }) {
