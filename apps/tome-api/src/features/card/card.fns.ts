@@ -899,6 +899,27 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+	{
+		id: '62',
+		name: 'Mirror shield',
+		type: 'spell',
+		colors: [],
+		attack: 0,
+		description:
+			'If this spell is beaten in combat, the damage that would have been caused to you is caused to the opponent instead. If this spell is not beaten in combat, discard it.',
+		effects: {
+			onClashWin: async function* ({ actions, game, thisCard, ownerSide }) {
+				yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+			},
+			onClashLose: async function* ({ game, ownerSide, opponentSide }) {
+				for (const combat of game.turn.combatStack) {
+					if (combat.type !== 'damage') continue;
+					if (combat.target !== ownerSide) continue;
+					combat.target = opponentSide;
+				}
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -994,16 +1015,6 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: null,
 		description: 'Spells have no effects',
-		effects: {},
-	},
-	{
-		id: '62',
-		name: 'Mirror shield',
-		type: 'spell',
-		colors: [],
-		attack: 0,
-		description:
-			'If this spell is beaten in combat, the damage that would have been caused to you is caused to the opponent instead. If this spell is not beaten in combat, discard it.',
 		effects: {},
 	},
 	{
