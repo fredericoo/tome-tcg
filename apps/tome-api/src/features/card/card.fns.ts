@@ -670,7 +670,7 @@ export const deck: DbCard[] = [
 		id: '38',
 		name: 'Violent Instinct',
 		type: 'spell',
-		attack: 20,
+		attack: 15,
 		colors: ['red'],
 		description:
 			'If this spell is chosen as an attack, any damage caused during combat is doubled. Remove this card from play after used in combat.',
