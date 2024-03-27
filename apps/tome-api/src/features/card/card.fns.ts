@@ -538,7 +538,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 5,
-		heal: 8,
+		heal: 6,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
 			onClashLose: async function* ({ actions, game, winnerCard }) {
