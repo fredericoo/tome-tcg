@@ -11,7 +11,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'blue'],
-		description: 'When this card is revealed, discard 1 BLUE or RED spell from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or RED (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -51,7 +51,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
-		description: 'When this card is revealed, discard 1 RED or GREEN spell from your hand.',
+		description: 'When this card is revealed, discard 1 RED or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -90,7 +90,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['blue', 'green'],
-		description: 'When this card is revealed, discard 1 BLUE or GREEN spell from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -452,7 +452,8 @@ export const deck: DbCard[] = [
 		type: 'field',
 		color: 'red',
 		description:
-			'Can only be cast on top of a GREEN field spell (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
+			'When this card is revealed, discard 1 GREEN card from your hand (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
+			// TODO: Implement discard from hand
 		effects: {
 			beforeCast: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
