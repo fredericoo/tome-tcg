@@ -814,6 +814,22 @@ export const deck: DbCard[] = [
 			}
 		},
 	},
+	{
+		id: '57',
+		name: 'Wind Sceptre',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 30,
+		description: 'When this card is revealed, draw one card. Then discard this card.',
+		effects: {
+			onReveal: async function* ({ actions, ownerSide }) {
+				yield* actions.draw({ sides: [ownerSide] });
+			},
+			beforeCombat: async function* ({ actions, game, thisCard }) {
+				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+			}
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -909,15 +925,6 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: null,
 		description: 'Spells have no effects',
-		effects: {},
-	},
-	{
-		id: '57',
-		name: 'Wind Sceptre',
-		type: 'spell',
-		colors: ['blue', 'green'],
-		attack: 30,
-		description: 'When this card is revealed, draw one card. Then destroy this card.',
 		effects: {},
 	},
 	{
