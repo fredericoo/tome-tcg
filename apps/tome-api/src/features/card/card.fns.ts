@@ -104,12 +104,14 @@ export const deck: DbCard[] = [
 		id: '7',
 		type: 'field',
 		name: 'Sacred Pool',
-		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
+		description: 'Whenever players attack with the same color, they heal 10 HP.',
 		color: 'blue',
 		effects: {
 			beforeDamage: async function* ({ game, turn, thisCard }) {
 				for (const side of SIDES) {
-					if (turn[side].spellAttack?.slot === 'blue') {
+					const spellA = turn.sideA.spellAttack;
+					const spellB = turn.sideB.spellAttack;
+					if (spellA?.slot === spellB?.slot) {
 						turn.combatStack.push({ source: thisCard, target: side, type: 'heal', value: 10 });
 						yield game;
 					}
