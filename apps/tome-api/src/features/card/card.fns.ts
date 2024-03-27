@@ -597,12 +597,12 @@ export const deck: DbCard[] = [
 			getValue({ game, ownerSide, thisCard }) {
 				const redStack = game.board.players[ownerSide].stacks.red;
 				if (redStack.length === 1 && topOf(redStack) === thisCard) {
-					return 20;
+					return 15;
 				}
 				return 10;
 			},
 		},
-		description: 'If this is the only card in your RED slot, this card has +10 attack',
+		description: 'If this is the only card in your RED slot, this card has +5 attack',
 		effects: {},
 	},
 	{
