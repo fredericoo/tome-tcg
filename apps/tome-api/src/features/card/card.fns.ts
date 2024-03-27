@@ -880,6 +880,25 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+	{
+		id: '61',
+		name: 'Wobbly bridge',
+		type: 'field',
+		color: 'green',
+		description: 'Spells deal +2X damage during combat, where X is the size of the field effect stack',
+		effects: {
+			beforeCombat: async function* ({ turn, game }) {
+				const fieldEffectStack = game.board.field.length;
+				for (const combat of turn.combatStack) {
+					if (!combat.source) continue;
+					if (combat.type !== 'damage') continue;
+					if (combat.source.type !== 'spell') continue;
+					combat.value += 2 * fieldEffectStack;
+				}
+				yield game;
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -975,14 +994,6 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: null,
 		description: 'Spells have no effects',
-		effects: {},
-	},
-	{
-		id: '61',
-		name: 'Wobbly bridge',
-		type: 'field',
-		color: 'green',
-		description: 'Spells deal +X damage during combat, where X is the size of the field effect stack',
 		effects: {},
 	},
 	{
