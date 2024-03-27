@@ -788,6 +788,32 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+	{
+		id: '55',
+		name: 'Burning flame',
+		type: 'spell',
+		colors: ['red'],
+		attack: 18,
+		description:
+			'Every time this spell deals damage, discard the bottom card from its stack. If there’s no more cards to discard, discard Burning flame.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
+				const stack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!stack) {
+					yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+					return;
+				}
+				const cardToDiscard = game.board.players[ownerSide].stacks[stack].pop();
+				if (cardToDiscard) {
+					yield* actions.discard({
+						card: cardToDiscard,
+						from: game.board.players[ownerSide].stacks[stack],
+						side: ownerSide,
+					});
+				}
+			}
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -875,16 +901,6 @@ export const notImplementedCards: DbCard[] = [
 		colors: ['blue'],
 		attack: 8,
 		description: 'BLUE field effects trigger twice',
-		effects: {},
-	},
-	{
-		id: '55',
-		name: 'Burning flame',
-		type: 'spell',
-		colors: ['red'],
-		attack: 18,
-		description:
-			'Every time this spell deals damage, discard the bottom card from its stack. If there’s no more cards to discard, discard Burning flame.',
 		effects: {},
 	},
 	{
