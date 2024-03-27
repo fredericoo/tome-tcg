@@ -206,7 +206,7 @@ export const deck: DbCard[] = [
 		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
 		color: null,
 		effects: {
-			beforeCombat: async function* ({ actions, game }) {
+			beforeCombat: async function* ({ actions, game, thisCard }) {
 				const selectStackAndDiscard = (side: Side) => {
 					const stacksWithCards = COLORS.filter(stack => game.board.players[side].stacks[stack].length > 0);
 					if (stacksWithCards.length === 0) return;
@@ -243,10 +243,7 @@ export const deck: DbCard[] = [
 				if (ownerDiscard) yield* ownerDiscard;
 				const opponentDiscard = selectStackAndDiscard('sideB');
 				if (opponentDiscard) yield* opponentDiscard;
-				const topFieldCard = topOf(game.board.field);
-				if (topFieldCard) {
-					yield* actions.discard({ card: topFieldCard, from: game.board.field, side: 'sideA' });
-				}
+				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
 			},
 		},
 	},
@@ -292,7 +289,7 @@ export const deck: DbCard[] = [
 		id: '13',
 		type: 'field',
 		name: 'Unstable Ground',
-		description: 'If both players attack with the same spell stack, both take 10 damage.',
+		description: 'If both players attack with the same spell colour, both take 10 damage.',
 		color: null,
 		effects: {
 			beforeDamage: async function* ({ thisCard, game }) {
