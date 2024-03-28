@@ -362,6 +362,7 @@ export const deck: DbCard[] = [
 	{
 		id: '17',
 		type: 'field',
+		image: 'spreading-fire',
 		name: 'Spreading Fire',
 		description: 'Whenever you attack with a red spell, draw 1 card',
 		color: 'red',

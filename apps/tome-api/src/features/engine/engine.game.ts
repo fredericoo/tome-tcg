@@ -15,6 +15,7 @@ type BaseCard = {
 	id: string;
 	name: string;
 	description: string;
+	image?: string;
 };
 
 export type DynamicCombatValue = {
@@ -46,6 +47,7 @@ export interface FieldCard extends BaseCard {
 	type: 'field';
 	name: string;
 	color: SpellColor | null;
+
 	effects: Partial<TurnHooks>;
 }
 

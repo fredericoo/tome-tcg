@@ -4,65 +4,41 @@ import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 import { create } from 'zustand';
 
-import type { PubSubCard, PubSubShownCard } from '../../../../tome-api/src/features/game/game.pubsub';
-import { useCardData } from '../../lib/card-data';
+import { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
+import type {
+	PubSubCard,
+	PubSubShownCard,
+	PubSubShownSpellCard,
+} from '../../../../tome-api/src/features/game/game.pubsub';
+import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
+import cardBackSrc from '../../../public/card-back.png';
+import { CardData, useCardData } from '../../lib/card-data';
 import { useHighlightedCardsStore } from '../../routes/games.$id';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 
 export const cardClass = cva({
-	base: 'aspect-[63/88] rounded-lg select-none transition-shadow',
+	base: 'select-none transition-shadow overflow-hidden rounded-[1vmin] ring-1 ring-[#4F3739]/20',
 	variants: {
-		variant: {
-			placeholder: '',
-			card: 'outline outline-neutral-200/20 p-1.5',
-		},
-		face: {
-			back: 'bg-gradient-to-tr from-teal-900 to-teal-800',
-			front: 'bg-gradient-to-tr overflow-hidden',
-		},
 		size: {
-			md: 'h-[22.5vh]',
-			sm: 'h-[15vh]',
+			md: 'h-[33vmin] aspect-[63/88]',
+			sm: 'h-[15vmin] aspect-[63/88]',
 		},
 		interactive: {
-			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer',
+			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/80 cursor-pointer',
 		},
 		highlight: {
 			effect: 'animate-card-effect',
 			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20 bg-red-500',
 			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20 bg-green-500',
 		},
-		color1: {
-			red: 'from-red-800',
-			green: 'from-green-800',
-			blue: 'from-blue-800',
-			neutral: 'from-neutral-800',
-		},
-		color2: {
-			red: 'to-red-700',
-			green: 'to-green-700',
-			blue: 'to-blue-700',
-			neutral: 'to-neutral-700',
-		},
 	},
 	defaultVariants: {
 		size: 'sm',
-		variant: 'card',
 	},
 });
 
 type Variants = VariantProps<typeof cardClass>;
-
-const cardBodyClass = cva({
-	base: 'h-full overflow-hidden rounded-sm',
-	variants: {
-		type: {
-			spell: 'bg-white',
-			field: 'text-white',
-		},
-	},
-});
 
 type HoveredCardStore = {
 	hoveredCard: number | null;
@@ -80,109 +56,145 @@ export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof M
 	highlight?: Variants['highlight'];
 }
 
-export const Card = ({ card, className, size, interactive, highlight: highlightOverride, ...props }: CardProps) => {
-	const cardData = useCardData();
-	const data = isShownCard(card) ? cardData[card.id] : undefined;
+export const Card = ({
+	card,
+	className,
+	size = 'sm',
+	interactive,
+	highlight: highlightOverride,
+	...props
+}: CardProps) => {
 	const isHovered = useHoveredCard(s => s.hoveredCard === card.key);
 	const setHovered = useHoveredCard(s => s.setHoveredCard);
 	const pubsubHighlight = useHighlightedCardsStore(s => s.highlightedCards[card.key]);
 	const highlight = highlightOverride || pubsubHighlight;
 
-	if (!data)
-		return (
-			<motion.div
-				layoutId={card.key.toString()}
-				key={card.key}
-				layout="preserve-aspect"
-				className={cardClass({ face: 'back', size, className, interactive, highlight })}
-				{...props}
-			></motion.div>
-		);
-
-	const [color1, color2] = (() => {
-		if (data.type === 'field') return [data.color, data.color];
-		return [data.colors[0], data.colors[1] ?? data.colors[0]];
-	})();
-
 	return (
-		<div
-			className={clsx('relative', { 'z-50': isHovered })}
-			onMouseEnter={() => setHovered(card.key)}
-			onMouseLeave={() => setHovered(null)}
+		<motion.div
+			layoutId={card.key.toString()}
+			key={card.key}
+			layout="preserve-aspect"
+			className={cardClass({ size, className, interactive, highlight })}
+			{...props}
 		>
-			{isHovered && (
+			{isShownCard(card) && isHovered && (
 				<div
 					className={cardClass({
-						face: 'front',
 						size: 'md',
-						interactive,
-						highlight,
-						color1: color1 ?? 'neutral',
-						color2: color2 ?? color1 ?? 'neutral',
-						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 shadow-xl',
+						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 z-50 shadow-xl',
 					})}
 				>
-					<div className={cardBodyClass({ type: data.type })}>
-						<div className="h-full w-full space-y-2 overflow-hidden">
-							<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
-							<p className="overflow-hidden px-2 text-left text-xs leading-tight opacity-60">{data.description}</p>
-						</div>
-					</div>
-					<CardAttack card={card} />
-					<CardHeal card={card} />
+					<CardFront card={card} size="md" />
 				</div>
 			)}
-			<motion.div
-				id={`card-${card.key}`}
-				key={card.key}
-				layoutId={card.key.toString()}
-				layout="preserve-aspect"
-				className={cardClass({
-					face: 'front',
-					size,
-					className: clsx(className, 'relative'),
-					interactive,
-					highlight,
-					color1: color1 ?? 'neutral',
-					color2: color2 ?? color1 ?? 'neutral',
-				})}
-				animate={{ rotate: 0 }}
-				{...props}
-			>
-				<div className={cardBodyClass({ type: data.type })}>
-					<div className="h-full w-full space-y-2 overflow-hidden">
-						<p className="p-2 text-center text-sm font-bold leading-none tracking-tight">{data.name}</p>
-						{size === 'md' && (
-							<p className="overflow-hidden px-1 text-left text-xs leading-tight opacity-60">{data.description}</p>
-						)}
-					</div>
+
+			{isShownCard(card) ?
+				<CardFront
+					card={card}
+					size={size}
+					className={clsx('relative', { 'z-50': isHovered })}
+					onMouseEnter={() => setHovered(card.key)}
+					onMouseLeave={() => setHovered(null)}
+				/>
+			:	<CardBack />}
+		</motion.div>
+	);
+};
+
+export const CardBack = () => {
+	return <img className="h-full w-full" src={cardBackSrc} alt="Card" />;
+};
+
+const cardFrontClass = cva({
+	base: 'p-[0.5vmin] w-full h-full bg-[#F6EFE8] text-[#4F3739]',
+	variants: {
+		type: {
+			spell: '',
+			field: '',
+		},
+	},
+});
+
+const cardColorClass = cva({
+	base: 'w-6 aspect-[1/1.75]',
+	variants: {
+		color: {
+			red: 'text-[#FE4D00]',
+			green: 'text-[#A1BE3F]',
+			blue: 'text-[#5F6DEE]',
+		},
+	},
+});
+const CardColor = ({ color }: { color: SpellColor }) => {
+	return (
+		<svg className={cardColorClass({ color })}>
+			<use xlinkHref={`#bookmark-${color}`} />
+		</svg>
+	);
+};
+
+interface CardFrontProps extends ComponentPropsWithoutRef<'div'> {
+	card: PubSubShownCard;
+	size: NonNullable<Variants['size']>;
+}
+const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
+	const cardData = useCardData();
+	const data = cardData[card.id];
+	invariant(data, `Card data not found for card ID ${card.id}`);
+	const colors = data.type === 'field' ? [data.color].filter(Boolean) : data.colors;
+
+	return (
+		<div className={cardFrontClass({ type: data.type, className })} {...props}>
+			<div className="absolute left-[0.5vmin] right-[1vmin] top-0 flex justify-end gap-1">
+				{colors.map(color => (
+					<CardColor key={color} color={color} />
+				))}
+			</div>
+			<div className="aspect-[696/644] w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
+				{data.image && (
+					<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
+				)}
+			</div>
+			<CardBody data={data} size={size} />
+			{card.type === 'spell' && <CardFooter card={card} />}
+		</div>
+	);
+};
+
+const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
+	switch (size) {
+		case 'sm':
+			return (
+				<div className="p-[0.5vmin]">
+					<p className="line-clamp-2 text-center text-xs font-bold leading-none">{data.name}</p>
 				</div>
-				<CardAttack card={card} />
-				<CardHeal card={card} />
-			</motion.div>
-		</div>
-	);
+			);
+		case 'md':
+			return (
+				<div className="p-[0.5vmin]">
+					<p className="text-md py-1 text-center font-bold leading-none">{data.name}</p>
+					{data.description.length > 0 && (
+						<>
+							<div className="flex items-center gap-1 text-[#B8A1A3]">
+								<div className="h-px flex-1 bg-current" />
+								<span className="text-[1vmin] font-bold tracking-widest">EFFECT</span>
+								<div className="h-px flex-1 bg-current" />
+							</div>
+							<p className="overflow-hidden px-1 text-left text-sm leading-tight opacity-80">{data.description}</p>
+						</>
+					)}
+				</div>
+			);
+		default:
+			throw exhaustive(size);
+	}
 };
 
-const CardAttack = ({ card }: { card: PubSubCard }) => {
-	if (!isShownCard(card)) return null;
-	if (card.type === 'field') return null;
-
+const CardFooter = ({ card }: { card: PubSubShownSpellCard }) => {
 	return (
-		<div className="absolute bottom-1 right-1 rounded-full bg-white px-2 py-1 text-xs ring-2 ring-neutral-900/20">
-			{card.attack}
-		</div>
-	);
-};
-
-const CardHeal = ({ card }: { card: PubSubCard }) => {
-	if (!isShownCard(card)) return null;
-	if (card.type === 'field') return null;
-	if (card.heal === undefined) return null;
-
-	return (
-		<div className="absolute bottom-1 left-1 rounded-full bg-white px-2 py-1 text-xs text-green-500 ring-2 ring-green-600/80">
-			+{card.heal} HP
-		</div>
+		<footer className="absolute bottom-[0.5vmin] left-[0.5vmin] right-[0.5vmin] flex items-center justify-end gap-1">
+			{card.heal && <div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">+{card.heal} HP</div>}
+			<div className="rounded-full bg-[#4F3739] px-2 py-0.5 text-xs text-white">{card.attack}</div>
+		</footer>
 	);
 };

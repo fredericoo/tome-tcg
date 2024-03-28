@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 import { DbCard } from '../../../tome-api/src/features/engine/engine.game';
 import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 
-type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;
+export type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;
 
 const CardDataContext = createContext<CardData | null>(null);
 

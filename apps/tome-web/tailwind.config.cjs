@@ -2,6 +2,10 @@
 module.exports = {
 	content: ['./index.html', './app/**/*.{js,ts,jsx,tsx}'],
 	theme: {
+		fontFamily: {
+			body: ['GT Walsheim Pro', 'sans-serif'],
+			display: ['GT Walsheim Pro', 'sans-serif'],
+		},
 		extend: {
 			keyframes: {
 				'fade-in': {
