@@ -9,15 +9,15 @@ import { deck } from '../card/card.fns';
 import { resolveCombatValue } from '../card/card.fns.utils';
 import { Board } from '../engine/engine.board';
 import {
+	COLORS,
 	CombatStackItem,
 	DynamicCombatValue,
 	GameAction,
 	GameCard,
 	GameIterationResponse,
 	SIDES,
-	STACKS,
 	Side,
-	SpellStack,
+	SpellColor,
 	createGameInstance,
 } from '../engine/engine.game';
 import { getGameById } from './game.api';
@@ -41,7 +41,7 @@ export type CompressedCombatStackItem = DistributiveOmit<CombatStackItem, 'sourc
 export type SanitisedIteration = {
 	side: Side;
 	board: {
-		attackStacks?: Record<Side, SpellStack | null>;
+		attackStacks?: Record<Side, SpellColor | null>;
 		combatStack?: CompressedCombatStackItem[];
 		phase: Board['phase'];
 		field: PubSubCard[];
@@ -50,11 +50,11 @@ export type SanitisedIteration = {
 		Side,
 		{
 			hp: number;
-			casting: Partial<Record<'field' | SpellStack, PubSubCard>>;
+			casting: Partial<Record<'field' | SpellColor, PubSubCard>>;
 			drawPile: PubSubCard[];
 			discardPile: PubSubCard[];
 			hand: PubSubCard[];
-			stacks: Record<SpellStack, PubSubCard[]>;
+			stacks: Record<SpellColor, PubSubCard[]>;
 			action?: GameAction;
 		}
 	>;
@@ -102,12 +102,12 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		board: {
 			combatStack:
 				originalIteration.board.phase === 'damage' ?
-					originalIteration.turn?.combatStack.map(item => ({
+					originalIteration.turn.combatStack.map(item => ({
 						target: item.target,
 						value: item.value,
 						type: item.type,
 						sourceKey: item.source?.key ?? null,
-					})) ?? []
+					}))
 				:	undefined,
 			highlights: {},
 			field: originalIteration.board.field.map(showCard),
@@ -152,7 +152,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		iteration.board[side].discardPile = originalIteration.board.players[side].discardPile.map(hideCard);
 		iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
 		// everyone can see the stacks
-		STACKS.forEach(stack => {
+		COLORS.forEach(stack => {
 			iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
 
 			const casting = originalIteration.board.players[side].casting[stack];
@@ -169,8 +169,8 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 
 	if (originalIteration.board.phase === 'combat') {
 		iteration.board.attackStacks = {
-			sideA: originalIteration.turn?.sideA.spellAttack?.slot ?? null,
-			sideB: originalIteration.turn?.sideB.spellAttack?.slot ?? null,
+			sideA: originalIteration.turn.sideA.spellAttack?.slot ?? null,
+			sideB: originalIteration.turn.sideB.spellAttack?.slot ?? null,
 		};
 	}
 	return iteration;

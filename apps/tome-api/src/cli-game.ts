@@ -1,5 +1,5 @@
 import { topOf } from './features/engine/engine.board';
-import { DbCard, SIDES, STACKS, Side, SpellStack, createGameInstance } from './features/engine/engine.game';
+import { COLORS, DbCard, SIDES, Side, SpellColor, createGameInstance } from './features/engine/engine.game';
 import { invariant } from './lib/utils';
 
 const deck: DbCard[] = [
@@ -44,7 +44,7 @@ const deck: DbCard[] = [
 		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, board }) {
-				const discardFromStack = (stack: SpellStack, side: Side) => {
+				const discardFromStack = (stack: SpellColor, side: Side) => {
 					const selectedStack = board.players[side].stacks[stack];
 					const cardToDiscard = topOf(selectedStack);
 					if (!cardToDiscard) return;
@@ -64,7 +64,7 @@ const deck: DbCard[] = [
 						side,
 						timeoutMs: 10000,
 						onTimeout: () => {
-							const randomStack = STACKS[Math.floor(Math.random() * STACKS.length)];
+							const randomStack = COLORS[Math.floor(Math.random() * COLORS.length)];
 							invariant(randomStack, 'randomStack is undefined');
 							discardFromStack(randomStack, side);
 						},

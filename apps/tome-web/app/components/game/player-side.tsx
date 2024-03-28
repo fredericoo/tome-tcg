@@ -3,7 +3,7 @@ import { cva } from 'cva';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { GameAction, STACKS, Side, SpellStack } from '../../../../tome-api/src/features/engine/engine.game';
+import { COLORS, GameAction, Side, SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
 import {
 	SanitisedIteration,
 	SelectFromHandMessageSchema,
@@ -51,7 +51,7 @@ interface PlayerSideProps {
 	side: Side;
 	onSelectFromHand: (params: SelectFromHandMessageSchema) => void;
 	onSelectStack: (params: SelectStackMessageSchema) => void;
-	attackingWithStack: SpellStack | undefined | null;
+	attackingWithStack: SpellColor | undefined | null;
 }
 
 export const PlayerSide = ({
@@ -64,15 +64,15 @@ export const PlayerSide = ({
 	attackingWithStack,
 }: PlayerSideProps) => {
 	const isSelectingStack = action?.type === 'select_spell_stack' && action?.config.from === relative;
-	const [selectedStacks, setSelectedStacks] = useState<Set<SpellStack>>(new Set());
-	if (selectedStacks.size > 0 && action?.type !== 'select_spell_stack') setSelectedStacks(new Set());
+	const [selectedCOLORS, setSelectedCOLORS] = useState<Set<SpellColor>>(new Set());
+	if (selectedCOLORS.size > 0 && action?.type !== 'select_spell_stack') setSelectedCOLORS(new Set());
 
 	return (
 		<div className={clsx('flex flex-col items-center gap-2', { 'flex-col-reverse': relative === 'opponent' })}>
 			<ActionProgressBar action={boardSide.action} />
 
-			<ol aria-label="Stacks" className={clsx('flex gap-4 px-4')}>
-				{STACKS.map(stack => {
+			<ol aria-label="COLORS" className={clsx('flex gap-4 px-4')}>
+				{COLORS.map(stack => {
 					const canSelectStack = isSelectingStack && action.config.availableStacks.includes(stack);
 					const casting = boardSide.casting[stack];
 					return (
@@ -84,7 +84,7 @@ export const PlayerSide = ({
 									canSelectStack ?
 										() => {
 											flushSync(() =>
-												setSelectedStacks(set => {
+												setSelectedCOLORS(set => {
 													if (set.has(stack)) {
 														set.delete(stack);
 														return set;
@@ -94,9 +94,9 @@ export const PlayerSide = ({
 											);
 											invariant(action?.type === 'select_spell_stack', 'Invalid action type');
 											// TODO: implement non-automatically submitting cards when min/max is not 1
-											// TODO: implement validation of available stacks
-											if (selectedStacks.size >= action.config.min && selectedStacks.size <= action.config.max) {
-												onSelectStack({ type: 'select_spell_stack', stacks: Array.from(selectedStacks) });
+											// TODO: implement validation of available cOLORS
+											if (selectedCOLORS.size >= action.config.min && selectedCOLORS.size <= action.config.max) {
+												onSelectStack({ type: 'select_spell_stack', stacks: Array.from(selectedCOLORS) });
 											}
 										}
 									:	undefined

@@ -1,13 +1,13 @@
 import { expect, mock, test } from 'bun:test';
 
 import { createGameBoard } from './engine.board';
-import { SIDES, STACKS, Side, SpellStack, initialiseGame } from './engine.game';
+import { COLORS, SIDES, Side, SpellColor, initialiseGame } from './engine.game';
 import { useGameActions } from './engine.hook.actions';
 import { useTriggerHooks } from './engine.hooks';
 import { initialiseTurn } from './engine.turn';
 
 test('trigger all effects of fields and spells from both sides', async () => {
-	const effect = mock((ownerSide: undefined | [Side, SpellStack]) => ownerSide);
+	const effect = mock((ownerSide: undefined | [Side, SpellColor]) => ownerSide);
 
 	const game = initialiseGame(createGameBoard({ decks: { sideA: [], sideB: [] } }));
 	game.board.field.push({
@@ -26,7 +26,7 @@ test('trigger all effects of fields and spells from both sides', async () => {
 	});
 
 	SIDES.map(side =>
-		STACKS.map(stack => {
+		COLORS.map(stack => {
 			game.board.players[side].stacks[stack].push({
 				name: 'Spell',
 				key: 1,

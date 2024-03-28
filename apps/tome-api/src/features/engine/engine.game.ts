@@ -1,13 +1,14 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { Board, createGameBoard } from './engine.board';
+import { useGameActions } from './engine.hook.actions';
 import { TurnHooks } from './engine.hooks';
-import { handleTurn } from './engine.turn';
+import { handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
 
-type SpellColor = 'red' | 'green' | 'blue';
+export type SpellColor = 'red' | 'green' | 'blue';
 
 type BaseCard = {
 	key: number;
@@ -50,11 +51,12 @@ export interface FieldCard extends BaseCard {
 
 export type GameCard = SpellCard | FieldCard;
 
+export const CARD_TYPES = ['field', 'spell'] as const satisfies Array<GameCard['type']>;
+
 // TODO: reference this from the drizzle model
 export type DbCard = DistributiveOmit<GameCard, 'key'>;
 
-export const STACKS = ['red', 'green', 'blue'] as const satisfies SpellStack[];
-export type SpellStack = 'red' | 'green' | 'blue';
+export const COLORS = ['red', 'green', 'blue'] as const satisfies SpellColor[];
 
 export type GameAction = {
 	[A in keyof PlayerActionMap]: {
@@ -67,7 +69,8 @@ export type GameAction = {
 }[keyof PlayerActionMap];
 
 export type GameIterationResponse = {
-	turn: Turn | undefined;
+	finishedTurns: Turn[];
+	turn: Turn;
 	board: Board;
 	/** Highlighted card keys */
 	highlights: {
@@ -98,12 +101,12 @@ export type CombatStackItem =
 			target: Side;
 	  };
 
-type SpellAttack = { slot: SpellStack; card: SpellCard | null };
-export type Turn = { finishedTurns: Turn[]; combatStack: CombatStackItem[] } & Record<
+type SpellAttack = { slot: SpellColor; card: SpellCard | null };
+export type Turn = { combatStack: CombatStackItem[] } & Record<
 	Side,
 	{
 		draws: GameCard[];
-		casts: Record<SpellStack, SpellCard[]> & { field: FieldCard[] };
+		casts: Record<SpellColor, SpellCard[]> & { field: FieldCard[] };
 		spellAttack: SpellAttack | undefined;
 	}
 >;
@@ -155,9 +158,90 @@ export const resolveSpellClash = ({
 	return { won: null };
 };
 
+export async function* runClashEffects({
+	winnerCard,
+	loserCard,
+	winnerSide,
+	loserSide,
+	actions,
+	game,
+}: {
+	winnerCard?: GameCard | null;
+	loserCard?: GameCard | null;
+	winnerSide: Side;
+	loserSide: Side;
+	actions: ReturnType<typeof useGameActions>;
+	game: GameIterationResponse;
+}) {
+	if (winnerCard && loserCard && loserCard.type !== winnerCard.type)
+		throw new Error('Clash needs two cards of the same type');
+
+	switch (winnerCard?.type) {
+		case 'field': {
+			const effect = winnerCard.effects.onClashWin;
+			if (!effect) break;
+			yield* effect({
+				actions,
+				game,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: winnerCard,
+				loserCard: loserCard?.type === 'field' ? loserCard : undefined,
+				winnerSide,
+			});
+			break;
+		}
+		case 'spell': {
+			const effect = winnerCard.effects.onClashWin;
+			if (!effect) break;
+			yield* effect({
+				actions,
+				game,
+				ownerSide: winnerSide,
+				opponentSide: loserSide,
+				thisCard: winnerCard,
+				loserCard: loserCard?.type === 'spell' ? loserCard : undefined,
+				winnerSide,
+			});
+			break;
+		}
+	}
+	switch (loserCard?.type) {
+		case 'field': {
+			const effect = loserCard.effects.onClashLose;
+			if (!effect) break;
+			yield* effect({
+				actions,
+				game,
+				ownerSide: undefined,
+				opponentSide: undefined,
+				thisCard: loserCard,
+				winnerCard: winnerCard?.type === 'field' ? loserCard : undefined,
+				loserSide,
+			});
+			break;
+		}
+		case 'spell': {
+			const effect = loserCard.effects.onClashLose;
+			if (!effect) break;
+			yield* effect({
+				actions,
+				game,
+				ownerSide: winnerSide,
+				opponentSide: loserSide,
+				thisCard: loserCard,
+				winnerCard: winnerCard?.type === 'spell' ? loserCard : undefined,
+				loserSide,
+			});
+			break;
+		}
+	}
+}
+
 export const initialiseGame = (board: Board): GameIterationResponse => ({
 	board,
-	turn: undefined,
+	finishedTurns: [],
+	turn: initialiseTurn(),
 	actions: {},
 	highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
 	arrows: [],
@@ -173,7 +257,6 @@ export type GameSettings = {
 };
 
 export const createGameInstance = ({ decks, settings }: { decks: Record<Side, DbCard[]>; settings: GameSettings }) => {
-	const finishedTurns: Turn[] = [];
 	const game = initialiseGame(createGameBoard({ decks }));
-	return handleTurn({ game, finishedTurns, settings });
+	return handleTurn({ game, settings });
 };

@@ -1,4 +1,4 @@
-import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellStack } from './engine.game';
+import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
 	phase: 'draw' | 'cast' | 'reveal' | 'spell' | 'combat' | 'damage';
@@ -7,11 +7,11 @@ export type Board = {
 		{
 			side: Side;
 			hp: number;
-			stacks: Record<SpellStack, SpellCard[]>;
+			stacks: Record<SpellColor, SpellCard[]>;
 			hand: GameCard[];
 			drawPile: GameCard[];
 			discardPile: GameCard[];
-			casting: Partial<Record<SpellStack, SpellCard>> & { field?: FieldCard };
+			casting: Partial<Record<SpellColor, SpellCard>> & { field?: FieldCard };
 		}
 	>;
 	field: FieldCard[];

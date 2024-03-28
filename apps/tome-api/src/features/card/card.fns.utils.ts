@@ -1,4 +1,4 @@
-import { CombatValue, DynamicCombatValue, STACKS } from '../engine/engine.game';
+import { COLORS, CombatValue, DynamicCombatValue } from '../engine/engine.game';
 import { TurnHooks } from '../engine/engine.hooks';
 
 export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async function* removeIfUsedInCombat({
@@ -10,7 +10,7 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async functi
 }) {
 	const isUsedInCombat = turn[ownerSide].spellAttack?.card === thisCard;
 	if (!isUsedInCombat) return;
-	const thisCardStack = STACKS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+	const thisCardStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 	if (!thisCardStack) return;
 	yield* actions.discard({
 		card: thisCard,

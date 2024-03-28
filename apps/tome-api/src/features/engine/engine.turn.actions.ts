@@ -1,9 +1,17 @@
-import { GameCard, GameIterationResponse, Side, SpellStack } from './engine.game';
+import { GameCard, GameIterationResponse, Side, SpellColor } from './engine.game';
 
 export type PlayerActionMap = {
 	select_from_hand: {
 		type: 'select_from_hand';
-		config: { type: GameCard['type'] | 'any'; from: 'self' | 'opponent'; min: number; max: number; message: string };
+		config: {
+			availableTypes: Array<GameCard['type']>;
+			availableColors: SpellColor[];
+			from: 'self' | 'opponent';
+			min: number;
+			max: number;
+			message: string;
+			skippable: boolean;
+		};
 		onAction: (params: {
 			side: Side;
 			cardKeys: number[];
@@ -11,10 +19,17 @@ export type PlayerActionMap = {
 	};
 	select_spell_stack: {
 		type: 'select_spell_stack';
-		config: { availableStacks: SpellStack[]; from: 'self' | 'opponent'; min: number; max: number; message: string };
+		config: {
+			availableStacks: SpellColor[];
+			from: 'self' | 'opponent';
+			min: number;
+			max: number;
+			message: string;
+			skippable: boolean;
+		};
 		onAction: (params: {
 			side: Side;
-			stacks: SpellStack[];
+			stacks: SpellColor[];
 		}) => Generator<GameIterationResponse> | AsyncGenerator<GameIterationResponse>;
 	};
 };
