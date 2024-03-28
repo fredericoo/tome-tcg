@@ -118,6 +118,9 @@ importers:
       '@remix-run/react':
         specifier: ^2.8.1
         version: 2.8.1(react-dom@18.2.0)(react@18.2.0)(typescript@5.3.3)
+      '@tabler/icons-react':
+        specifier: ^3.1.0
+        version: 3.1.0(react@18.2.0)
       clsx:
         specifier: ^2.1.0
         version: 2.1.0
@@ -2937,6 +2940,19 @@ packages:
 
   /@sinclair/typebox@0.32.15:
     resolution: {integrity: sha512-5Lrwo7VOiWEBJBhHmqNmf3TPB9ll8gcEshvYJyAIJyCZ2PF48MFOtiDHJNj8+FsNcqImaQYmxVkKBCBlyAa/wg==}
+
+  /@tabler/icons-react@3.1.0(react@18.2.0):
+    resolution: {integrity: sha512-k/WTlax2vbj/LpxvaJ+BmaLAAhVUgyLj4Ftgaczz66tUSNzqrAZXCFdOU7cRMYPNVBqyqE2IdQd2rzzhDEJvkw==}
+    peerDependencies:
+      react: '>= 16'
+    dependencies:
+      '@tabler/icons': 3.1.0
+      react: 18.2.0
+    dev: false
+
+  /@tabler/icons@3.1.0:
+    resolution: {integrity: sha512-CpZGyS1IVJKFcv88yZ2sYZIpWWhQ6oy76BQKQ5SF0fGgOqgyqKdBGG/YGyyMW632on37MX7VqQIMTzN/uQqmFg==}
+    dev: false
 
   /@total-typescript/ts-reset@0.5.1:
     resolution: {integrity: sha512-AqlrT8YA1o7Ff5wPfMOL0pvL+1X+sw60NN6CcOCqs658emD6RfiXhF7Gu9QcfKBH7ELY2nInLhKSCWVoNL70MQ==}

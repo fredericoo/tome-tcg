@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { Elysia, Static, t } from 'elysia';
 
 import { DistributiveOmit } from '../../lib/type-utils';
-import { delay } from '../../lib/utils';
+import { delay, invariant, pill } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { resolveCombatValue } from '../card/card.fns.utils';
@@ -19,6 +19,7 @@ import {
 	Side,
 	SpellColor,
 	createGameInstance,
+	getCardColors,
 } from '../engine/engine.game';
 import { getGameById } from './game.api';
 
@@ -315,15 +316,24 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 		}
 
 		try {
-			for await (const iteration of validateAction(action, message, userSide)) {
+			const state = ongoingGame.state.lastState;
+			invariant(state, 'No state found');
+			for await (const iteration of validateAction({
+				action,
+				message,
+				side: userSide,
+				game: state,
+				logSuccess: message => console.log(`⚡ (${channel}) “${user.username ?? user.id}”`, message),
+			})) {
 				ongoingGame.state.lastState = iteration;
 				SIDES.forEach(side => ongoingGame.state.connections[side]?.send(iteration));
 				await delay(350);
 			}
-			console.log(`⚡ (${channel}) “${user.username ?? user.id}”:`, message);
 		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Invalid Action';
+			console.log(`⚡ (${channel}) “${user.username ?? user.id}”:`, errorMessage);
 			console.error(error);
-			ws.send({ error: 'Invalid action' });
+			ws.send({ error: errorMessage });
 			return;
 		}
 	},
@@ -341,20 +351,57 @@ const SelectStackMessageSchema = t.Object({
 });
 export type SelectStackMessageSchema = Static<typeof SelectStackMessageSchema>;
 
-async function* validateAction(
-	action: NonNullable<NonNullable<GameIterationResponse['actions']>[Side]>,
-	message: unknown,
-	side: Side,
-) {
+async function* validateAction({
+	action,
+	game,
+	logSuccess,
+	message,
+	side,
+}: {
+	action: NonNullable<NonNullable<GameIterationResponse['actions']>[Side]>;
+	message: unknown;
+	side: Side;
+	game: GameIterationResponse;
+	logSuccess: (message: string) => void;
+}) {
 	switch (action.type) {
 		case 'select_from_hand': {
 			const payload = Value.Decode(SelectFromHandMessageSchema, message);
+
+			const invalidLength = payload.cardKeys.length < action.config.min || payload.cardKeys.length > action.config.max;
+			if (invalidLength) throw new Error(`Please select between ${action.config.min} and ${action.config.max} cards`);
+
+			const selectedCards = payload.cardKeys.map(key => {
+				const card = game.board.players[side].hand.find(card => card.key === key);
+				invariant(card, `Card not found in hand`);
+				return card;
+			});
+
+			const invalidType = selectedCards.some(card => !action.config.availableTypes.includes(card.type));
+			if (invalidType) throw new Error(`Please select a ${action.config.availableTypes.join(' or ')} card`);
+
+			const invalidColors = selectedCards.some(card => {
+				const colors = getCardColors(card);
+				if (colors.length === 0) return false;
+				return !colors.some(color => action.config.availableColors.includes(color));
+			});
+			if (invalidColors) throw new Error(`Please select a ${action.config.availableColors.join(' or ')} card`);
+
 			yield* action.submit({ side, cardKeys: payload.cardKeys });
+			logSuccess(`selected ${selectedCards.map(card => pill('gray', card.name)).join(', ')} from hand`);
 			return;
 		}
 		case 'select_spell_stack': {
 			const payload = Value.Decode(SelectStackMessageSchema, message);
+
+			const invalidLength = payload.stacks.length < action.config.min || payload.stacks.length > action.config.max;
+			if (invalidLength) throw new Error(`Please select between ${action.config.min} and ${action.config.max} cards`);
+
+			const invalidColors = payload.stacks.some(stack => !action.config.availableStacks.includes(stack));
+			if (invalidColors) throw new Error(`Please select only ${action.config.availableStacks.join(' or ')} stacks`);
+
 			yield* action.submit({ side, stacks: payload.stacks });
+			logSuccess(`selected ${payload.stacks.join(', ')} stack${payload.stacks.length > 1 ? 's' : ''}`);
 			return;
 		}
 		default:

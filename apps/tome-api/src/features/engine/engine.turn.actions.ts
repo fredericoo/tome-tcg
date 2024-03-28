@@ -10,7 +10,6 @@ export type PlayerActionMap = {
 			min: number;
 			max: number;
 			message: string;
-			skippable: boolean;
 		};
 		onAction: (params: {
 			side: Side;
@@ -25,7 +24,6 @@ export type PlayerActionMap = {
 			min: number;
 			max: number;
 			message: string;
-			skippable: boolean;
 		};
 		onAction: (params: {
 			side: Side;

@@ -70,13 +70,12 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		action: {
 			type: 'select_from_hand',
 			config: {
-				min: 1,
+				min: 0,
 				max: 1,
 				from: 'self',
 				message: 'Select a card to cast',
 				availableColors: COLORS,
 				availableTypes: ['field', 'spell'],
-				skippable: true,
 			},
 			onAction: async function* ({ side, cardKeys }) {
 				const cardKey = cardKeys[0];
@@ -252,36 +251,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	yield* setPhase('combat');
 	const spellClash = resolveSpellClash({ spellA: game.turn.sideA.spellAttack, spellB: game.turn.sideB.spellAttack });
 
-	// only resolve if there was a clash
-	// if (fieldClash.won !== null) {
-	// 	const winnerSide = fieldClash.won;
-	// 	const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
-	// 	const winnerCard = game.board.players[winnerSide].casting.field;
-	// 	const loserCard = game.board.players[loserSide].casting.field;
-
-	// 	if (winnerCard) game.highlights.positive.add(winnerCard.key);
-	// 	if (loserCard) game.highlights.negative.add(loserCard.key);
-	// 	yield game;
-	// 	delay(1000);
-
-	// 	yield* runClashEffects({
-	// 		actions,
-	// 		game,
-	// 		winnerSide,
-	// 		loserSide,
-	// 		loserCard,
-	// 		winnerCard,
-	// 	});
-
-	// 	if (winnerCard) game.board.field.push(winnerCard);
-	// 	if (loserCard) game.board.players[loserSide].discardPile.push(loserCard);
-	// 	game.board.players[winnerSide].casting.field = undefined;
-	// 	game.board.players[loserSide].casting.field = undefined;
-	// 	game.highlights.positive.clear();
-	// 	game.highlights.negative.clear();
-	// 	yield game;
-	// }
-
 	if (spellClash.won) {
 		const winnerSide = spellClash.won;
 		const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
@@ -335,6 +304,8 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			loserCard,
 			winnerCard,
 		});
+		game.highlights.positive.clear();
+		game.highlights.negative.clear();
 
 		/**
 		 * DAMAGE PHASE

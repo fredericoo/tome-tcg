@@ -247,6 +247,15 @@ export const initialiseGame = (board: Board): GameIterationResponse => ({
 	arrows: [],
 });
 
+export const getCardColors = (card: GameCard): SpellColor[] => {
+	switch (card.type) {
+		case 'field':
+			return card.color ? [card.color] : [];
+		case 'spell':
+			return card.colors;
+	}
+};
+
 export type GameSettings = {
 	castTimeoutMs: number;
 	spellTimeoutMs: number;
