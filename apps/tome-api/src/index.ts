@@ -13,7 +13,7 @@ const app = new Elysia()
 	.use(
 		cors({
 			origin: match(process.env.NODE_ENV)
-				.with('development', () => ['localhost:5173', '192.168.0.38:5173'])
+				.with('development', () => ['localhost:5173', 'localhost:4173', '192.168.0.38:5173'])
 				.with('production', () => [process.env.ALLOWED_ORIGIN].filter(Boolean))
 				.otherwise(() => []),
 			credentials: true,

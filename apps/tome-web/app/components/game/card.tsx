@@ -13,16 +13,25 @@ import type {
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
 import { CardData, useCardData } from '../../lib/card-data';
 import { useHighlightedCardsStore } from '../../routes/games.$id';
+import { Image } from '../image';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 
+const sizeToRenderedWidth = {
+	// 0.7159090909 * 12vh
+	sm: '8.59vh',
+	// 0.7159090909 * 15vh
+	md: '10.73vh',
+	// 0.7159090909 * 33vh
+	lg: '23.62vh',
+};
 export const cardClass = cva({
-	base: 'select-none transition-shadow overflow-hidden rounded-[1vmin] ring-1 ring-[#4F3739]/20',
+	base: 'select-none transition-shadow overflow-hidden rounded-[1vh] ring-1 ring-[#4F3739]/20',
 	variants: {
 		size: {
-			lg: 'h-[33vmin] aspect-[63/88]',
-			md: 'h-[15vmin] aspect-[63/88]',
-			sm: 'h-[12vmin] aspect-[63/88]',
+			lg: 'h-[33vh] aspect-[63/88]',
+			md: 'h-[15vh] aspect-[63/88]',
+			sm: 'h-[12vh] aspect-[63/88]',
 		},
 		interactive: {
 			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/80 cursor-pointer',
@@ -96,17 +105,17 @@ export const Card = ({
 					onMouseEnter={() => setHovered(card.key)}
 					onMouseLeave={() => setHovered(null)}
 				/>
-			:	<CardBack />}
+			:	<CardBack size={size} />}
 		</motion.div>
 	);
 };
 
-export const CardBack = () => {
-	return <img className="h-full w-full" src="/card-back.png" alt="Card" />;
+export const CardBack = ({ size }: { size: NonNullable<Variants['size']> }) => {
+	return <Image srcWidth={sizeToRenderedWidth[size]} className="h-full w-full" src="/card-back.png" alt="Card" />;
 };
 
 const cardFrontClass = cva({
-	base: 'p-[0.5vmin] w-full h-full bg-[#F6EFE8] text-[#4F3739]',
+	base: 'p-[0.5vh] w-full h-full bg-[#F6EFE8] text-[#4F3739]',
 	variants: {
 		type: {
 			spell: '',
@@ -145,7 +154,7 @@ const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
 
 	return (
 		<div className={cardFrontClass({ type: data.type, className })} {...props}>
-			<div className="absolute left-[0.5vmin] right-[1vmin] top-0 flex justify-end gap-1">
+			<div className="absolute left-[0.5vh] right-[1vh] top-0 flex justify-end gap-1">
 				{colors.map(color => (
 					<CardColor key={color} color={color} />
 				))}
@@ -162,17 +171,27 @@ const CardImage = ({ data, size }: { data: CardData[keyof CardData]; size: NonNu
 		case 'lg':
 		case 'md':
 			return (
-				<div className="aspect-[696/644] w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
+				<div className="aspect-[696/644] w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
 					{data.image && (
-						<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
+						<Image
+							srcWidth={sizeToRenderedWidth[size]}
+							src={`/cards/${data.image}.png`}
+							alt=""
+							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+						/>
 					)}
 				</div>
 			);
 		case 'sm':
 			return (
-				<div className="h-full w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
+				<div className="h-full w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
 					{data.image && (
-						<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
+						<Image
+							srcWidth={sizeToRenderedWidth[size]}
+							src={`/cards/${data.image}.png`}
+							alt=""
+							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+						/>
 					)}
 				</div>
 			);
@@ -187,19 +206,19 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 			return null;
 		case 'md':
 			return (
-				<div className="p-[0.5vmin]">
+				<div className="p-[0.5vh]">
 					<p className="line-clamp-2 text-center text-xs font-bold leading-none">{data.name}</p>
 				</div>
 			);
 		case 'lg':
 			return (
-				<div className="p-[0.5vmin]">
+				<div className="p-[0.5vh]">
 					<p className="text-md py-1 text-center font-bold leading-none">{data.name}</p>
 					{data.description.length > 0 && (
 						<>
 							<div className="flex items-center gap-1 text-[#B8A1A3]">
 								<div className="h-px flex-1 bg-current" />
-								<span className="text-[1vmin] font-bold tracking-widest">EFFECT</span>
+								<span className="text-[1vh] font-bold tracking-widest">EFFECT</span>
 								<div className="h-px flex-1 bg-current" />
 							</div>
 							<p className="overflow-hidden px-1 text-left text-sm leading-tight opacity-80">{data.description}</p>
@@ -214,7 +233,7 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 
 const CardFooter = ({ card }: { card: PubSubShownSpellCard }) => {
 	return (
-		<footer className="absolute bottom-[0.5vmin] left-[0.5vmin] right-[0.5vmin] flex items-center justify-end gap-1">
+		<footer className="absolute bottom-[0.5vh] left-[0.5vh] right-[0.5vh] flex items-center justify-end gap-1">
 			{card.heal && <div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">{card.heal}</div>}
 			<div className="rounded-full bg-[#4F3739] px-2 py-0.5 text-xs text-white">{card.attack}</div>
 		</footer>
