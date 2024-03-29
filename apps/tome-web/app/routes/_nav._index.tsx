@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
 
 import { GenericErrorBoundary } from '../components/generic-error-boundary';
+import { UserAvatar } from '../components/user-avatar';
 import { api } from '../lib/api';
 
 export const clientLoader = (async () => {
@@ -42,8 +43,18 @@ export default function Page() {
 						<ul className="flex flex-col gap-4">
 							{games.map(game => (
 								<li key={game.id}>
-									<Link to={`/games/${game.id}`} className="block rounded-xl bg-neutral-100 p-4">
-										{game.sideA} vs. {game.sideB}
+									<Link to={`/games/${game.id}`} className="flex gap-4 rounded-xl bg-neutral-100 p-4">
+										<div className="flex flex-shrink flex-grow items-center gap-4">
+											<span className="flex flex-1 flex-row-reverse items-center gap-2">
+												<UserAvatar user={game.sideA} /> {game.sideA.username}
+											</span>
+											<span className="opacity-50">vs</span>
+											<span className="flex flex-1 items-center gap-2 ">
+												<UserAvatar user={game.sideB} /> {game.sideB.username}
+											</span>
+										</div>
+
+										<div className="flex-none">{game.status}</div>
 									</Link>
 								</li>
 							))}

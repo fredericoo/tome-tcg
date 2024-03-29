@@ -48,6 +48,7 @@ export const deck: DbCard[] = [
 	{
 		id: '2',
 		name: 'Burning Branch',
+		image: 'burning-branch',
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
@@ -131,6 +132,7 @@ export const deck: DbCard[] = [
 		id: '7',
 		type: 'field',
 		name: 'Sacred Pool',
+		image: 'sacred-pool',
 		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
 		color: 'blue',
 		effects: {
@@ -253,6 +255,7 @@ export const deck: DbCard[] = [
 		id: '12',
 		type: 'spell',
 		name: 'Overgrown root',
+		image: 'overgrown-root',
 		description: '4X attack, where X is the number of cards in this stack.',
 		attack: {
 			label: '6X',
@@ -379,6 +382,7 @@ export const deck: DbCard[] = [
 		id: '18',
 		type: 'field',
 		name: 'Hailstorm',
+		image: 'hailstorm',
 		description: 'Whenever you attack with a blue spell, draw 1 card',
 		color: 'blue',
 		effects: {
@@ -409,6 +413,7 @@ export const deck: DbCard[] = [
 	{
 		id: '23',
 		name: 'Tall grass',
+		image: 'tall-grass',
 		type: 'field',
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
@@ -449,6 +454,7 @@ export const deck: DbCard[] = [
 	{
 		id: '25',
 		name: 'Meteor shower',
+		image: 'meteor-storm',
 		type: 'field',
 		color: 'red',
 		description:
@@ -647,6 +653,7 @@ export const deck: DbCard[] = [
 	{
 		id: '37',
 		name: 'Prevent harm',
+		image: 'prevent-harm',
 		type: 'spell',
 		attack: 0,
 		heal: 10,
@@ -722,6 +729,7 @@ export const deck: DbCard[] = [
 	{
 		id: '48',
 		name: 'Windy valley',
+		image: 'windy-valley',
 		type: 'field',
 		color: 'green',
 		description:

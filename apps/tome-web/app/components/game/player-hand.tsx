@@ -70,7 +70,7 @@ export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerH
 										}
 									:	undefined
 								}
-								size="sm"
+								size="md"
 								card={cardRef}
 							/>
 						</li>

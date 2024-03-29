@@ -5,13 +5,13 @@
 @layer base {
 	@font-face {
 		font-family: 'GT Walsheim Pro';
-		src: url('GT-Walsheim-Pro-Bold.woff2') format('woff2');
+		src: url('/fonts/GT-Walsheim-Pro-Bold.woff2') format('woff2');
 		font-weight: bold;
 		font-style: normal;
 	}
 	@font-face {
 		font-family: 'GT Walsheim Pro';
-		src: url('GT-Walsheim-Pro-Medium.woff2') format('woff2');
+		src: url('/fonts/GT-Walsheim-Pro-Medium.woff2') format('woff2');
 		font-weight: normal;
 		font-style: normal;
 	}

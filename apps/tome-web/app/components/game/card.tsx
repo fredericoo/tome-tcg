@@ -11,7 +11,6 @@ import type {
 	PubSubShownSpellCard,
 } from '../../../../tome-api/src/features/game/game.pubsub';
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
-import cardBackSrc from '../../../public/card-back.png';
 import { CardData, useCardData } from '../../lib/card-data';
 import { useHighlightedCardsStore } from '../../routes/games.$id';
 
@@ -21,8 +20,9 @@ export const cardClass = cva({
 	base: 'select-none transition-shadow overflow-hidden rounded-[1vmin] ring-1 ring-[#4F3739]/20',
 	variants: {
 		size: {
-			md: 'h-[33vmin] aspect-[63/88]',
-			sm: 'h-[15vmin] aspect-[63/88]',
+			lg: 'h-[33vmin] aspect-[63/88]',
+			md: 'h-[15vmin] aspect-[63/88]',
+			sm: 'h-[12vmin] aspect-[63/88]',
 		},
 		interactive: {
 			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/80 cursor-pointer',
@@ -80,11 +80,11 @@ export const Card = ({
 			{isShownCard(card) && isHovered && (
 				<div
 					className={cardClass({
-						size: 'md',
+						size: 'lg',
 						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 z-50 shadow-xl',
 					})}
 				>
-					<CardFront card={card} size="md" />
+					<CardFront card={card} size="lg" />
 				</div>
 			)}
 
@@ -102,7 +102,7 @@ export const Card = ({
 };
 
 export const CardBack = () => {
-	return <img className="h-full w-full" src={cardBackSrc} alt="Card" />;
+	return <img className="h-full w-full" src="/card-back.png" alt="Card" />;
 };
 
 const cardFrontClass = cva({
@@ -150,26 +150,48 @@ const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
 					<CardColor key={color} color={color} />
 				))}
 			</div>
-			<div className="aspect-[696/644] w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
-				{data.image && (
-					<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
-				)}
-			</div>
+			<CardImage data={data} size={size} />
 			<CardBody data={data} size={size} />
 			{card.type === 'spell' && <CardFooter card={card} />}
 		</div>
 	);
 };
 
+const CardImage = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
+	switch (size) {
+		case 'lg':
+		case 'md':
+			return (
+				<div className="aspect-[696/644] w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
+					{data.image && (
+						<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
+					)}
+				</div>
+			);
+		case 'sm':
+			return (
+				<div className="h-full w-full rounded-[0.5vmin] bg-[#B8A1A3] shadow-md">
+					{data.image && (
+						<img src={`/cards/${data.image}.png`} alt="" className="h-full w-full rounded-[0.5vmin] object-cover" />
+					)}
+				</div>
+			);
+		default:
+			throw exhaustive(size);
+	}
+};
+
 const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
 	switch (size) {
 		case 'sm':
+			return null;
+		case 'md':
 			return (
 				<div className="p-[0.5vmin]">
 					<p className="line-clamp-2 text-center text-xs font-bold leading-none">{data.name}</p>
 				</div>
 			);
-		case 'md':
+		case 'lg':
 			return (
 				<div className="p-[0.5vmin]">
 					<p className="text-md py-1 text-center font-bold leading-none">{data.name}</p>
@@ -193,7 +215,7 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 const CardFooter = ({ card }: { card: PubSubShownSpellCard }) => {
 	return (
 		<footer className="absolute bottom-[0.5vmin] left-[0.5vmin] right-[0.5vmin] flex items-center justify-end gap-1">
-			{card.heal && <div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">+{card.heal} HP</div>}
+			{card.heal && <div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">{card.heal}</div>}
 			<div className="rounded-full bg-[#4F3739] px-2 py-0.5 text-xs text-white">{card.attack}</div>
 		</footer>
 	);

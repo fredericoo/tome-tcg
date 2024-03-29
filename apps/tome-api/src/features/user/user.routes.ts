@@ -33,11 +33,11 @@ export const userRoutes = new Elysia()
 			.select({
 				id: games.id,
 				status: games.status,
-				sideA: sideA.username,
-				sideB: sideB.username,
+				sideA: sideA,
+				sideB: sideB,
 			})
 			.from(games)
 			.where(and(gameIncludesUser, eq(games.status, 'CREATED')))
-			.leftJoin(sideA, eq(games.sideA, sideA.id))
-			.leftJoin(sideB, eq(games.sideB, sideB.id));
+			.innerJoin(sideA, eq(games.sideA, sideA.id))
+			.innerJoin(sideB, eq(games.sideB, sideB.id));
 	});

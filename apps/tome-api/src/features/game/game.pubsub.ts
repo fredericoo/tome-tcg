@@ -1,9 +1,12 @@
 import { Value } from '@sinclair/typebox/value';
 import chalk from 'chalk';
+import { eq } from 'drizzle-orm';
 import { Elysia, Static, t } from 'elysia';
 
+import { db } from '../../db';
+import { games } from '../../db/schema';
 import { DistributiveOmit } from '../../lib/type-utils';
-import { delay, invariant, pill } from '../../lib/utils';
+import { delay, exhaustive, invariant, pill } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { resolveCombatValue } from '../card/card.fns.utils';
@@ -257,14 +260,39 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			return;
 		}
 
-		const ongoingGame = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom());
-		ongoingGame.join(sideToJoin, ws.id, ws.send);
-
-		ws.subscribe(channel);
-		console.log(
-			`⚡ (${channel}) “${user.username ?? user.id}” is now`,
-			chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`),
-		);
+		switch (game.status) {
+			case 'CREATED': {
+				const room = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom());
+				room.join(sideToJoin, ws.id, ws.send);
+				ws.subscribe(channel);
+				console.log(
+					`⚡ (${channel}) “${user.username ?? user.id}” is now`,
+					chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`),
+				);
+				break;
+			}
+			case 'PLAYING': {
+				const room = runningGameRooms[channel];
+				if (!room) {
+					// This should never happen, but in case the server restarts with a `PLAYING` game in the db, we need to handle it.
+					ws.send({ error: 'Game room not found.' });
+					await db.update(games).set({ status: 'FINISHED' }).where(eq(games.id, game.id));
+					return;
+				}
+				room.join(sideToJoin, ws.id, ws.send);
+				ws.subscribe(channel);
+				console.log(
+					`⚡ (${channel}) “${user.username ?? user.id}” is now`,
+					chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`),
+				);
+				break;
+			}
+			case 'FINISHED':
+				ws.send({ error: 'Game already finished.' });
+				break;
+			default:
+				throw exhaustive(game.status);
+		}
 	},
 	close(ws) {
 		const user = ws.data.user;
