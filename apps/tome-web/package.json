@@ -10,14 +10,23 @@
 		"preview": "vite preview",
 		"typecheck": "tsc"
 	},
+	"imports": {
+		"~/*": [
+			"./src/*"
+		]
+	},
 	"dependencies": {
 		"@elysiajs/eden": "^1.0.0",
+		"@inploi/design-tokens": "^0.2.0",
 		"@radix-ui/react-avatar": "^1.0.4",
+		"@radix-ui/react-dialog": "^1.0.5",
+		"@radix-ui/react-popover": "^1.0.7",
 		"@radix-ui/react-slot": "^1.0.2",
 		"@remix-run/node": "^2.8.1",
 		"@remix-run/react": "^2.8.1",
 		"@tabler/icons-react": "^3.1.0",
 		"clsx": "^2.1.0",
+		"cmdk": "^1.0.0",
 		"cva": "1.0.0-beta.1",
 		"framer-motion": "^11.0.14",
 		"i": "^0.3.7",
@@ -28,6 +37,7 @@
 		"react-dom": "^18.2.0",
 		"react-router-typesafe": "^1.4.4",
 		"swr-loader": "^0.3.2",
+		"tailwindcss-animate": "^1.0.7",
 		"ts-pattern": "^5.0.8",
 		"zustand": "^4.5.2"
 	},
@@ -50,6 +60,7 @@
 		"sharp": "0.32.6",
 		"svgo": "^3.2.0",
 		"tailwindcss": "^3.4.1",
+		"tailwindcss-touch": "^1.0.1",
 		"typescript": "^5.1.6",
 		"vite": "^5.1.0",
 		"vite-plugin-image-optimizer": "^1.1.7",

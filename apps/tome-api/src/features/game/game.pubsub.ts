@@ -6,7 +6,7 @@ import { Elysia, Static, t } from 'elysia';
 import { db } from '../../db';
 import { games } from '../../db/schema';
 import { DistributiveOmit } from '../../lib/type-utils';
-import { delay, exhaustive, invariant, pill } from '../../lib/utils';
+import { delay, exhaustive, invariant, pill, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { resolveCombatValue } from '../card/card.fns.utils';
@@ -180,31 +180,39 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 	return iteration;
 };
 
-const createGameRoom = () => {
-	const game = createGameInstance({
-		// Mock decks for testing
-		decks: { sideA: deck, sideB: deck },
-		settings: {
-			castTimeoutMs: 60000,
-			spellTimeoutMs: 60000,
-			startingCards: 2,
-			emptySlotAttack: 10,
-			phaseDelayMs: 1000,
-		},
-	});
+const createGameRoom = (gameId: number) => {
 	const state: GameRoomState = {
 		connections: { sideA: undefined, sideB: undefined },
 		lastState: undefined,
 	};
 
-	const handleGame = async () => {
-		for await (const iteration of game) {
-			state.lastState = iteration;
-			SIDES.forEach(side => state.connections[side]?.send(iteration));
-			await delay(350);
-		}
+	const startGame = async () => {
+		const game = await db
+			.update(games)
+			.set({ status: 'PLAYING' })
+			.where(eq(games.id, gameId))
+			.returning()
+			.then(takeFirstOrThrow);
+		const gameInstance = createGameInstance({
+			// Mock decks for testing
+			decks: { sideA: deck, sideB: deck },
+			settings: {
+				castTimeoutMs: game.castTimeoutMs,
+				spellTimeoutMs: game.spellTimeoutMs,
+				startingCards: game.startingCards,
+				phaseDelayMs: game.phaseDelayMs,
+				emptySlotAttack: 10,
+			},
+		});
+		const handleGame = async () => {
+			for await (const iteration of gameInstance) {
+				state.lastState = iteration;
+				SIDES.forEach(side => state.connections[side]?.send(iteration));
+				await delay(350);
+			}
+		};
+		handleGame();
 	};
-	handleGame();
 
 	return {
 		state,
@@ -214,6 +222,7 @@ const createGameRoom = () => {
 				send: (data: GameIterationResponse) => sendFn(sanitiseIteration(side, data)),
 			};
 			if (state.lastState) state.connections[side]?.send(state.lastState);
+			if (state.connections.sideA && state.connections.sideB) startGame();
 		},
 		leave: (connectionId: string) => {
 			if (state.connections.sideA?.id === connectionId) {
@@ -262,7 +271,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 
 		switch (game.status) {
 			case 'CREATED': {
-				const room = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom());
+				const room = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom(game.id));
 				room.join(sideToJoin, ws.id, ws.send);
 				ws.subscribe(channel);
 				console.log(

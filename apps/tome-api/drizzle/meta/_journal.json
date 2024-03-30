@@ -8,6 +8,13 @@
       "when": 1710627936642,
       "tag": "0000_boring_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1711826555695,
+      "tag": "0001_safe_wallop",
+      "breakpoints": true
     }
   ]
 }

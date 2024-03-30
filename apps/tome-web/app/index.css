@@ -27,3 +27,7 @@
 		object-fit: inherit;
 	}
 }
+.tabler-icon {
+	width: 20px;
+	height: 20px;
+}

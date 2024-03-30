@@ -1,7 +1,10 @@
 import { Form, useSubmit } from '@remix-run/react';
+import { ComponentPropsWithoutRef } from 'react';
 import { ActionFunction, LoaderFunction, defer, redirect, useActionData, useLoaderData } from 'react-router-typesafe';
 import { SWR } from 'swr-loader/react';
 
+import { Button } from '../components/button';
+import { Input } from '../components/input';
 import { UserAvatar } from '../components/user-avatar';
 import { api } from '../lib/api';
 import { swr } from '../lib/cache';
@@ -35,6 +38,15 @@ export const clientAction = (async ({ request }) => {
 	return redirect('/');
 }) satisfies ActionFunction;
 
+const gameConfigs = ['castTimeoutMs', 'phaseDelayMs', 'startingCards', 'spellTimeoutMs'] as const;
+
+const gameConfigProps: Record<(typeof gameConfigs)[number], ComponentPropsWithoutRef<'input'> & { label: string }> = {
+	castTimeoutMs: { label: 'Cast timeout (ms)', type: 'number', defaultValue: 60000 },
+	phaseDelayMs: { label: 'Phase delay (ms)', type: 'number', defaultValue: 1000 },
+	startingCards: { label: 'Starting cards in hand', type: 'number', defaultValue: 2 },
+	spellTimeoutMs: { label: 'Spell timeout (ms)', type: 'number', defaultValue: 60000 },
+};
+
 export default function Page() {
 	const { users } = useLoaderData<typeof clientLoader>();
 	const submit = useSubmit();
@@ -51,21 +63,37 @@ export default function Page() {
 				<input name="q" className="rounded-lg border border-neutral-400 px-4 py-2" placeholder="Type to search" />
 			</Form>
 
-			<Form method="POST">
+			<Form method="POST" className="flex flex-col gap-4">
 				<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
 					{users => (
 						<ul className="flex flex-col gap-4">
-							{users?.data.map(user => (
-								<li key={user.id}>
-									<button name="opponent_id" value={user.id} className="flex items-center gap-2">
-										<UserAvatar user={user} />
-										<span>{user.username}</span>
-									</button>
-								</li>
-							))}
+							{users?.data.map(user => {
+								const id = `opponent-${user.id}`;
+								return (
+									<li key={user.id}>
+										<label htmlFor={id} className="flex items-center gap-2">
+											<input id={id} type="radio" name="opponent_id" value={user.id} />
+											<UserAvatar user={user} />
+											<span>{user.username}</span>
+										</label>
+									</li>
+								);
+							})}
 						</ul>
 					)}
 				</SWR>
+
+				{gameConfigs.map(config => {
+					const { label, ...props } = gameConfigProps[config];
+					return (
+						<label key={config}>
+							{label}
+							<Input type="number" name={config} {...props} />
+						</label>
+					);
+				})}
+
+				<Button type="submit">Create</Button>
 			</Form>
 			{actionData?.ok === false && <div role="alert">{actionData.error}</div>}
 		</section>

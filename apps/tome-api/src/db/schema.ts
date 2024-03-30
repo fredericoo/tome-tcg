@@ -40,4 +40,8 @@ export const games = sqliteTable('games', {
 		.notNull()
 		.default(sql`CURRENT_TIMESTAMP`),
 	status: text('status', { enum: ['CREATED', 'PLAYING', 'FINISHED'] }).notNull(),
+	castTimeoutMs: integer('cast_timeout_ms').notNull().default(60000),
+	spellTimeoutMs: integer('cast_timeout_ms').notNull().default(60000),
+	phaseDelayMs: integer('phase_delay_ms').notNull().default(1000),
+	startingCards: integer('starting_cards').notNull().default(2),
 });
