@@ -17,6 +17,12 @@ primary_region = 'lhr'
   min_machines_running = 1
   processes = ['app']
 
+[[services.tcp_checks]]
+  grace_period = "1s"
+  interval = "15s"
+  restart_limit = 0
+  timeout = "2s"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
