@@ -1,8 +1,9 @@
 import { IconBook } from '@tabler/icons-react';
-import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { MotionValue, motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
+import { useRef, useState } from 'react';
 
 import { DbCard } from '../../../../tome-api/src/features/engine/engine.game';
+import { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { CardDataProvider } from '../../lib/card-data';
 import { Card } from '../game/card';
 
@@ -14,14 +15,19 @@ const makeGuideSteps = <TStepName extends string>(steps: (GuideStep & { id: TSte
 
 const steps = makeGuideSteps([
 	{
-		id: 'turns' as const,
-		heading: 'Turns are simultaneous',
-		description: 'Both players play their cards at the same time',
+		id: 'draw',
+		heading: 'Draw a card',
+		description: '',
 	},
 	{
 		id: 'place',
-		heading: 'Place one card into play',
-		description: 'Draw and prepare a spell, or set the field to benefit your strategy',
+		heading: 'Each player places one secret card into play',
+		description: 'Prepare a spell, or set the field to benefit your strategy',
+	},
+	{
+		id: 'turns',
+		heading: 'Reveal you card',
+		description: 'Turns are simultaneous: both players play and reveal together',
 	},
 	{
 		id: 'cast',
@@ -52,15 +58,76 @@ const cardData: Record<number, DbCard> = {
 	4: { id: '', colors: [], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
 };
 
+const progressRange = steps.map((_, i) => i / (steps.length - 1));
+const OpponentHand = ({ progress }: { progress: MotionValue<number> }) => {
+	const deckY = useTransform(progress, progressRange, [-100, -100, -200, -200, -200, -200]);
+
+	return (
+		<motion.div style={{ y: deckY }} className="flex justify-center">
+			{Array.from({ length: 5 }).map((_, i) => {
+				const fanRatio = -1.5;
+				const rotate = (i + 0.5 - 5 / 2) * fanRatio;
+				const y = Math.abs(rotate) * fanRatio * 5;
+				return (
+					<motion.div style={{ y, rotate }} key={i} className="-mx-4 h-32">
+						<Card card={{ key: 1 }} size="md" />
+					</motion.div>
+				);
+			})}
+		</motion.div>
+	);
+};
+
+const OwnerHand = ({ progress }: { progress: MotionValue<number> }) => {
+	const multiplier = 1;
+	const deckY = useTransform(progress, progressRange, [0, 30, -30, 60, 0, 0]);
+
+	const [deck, setDeck] = useState<PubSubCard[]>([
+		{ key: 1, id: '0' },
+		{ key: 2, id: '1' },
+		{ key: 3, id: '2' },
+		{ key: 4, id: '3' },
+		{ key: 5, id: '4' },
+	]);
+	useMotionValueEvent(progress, 'change', progress => {
+		if (progress >= 1 / steps.length) {
+			if (deck[2] && 'id' in deck[2]) {
+				setDeck([{ key: 1, id: '0' }, { key: 2, id: '1' }, { key: 3 }, { key: 4, id: '3' }, { key: 5, id: '4' }]);
+			}
+		} else {
+			if (deck[2] && !('id' in deck[2])) {
+				setDeck([
+					{ key: 1, id: '0' },
+					{ key: 2, id: '1' },
+					{ key: 3, id: '2' },
+					{ key: 4, id: '3' },
+					{ key: 5, id: '4' },
+				]);
+			}
+		}
+	});
+	const mainCardY = useTransform(progress, progressRange, [0, -140, -80, 0, 0, 0]);
+
+	return (
+		<motion.div style={{ y: deckY }} className="flex justify-center">
+			{deck.map((pubsubCard, i) => {
+				const fanRatio = 1.5 * multiplier;
+				const rotateZ = (i + 0.5 - 5 / 2) * fanRatio;
+				const y = i === 2 ? mainCardY : Math.abs(rotateZ) * fanRatio * 5;
+
+				return (
+					<motion.div style={{ y, rotateZ }} key={i} className="-mx-4 h-32">
+						<Card card={pubsubCard} size="md" />
+					</motion.div>
+				);
+			})}
+		</motion.div>
+	);
+};
+
 export const Guide = () => {
-	const [currentStep, setCurrentStep] = useState(0);
-	const calculateCurrentStep = (e: React.UIEvent<HTMLUListElement>) => {
-		// loop through steps and find the one that is in view by the data-step attribute
-		const newCurrentStep = Array.from(e.currentTarget.children).find(
-			child => child.getBoundingClientRect().left >= e.currentTarget.clientWidth / 2,
-		);
-		if (newCurrentStep) setCurrentStep(Number(newCurrentStep.getAttribute('data-step')));
-	};
+	const container = useRef<HTMLUListElement>(null);
+	const { scrollXProgress } = useScroll({ axis: 'x', container });
 
 	return (
 		<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
@@ -71,41 +138,15 @@ export const Guide = () => {
 				<div className="pointer-events-none absolute w-full p-4">
 					<div className="bg-accent-3 rounded-1 aspect-video overflow-hidden">
 						<CardDataProvider value={cardData}>
-							{['other', 'self'].map(relative => (
-								<div key={relative} className="flex justify-center">
-									{Array.from({ length: 5 }).map((_, i) => {
-										const multiplier = relative === 'self' ? 1 : -1;
-										const fanRatio = 1.5 * multiplier;
-										const angle = (i + 0.5 - 5 / 2) * fanRatio;
-										const y = (() => {
-											if (currentStep >= 1 && relative === 'other') return 200 * multiplier;
-											if (currentStep >= 2) return 200 * multiplier;
-											return (Math.abs(angle) * 10 + 10) * fanRatio;
-										})();
-
-										const card =
-											relative === 'other' ? { key: 0 }
-											: currentStep > 0 ? { key: 1, id: i }
-											: { key: 1 };
-
-										return (
-											<motion.div
-												initial={{ y: (Math.abs(angle) * 15 + 20) * fanRatio }}
-												animate={{ y, rotate: angle }}
-												key={i}
-												className="-mx-4 h-32"
-											>
-												<Card card={card} size="md" />
-											</motion.div>
-										);
-									})}
-								</div>
-							))}
+							<div className="flex flex-col items-center gap-8 [perspective:800px]">
+								<OpponentHand progress={scrollXProgress} />
+								<OwnerHand progress={scrollXProgress} />
+							</div>
 						</CardDataProvider>
 					</div>
 				</div>
 				<ul
-					onScroll={calculateCurrentStep}
+					ref={container}
 					className="hide-scrollbars flex overflow-x-auto scroll-smooth [scroll-snap-stop:always] [scroll-snap-type:x_mandatory]"
 				>
 					{steps.map((step, i) => (

@@ -80,8 +80,9 @@ export const Card = ({
 
 	return (
 		<motion.div
+			id={`#card-${card.key}`}
 			layoutId={card.key.toString()}
-			key={card.key}
+			animate={{ rotateY: isShownCard(card) ? 0 : 180 }}
 			layout="preserve-aspect"
 			className={cardClass({ size, className, interactive, highlight })}
 			{...props}
