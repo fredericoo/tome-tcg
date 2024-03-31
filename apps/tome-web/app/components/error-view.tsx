@@ -1,6 +1,8 @@
 import { Link, useNavigation } from '@remix-run/react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { Button } from './button';
+
 export const isDev = import.meta.env.NODE_ENV === 'development';
 
 type ErrorViewProps = {
@@ -17,7 +19,7 @@ export const ErrorView = ({ error, heading, message, action }: ErrorViewProps) =
 	const { state } = useNavigation();
 
 	return (
-		<div role="alert" className="flex h-full w-full flex-col justify-center">
+		<div role="alert" className="bg-negative-1 flex h-full w-full grow flex-col justify-center">
 			<div className="pb-32 pt-4">
 				<AnimatePresence mode="popLayout">
 					{state === 'idle' && (
@@ -31,11 +33,17 @@ export const ErrorView = ({ error, heading, message, action }: ErrorViewProps) =
 								opacity: { type: 'tween', ease: 'easeOut', duration: 0.3 },
 							}}
 						>
-							<div className="flex flex-col items-center justify-center gap-6">
-								<p>{heading}</p>
-								{message && <p>{message}</p>}
+							<div className="flex flex-col items-center justify-center gap-4">
+								<div className="text-center">
+									<p className="heading-md text-negative-11 pb-1">{heading}</p>
+									{message && <p className="body-md text-neutral-11">{message}</p>}
+								</div>
 
-								{action && <Link to={action.link}>{action.label}</Link>}
+								{action && (
+									<Button asChild variant="outline">
+										<Link to={action.link}>{action.label}</Link>
+									</Button>
+								)}
 
 								{isDev && (
 									<div className="flex w-full max-w-lg flex-col items-center">

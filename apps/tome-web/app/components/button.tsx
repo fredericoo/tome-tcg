@@ -10,7 +10,7 @@ const buttonVariants = cva({
 			accent: 'bg-accent-10 hover:bg-accent-11 active:bg-accent-12 text-white shadow-surface-md surface-accent',
 			destructive: 'bg-negative-10 hover:bg-negative-11 active:bg-negative-12 text-negative-1',
 			outline:
-				'border border-neutral-4 bg-transparent hover:bg-neutral-1 hover:border-neutral-5 active:border-neutral-6 text-neutral-12',
+				'border bg-lowest border-neutral-4 bg-transparent hover:bg-neutral-1 hover:border-neutral-5 active:border-neutral-6 text-neutral-12',
 			ghost: 'hover:bg-accent-3 hover:text-accent-11 active:bg-accent-4',
 			link: 'text-accent-10 underline-offset-4 hover:underline active:text-accent-11',
 		},

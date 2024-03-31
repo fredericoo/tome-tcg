@@ -8,6 +8,7 @@ import { db } from '../../db';
 import { users } from '../../db/schema';
 import { takeFirst } from '../../lib/utils';
 import { lucia } from './auth';
+import { withUser } from './auth.plugin';
 
 const githubEnv = Value.Cast(
 	t.Object({
@@ -99,4 +100,15 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 				github_oauth_state: t.String({ minLength: 1 }),
 			}),
 		},
+	)
+	.guard({}, app =>
+		app.use(withUser).post('/logout', async ({ cookie, session, set }) => {
+			if (!session) return error('Unauthorized', 'You must be logged in to log out');
+			await lucia.invalidateSession(session.id);
+
+			const sessionCookie = lucia.createBlankSessionCookie();
+			cookie[sessionCookie.name]?.set({ value: sessionCookie.value, ...sessionCookie.attributes });
+
+			set.redirect = process.env.AUTH_REDIRECT_URL || '/';
+		}),
 	);
