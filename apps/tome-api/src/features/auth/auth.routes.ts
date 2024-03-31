@@ -34,6 +34,27 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			return { ok: false, error: error.message };
 		}
 	})
+	.get(
+		'/dev',
+		async ({ query, cookie, set }) => {
+			if (process.env.NODE_ENV !== 'development') return error('Not Found');
+
+			const session = await lucia.createSession(query.userId, {});
+			const sessionCookie = lucia.createSessionCookie(session.id);
+			cookie[sessionCookie.name]?.set({
+				value: sessionCookie.value,
+				domain: process.env.AUTH_COOKIE_DOMAIN,
+				...sessionCookie.attributes,
+			});
+			set.redirect = process.env.AUTH_REDIRECT_URL || '/';
+			return;
+		},
+		{
+			query: t.Object({
+				userId: t.String({ minLength: 1 }),
+			}),
+		},
+	)
 	.get('/github', async ({ cookie: { github_oauth_state }, set }) => {
 		const state = generateState();
 		const url = await github.createAuthorizationURL(state);
@@ -47,6 +68,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 			sameSite: 'lax',
 		});
 		set.redirect = url.toString();
+		return;
 	})
 	.get(
 		'/github/callback',
@@ -78,7 +100,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 					domain: process.env.AUTH_COOKIE_DOMAIN,
 					...sessionCookie.attributes,
 				});
-				set.redirect = '/';
+				set.redirect = process.env.AUTH_REDIRECT_URL || '/';
 				return;
 			}
 
