@@ -23,6 +23,20 @@ module.exports = {
 			display: ['GT Walsheim Pro', 'sans-serif'],
 		},
 
+		fontWeight: {
+			regular: '400',
+			medium: '500',
+			bold: '700',
+		},
+		letterSpacing: {
+			tighter: '-0.03em',
+			tight: '-0.01em',
+			normal: '0',
+			wide: '0.025em',
+			wider: '0.05em',
+			widest: '0.06em',
+		},
+
 		borderRadius: {
 			1: '0.25rem',
 			2: '0.5rem',
@@ -121,13 +135,13 @@ module.exports = {
 			},
 			boxShadow: {
 				'surface-sm':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 2px 2px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 2px 2px 0px oklch(var(--tw-shadow-color) /0.03)',
+					'inset 0 1px 0 0 oklch(var(--surface-highlight) / 1), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 2px 2px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 2px 2px 0px oklch(var(--tw-shadow-color) /0.03)',
 				'surface-md':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 6px 4px 0px oklch(var(--tw-shadow-color) /0.01)',
+					'inset 0 1px 0 0 oklch(var(--surface-highlight) / 1), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 6px 4px 0px oklch(var(--tw-shadow-color) /0.01)',
 				'surface-lg':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 11px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 32px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
+					'inset 0 1px 0 0 oklch(var(--surface-highlight) / 1), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 11px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 32px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
 				'surface-lg-inverted':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 0px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 0px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 0px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 0px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 0px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
+					'inset 0 1px 0 0 oklch(var(--surface-highlight) / 1), 0px 0px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 0px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 0px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 0px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 0px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
 				'surface-inset': 'inset 0 1px 1px 0 rgba(0, 0, 0, 0.1)',
 			},
 			keyframes: {
@@ -189,6 +203,7 @@ module.exports = {
 				{
 					surface: value => ({
 						'--tw-shadow-color': `var(--${value}-11)`,
+						'--surface-highlight': `var(--${value}-1)`,
 					}),
 				},
 				{

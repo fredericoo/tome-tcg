@@ -31,7 +31,7 @@ export default function Page() {
 	const { user } = useNavLoaderData();
 
 	return (
-		<section className="bg-neutral-2 rounded-6 mx-auto flex max-w-md flex-col gap-2 p-2">
+		<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
 			<header className="flex gap-4 p-2">
 				<div className="flex-grow pl-3">
 					<h1 className="heading-md pb-1">Ongoing games</h1>

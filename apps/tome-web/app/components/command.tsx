@@ -11,7 +11,7 @@ const Command = forwardRef<ElementRef<typeof CommandPrimitive>, ComponentPropsWi
 		<CommandPrimitive
 			ref={ref}
 			className={clsx(
-				'bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md',
+				'bg-popover text-popover-foreground rounded-4 flex h-full w-full flex-col overflow-hidden',
 				className,
 			)}
 			{...props}
@@ -44,7 +44,7 @@ const CommandInput = forwardRef<
 		<CommandPrimitive.Input
 			ref={ref}
 			className={clsx(
-				'placeholder:text-muted-foreground flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50',
+				'placeholder:text-muted-foreground rounded-4 flex h-11 w-full bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50',
 				className,
 			)}
 			{...props}
@@ -105,7 +105,7 @@ const CommandItem = forwardRef<
 	<CommandPrimitive.Item
 		ref={ref}
 		className={clsx(
-			'aria-selected:bg-accent aria-selected:text-accent-foreground relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+			'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-2 relative flex cursor-default select-none items-center px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
 			className,
 		)}
 		{...props}

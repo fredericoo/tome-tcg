@@ -1,4 +1,5 @@
 import { Form, useSubmit } from '@remix-run/react';
+import { IconSettings, IconUser } from '@tabler/icons-react';
 import { ComponentPropsWithoutRef } from 'react';
 import { ActionFunction, LoaderFunction, defer, redirect, useActionData, useLoaderData } from 'react-router-typesafe';
 import { SWR } from 'swr-loader/react';
@@ -43,7 +44,7 @@ const gameConfigs = ['castTimeoutMs', 'phaseDelayMs', 'startingCards', 'spellTim
 const gameConfigProps: Record<(typeof gameConfigs)[number], ComponentPropsWithoutRef<'input'> & { label: string }> = {
 	castTimeoutMs: { label: 'Cast timeout (ms)', type: 'number', defaultValue: 60000 },
 	phaseDelayMs: { label: 'Phase delay (ms)', type: 'number', defaultValue: 1000 },
-	startingCards: { label: 'Starting cards in hand', type: 'number', defaultValue: 2 },
+	startingCards: { label: 'Starting cards in hand', type: 'number', min: 0, max: 30, defaultValue: 2 },
 	spellTimeoutMs: { label: 'Spell timeout (ms)', type: 'number', defaultValue: 60000 },
 };
 
@@ -53,49 +54,67 @@ export default function Page() {
 	const actionData = useActionData<typeof clientAction>();
 
 	return (
-		<section className="flex flex-col gap-2">
+		<div className="mx-auto flex w-full max-w-md flex-col gap-4">
 			<header className="flex gap-4">
-				<h1 className="flex-grow text-lg font-bold tracking-tight">New game</h1>
+				<h1 className="display-md flex-grow">Create game</h1>
 			</header>
-			<div>Opponent</div>
 
-			<Form method="GET" onChange={e => submit(e.currentTarget)}>
-				<input name="q" className="rounded-lg border border-neutral-400 px-4 py-2" placeholder="Type to search" />
-			</Form>
+			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
+				<header className="flex gap-2 p-2">
+					<IconUser /> <h1 className="heading-sm">Opponent</h1>
+				</header>
+				<div className="bg-lowest rounded-4 shadow-surface-md text-wrap surface-neutral ring-neutral-9/10 flex max-h-64 flex-col gap-4 overflow-auto ring-1">
+					<Form
+						className="bg-lowest/90 sticky top-0 z-10 border-b p-2 backdrop-blur-md backdrop-saturate-150"
+						method="GET"
+						onChange={e => submit(e.currentTarget)}
+					>
+						<Input name="q" placeholder="Type to search" />
+					</Form>
+
+					<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
+						{users => (
+							<ul className="flex flex-col gap-4 p-4 ">
+								{users?.data.map(user => {
+									const id = `opponent-${user.id}`;
+									return (
+										<li key={user.id}>
+											<label htmlFor={id} className="flex items-center gap-2">
+												<input id={id} type="radio" name="opponent_id" value={user.id} />
+												<UserAvatar user={user} />
+												<span>{user.username}</span>
+											</label>
+										</li>
+									);
+								})}
+							</ul>
+						)}
+					</SWR>
+				</div>
+			</section>
 
 			<Form method="POST" className="flex flex-col gap-4">
-				<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
-					{users => (
-						<ul className="flex flex-col gap-4">
-							{users?.data.map(user => {
-								const id = `opponent-${user.id}`;
-								return (
-									<li key={user.id}>
-										<label htmlFor={id} className="flex items-center gap-2">
-											<input id={id} type="radio" name="opponent_id" value={user.id} />
-											<UserAvatar user={user} />
-											<span>{user.username}</span>
-										</label>
-									</li>
-								);
-							})}
-						</ul>
-					)}
-				</SWR>
+				<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
+					<header className="flex gap-2 p-2">
+						<IconSettings /> <h1 className="heading-sm">Game settings</h1>
+					</header>
+					<fieldset className="bg-lowest rounded-4 shadow-surface-md text-wrap surface-neutral ring-neutral-9/10 flex flex-col gap-4 p-4 ring-1">
+						{gameConfigs.map(config => {
+							const { label, ...props } = gameConfigProps[config];
+							return (
+								<label key={config}>
+									<span className="label-sm">{label}</span>
+									<Input type="number" name={config} {...props} />
+								</label>
+							);
+						})}
 
-				{gameConfigs.map(config => {
-					const { label, ...props } = gameConfigProps[config];
-					return (
-						<label key={config}>
-							{label}
-							<Input type="number" name={config} {...props} />
-						</label>
-					);
-				})}
+						<Button type="submit">Create</Button>
+					</fieldset>
+				</section>
 
-				<Button type="submit">Create</Button>
+				{actionData?.ok === false && <div role="alert">{actionData.error}</div>}
 			</Form>
-			{actionData?.ok === false && <div role="alert">{actionData.error}</div>}
-		</section>
+		</div>
 	);
 }

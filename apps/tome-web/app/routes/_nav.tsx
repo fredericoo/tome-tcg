@@ -32,7 +32,7 @@ export default function Layout() {
 					</Link>
 					<div className="flex flex-1 items-center justify-end gap-2"></div>
 				</nav>
-				<div className="flex flex-col gap-8 py-4">
+				<div className="flex flex-col gap-8 py-4 pb-24">
 					<Outlet />
 				</div>
 			</main>
@@ -49,15 +49,15 @@ export default function Layout() {
 					</NavLink>
 
 					<div className="flex -translate-y-1/3 items-center">
-						<Link
-							className="bg-accent-9 shadow-surface-md surface-accent aspect-square flex-1 rounded-full px-4 py-2 text-white"
+						<NavLink
+							className="bg-accent-9 fr hover:bg-accent-10 active:bg-accent-11 shadow-surface-md surface-accent ease-expo-out aspect-square flex-1 rounded-full px-4 py-2 text-white transition-all aria-[current=page]:scale-75 aria-[current=page]:opacity-0 "
 							to="/games/new"
 						>
 							<div className="flex flex-col items-center gap-0.5">
 								<IconPlus className="label-lg" />
 								<span className="label-xs">Invite</span>
 							</div>
-						</Link>
+						</NavLink>
 					</div>
 
 					<NavLink className="flex flex-1" to="/me">

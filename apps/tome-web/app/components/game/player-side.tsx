@@ -16,7 +16,7 @@ import { CardPile } from './card-pile';
 import { PlayerHand } from './player-hand';
 
 const stackClass = cva({
-	base: 'rounded-xl shadow-inner p-2',
+	base: 'rounded-8 shadow-inner p-2',
 	variants: {
 		stack: { red: 'bg-red-200', green: 'bg-green-200', blue: 'bg-blue-200' },
 		interactive: {

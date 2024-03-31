@@ -39,10 +39,10 @@ export const ErrorView = ({ error, heading, message, action }: ErrorViewProps) =
 
 								{isDev && (
 									<div className="flex w-full max-w-lg flex-col items-center">
-										<h3 className="relative -mb-3 rounded-md border border-red-700 bg-white px-2 py-1 text-xs font-bold uppercase tracking-widest text-red-900">
+										<h3 className="rounded-4 relative -mb-3 border border-red-700 bg-white px-2 py-1 text-xs font-bold uppercase tracking-widest text-red-900">
 											Dev error
 										</h3>
-										<div className="max-h-[20rem] w-full overflow-scroll rounded-md border border-red-700 bg-red-50 pt-4 text-xs text-red-700">
+										<div className="rounded-4 max-h-[20rem] w-full overflow-scroll border border-red-700 bg-red-50 pt-4 text-xs text-red-700">
 											<pre className="px-2 py-2">{JSON.stringify(error)}</pre>
 										</div>
 									</div>

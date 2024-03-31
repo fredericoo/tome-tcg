@@ -183,7 +183,7 @@ export default function Page() {
 						</p>
 					</div>
 				)}
-				<nav className="absolute left-2 top-2 rounded-lg bg-white px-4 py-2 text-center shadow-lg">
+				<nav className="rounded-6 absolute left-2 top-2 bg-white px-4 py-2 text-center shadow-lg">
 					<span>status: {status}</span>
 					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
 					{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
