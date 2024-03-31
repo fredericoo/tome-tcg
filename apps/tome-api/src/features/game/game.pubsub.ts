@@ -14,7 +14,6 @@ import { Board } from '../engine/engine.board';
 import {
 	COLORS,
 	CombatStackItem,
-	DynamicCombatValue,
 	GameAction,
 	GameCard,
 	GameIterationResponse,
@@ -66,27 +65,33 @@ export type SanitisedIteration = {
 
 export type PubSubError = { error: string };
 
-const createCardActions = (params: Omit<Parameters<DynamicCombatValue['getValue']>[0], 'thisCard'>) => {
+const createCardActions = ({ game }: { game: GameIterationResponse }) => {
 	return {
 		hideCard: (card: GameCard): PubSubHiddenCard => ({ key: card.key }),
-		showCard: (card: GameCard): PubSubShownCard => {
-			switch (card.type) {
-				case 'field':
-					return {
-						key: card.key,
-						id: card.id,
-						type: card.type,
-					};
-				case 'spell':
-					return {
-						key: card.key,
-						id: card.id,
-						type: card.type,
-						attack: resolveCombatValue(card.attack, { ...params, thisCard: card }),
-						heal: card.heal ? resolveCombatValue(card.heal, { ...params, thisCard: card }) : undefined,
-					};
-			}
-		},
+		showCardFromSide:
+			(ownerSide: Side) =>
+			(card: GameCard): PubSubShownCard => {
+				const opponentSide = ownerSide === 'sideA' ? 'sideB' : 'sideA';
+				switch (card.type) {
+					case 'field':
+						return {
+							key: card.key,
+							id: card.id,
+							type: card.type,
+						};
+					case 'spell':
+						return {
+							key: card.key,
+							id: card.id,
+							type: card.type,
+							attack: resolveCombatValue(card.attack, { game, thisCard: card, ownerSide, opponentSide }),
+							heal:
+								card.heal ?
+									resolveCombatValue(card.heal, { game, thisCard: card, ownerSide, opponentSide })
+								:	undefined,
+						};
+				}
+			},
 	};
 };
 
@@ -95,10 +100,8 @@ const createCardActions = (params: Omit<Parameters<DynamicCombatValue['getValue'
  * E.g.: Deck cards are never supposed to be sent to the client.
  */
 const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationResponse) => {
-	const { hideCard, showCard } = createCardActions({
+	const { hideCard, showCardFromSide } = createCardActions({
 		game: originalIteration,
-		ownerSide: playerSide,
-		opponentSide: playerSide === 'sideA' ? 'sideB' : 'sideA',
 	});
 
 	const iteration: SanitisedIteration = {
@@ -114,7 +117,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 					}))
 				:	undefined,
 			highlights: {},
-			field: originalIteration.board.field.map(showCard),
+			field: originalIteration.board.field.map(showCardFromSide('sideA')),
 			phase: originalIteration.board.phase,
 			sideA: {
 				hp: originalIteration.board.players.sideA.hp,
@@ -151,6 +154,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 	}
 
 	SIDES.forEach(side => {
+		const showCard = showCardFromSide(side);
 		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
 		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
 		iteration.board[side].discardPile = originalIteration.board.players[side].discardPile.map(hideCard);
