@@ -6,9 +6,8 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async functi
 	game,
 	thisCard,
 	ownerSide,
-	turn,
 }) {
-	const isUsedInCombat = turn[ownerSide].spellAttack?.card === thisCard;
+	const isUsedInCombat = game.turn[ownerSide].spellAttack?.card === thisCard;
 	if (!isUsedInCombat) return;
 	const thisCardStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 	if (!thisCardStack) return;
