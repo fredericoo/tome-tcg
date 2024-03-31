@@ -31,7 +31,7 @@ export default function Page() {
 	const { user } = useNavLoaderData();
 
 	return (
-		<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
+		<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
 			<header className="flex gap-4 p-2">
 				<div className="flex-grow pl-3">
 					<h1 className="heading-md pb-1">Ongoing games</h1>
@@ -58,7 +58,7 @@ export default function Page() {
 									>
 										<Link
 											to={`/games/${game.id}`}
-											className="fr ease-expo-out flex items-center gap-4 rounded-[inherit] p-4 transition-all duration-300 hover:px-6"
+											className="fr ease-expo-out pointer-fine:hover:px-6 flex items-center gap-4 rounded-[inherit] p-4 transition-all duration-300"
 										>
 											<div className="flex flex-shrink flex-grow items-center gap-4 overflow-hidden">
 												<UserAvatar user={opponent} /> <span className="truncate">{opponent.username}</span>

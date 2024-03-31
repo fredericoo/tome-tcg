@@ -54,12 +54,12 @@ export default function Page() {
 	const actionData = useActionData<typeof clientAction>();
 
 	return (
-		<div className="mx-auto flex w-full max-w-md flex-col gap-4">
+		<div className="mx-auto flex w-full max-w-lg flex-col gap-4">
 			<header className="flex gap-4">
 				<h1 className="display-md flex-grow">Create game</h1>
 			</header>
 
-			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
+			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
 				<header className="flex gap-2 p-2">
 					<IconUser /> <h1 className="heading-sm">Opponent</h1>
 				</header>
@@ -94,7 +94,7 @@ export default function Page() {
 			</section>
 
 			<Form method="POST" className="flex flex-col gap-4">
-				<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-md flex-col gap-2 p-2">
+				<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
 					<header className="flex gap-2 p-2">
 						<IconSettings /> <h1 className="heading-sm">Game settings</h1>
 					</header>
