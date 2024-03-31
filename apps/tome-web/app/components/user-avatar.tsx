@@ -1,8 +1,12 @@
 import { getInitials } from '../lib/user.utils';
-import { Avatar, AvatarFallback, AvatarImage } from './avatar';
+import { Avatar, AvatarFallback, AvatarImage, AvatarProps } from './avatar';
 
-export const UserAvatar = ({ user }: { user: { avatarUrl?: string | null; username?: string | null } }) => (
-	<Avatar size="sm" aria-hidden="true">
+interface UserAvatarProps extends AvatarProps {
+	user: { avatarUrl?: string | null; username?: string | null };
+}
+
+export const UserAvatar = ({ user, ...props }: UserAvatarProps) => (
+	<Avatar aria-hidden="true" {...props}>
 		{user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
 		<AvatarFallback>{getInitials(user.username ?? '')}</AvatarFallback>
 	</Avatar>

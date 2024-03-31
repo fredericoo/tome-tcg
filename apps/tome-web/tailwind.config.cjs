@@ -38,6 +38,8 @@ module.exports = {
 		},
 
 		colors: {
+			white: token('white'),
+			black: token('black'),
 			lowest: token('lowest'),
 			highest: token('highest'),
 			border: token('neutral-4'),
@@ -121,11 +123,11 @@ module.exports = {
 				'surface-sm':
 					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 2px 2px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 2px 2px 0px oklch(var(--tw-shadow-color) /0.03)',
 				'surface-md':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 6px 4px 0px oklch(var(--tw-shadow-color) /0.01)',
+					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 6px 4px 0px oklch(var(--tw-shadow-color) /0.01)',
 				'surface-lg':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 11px 4px 0px oklch(var(--tw-shadow-color) /0.01), 0px 32px 24px -12px oklch(var(--tw-shadow-color) / 0.06)',
+					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 11px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 32px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
 				'surface-lg-inverted':
-					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 0px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 0px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 0px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 0px 4px 0px oklch(var(--tw-shadow-color) /0.01), 0px 0px 24px -12px oklch(var(--tw-shadow-color) / 0.06)',
+					'inset 0 1px 0 0 oklch(var(--lowest) / 0.75), 0px 0px 1px 0px oklch(var(--tw-shadow-color) / 0.06), 0px 0px 3px 0px oklch(var(--tw-shadow-color) / 0.05), 0px 0px 4px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 0px 4px 0px oklch(var(--tw-shadow-color) /0.03), 0px 0px 24px -12px oklch(var(--tw-shadow-color) / 0.08)',
 				'surface-inset': 'inset 0 1px 1px 0 rgba(0, 0, 0, 0.1)',
 			},
 			keyframes: {

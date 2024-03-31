@@ -8,6 +8,8 @@ type Theme = {
 const [black, white] = ['oklch(0% 0 0)', 'oklch(100% 0 0)'];
 
 export const tokens = (theme: Theme) => ({
+	white: white,
+	black: black,
 	lowest: theme.mode === 'light' ? white : black,
 	highest: theme.mode === 'light' ? black : white,
 	...generatePalette({ hue: 180, mode: theme.mode, transform: sameAsInput, prefix: 'neutral-', chroma: 0.1 }),

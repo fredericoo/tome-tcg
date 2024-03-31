@@ -1,4 +1,3 @@
-import { Icon } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { cva } from 'cva';
 import React, { forwardRef } from 'react';
@@ -9,7 +8,7 @@ const Container: React.FC<TabbarContainerProps> = ({ className, ...props }) => {
 	return (
 		<nav
 			className={clsx(
-				'rounded-t-8 bg-neutral-1 shadow-surface-lg-inverted flex w-full max-w-xl select-none',
+				'rounded-4 bg-neutral-1 ring-neutral-11/5 shadow-surface-lg surface-neutral flex w-full max-w-xl select-none ring-1',
 				className,
 			)}
 			{...props}
@@ -32,7 +31,7 @@ const itemVariant = cva({
 
 interface TabbarItemProps extends React.ComponentPropsWithoutRef<'div'> {
 	isActive?: boolean;
-	icon: { active: Icon; inactive: Icon };
+	icon: { active: JSX.Element; inactive: JSX.Element };
 }
 
 const Item = forwardRef<HTMLDivElement, TabbarItemProps>(({ icon, children, isActive, className, ...props }, ref) => {
@@ -40,7 +39,7 @@ const Item = forwardRef<HTMLDivElement, TabbarItemProps>(({ icon, children, isAc
 
 	return (
 		<div draggable="false" ref={ref} className={itemVariant({ isActive, className })} {...props}>
-			<Icon />
+			{Icon}
 			<p className="label-xs w-full truncate text-center">{children}</p>
 		</div>
 	);

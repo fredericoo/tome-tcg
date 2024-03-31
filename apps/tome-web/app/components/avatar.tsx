@@ -21,7 +21,7 @@ const avatarVariants = cva({
 });
 
 type AvatarVariants = VariantProps<typeof avatarVariants>;
-interface AvatarProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>, AvatarVariants {}
+export interface AvatarProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>, AvatarVariants {}
 const Avatar = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Root>, AvatarProps>(
 	({ className, size, ...props }, ref) => (
 		<AvatarPrimitive.Root ref={ref} className={avatarVariants({ size, className })} {...props} />
