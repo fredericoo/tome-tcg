@@ -58,42 +58,42 @@ export default function Page() {
 			<header className="flex gap-4">
 				<h1 className="display-md flex-grow">Create game</h1>
 			</header>
-
-			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
-				<header className="flex gap-2 p-2">
-					<IconUser /> <h1 className="heading-sm">Opponent</h1>
-				</header>
-				<div className="bg-lowest rounded-4 shadow-surface-md text-wrap surface-neutral ring-neutral-9/10 flex max-h-64 flex-col gap-4 overflow-auto ring-1">
-					<Form
-						className="bg-lowest/90 sticky top-0 z-10 border-b p-2 backdrop-blur-md backdrop-saturate-150"
-						method="GET"
-						onChange={e => submit(e.currentTarget)}
-					>
-						<Input name="q" placeholder="Type to search" />
-					</Form>
-
-					<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
-						{users => (
-							<ul className="flex flex-col gap-4 p-4 ">
-								{users?.data.map(user => {
-									const id = `opponent-${user.id}`;
-									return (
-										<li key={user.id}>
-											<label htmlFor={id} className="flex items-center gap-2">
-												<input id={id} type="radio" name="opponent_id" value={user.id} />
-												<UserAvatar user={user} />
-												<span>{user.username}</span>
-											</label>
-										</li>
-									);
-								})}
-							</ul>
-						)}
-					</SWR>
-				</div>
-			</section>
-
 			<Form method="POST" className="flex flex-col gap-4">
+				<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
+					<header className="flex gap-2 p-2">
+						<IconUser /> <h1 className="heading-sm">Opponent</h1>
+					</header>
+					<div className="bg-lowest rounded-4 shadow-surface-md text-wrap surface-neutral ring-neutral-9/10 flex max-h-64 flex-col gap-4 overflow-auto ring-1">
+						<Form
+							id="search"
+							className="bg-lowest/90 sticky top-0 z-10 border-b p-2 backdrop-blur-md backdrop-saturate-150"
+							method="GET"
+							onChange={e => submit(e.currentTarget)}
+						>
+							<Input form="search" name="q" placeholder="Type to search" />
+						</Form>
+
+						<SWR data={users} errorElement={'Whoops'} loadingElement={'Loading users…'}>
+							{users => (
+								<ul className="flex flex-col gap-4 p-4 ">
+									{users?.data.map(user => {
+										const id = `opponent-${user.id}`;
+										return (
+											<li key={user.id}>
+												<label htmlFor={id} className="flex items-center gap-2">
+													<input id={id} type="radio" name="opponent_id" value={user.id} />
+													<UserAvatar user={user} />
+													<span>{user.username}</span>
+												</label>
+											</li>
+										);
+									})}
+								</ul>
+							)}
+						</SWR>
+					</div>
+				</section>
+
 				<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
 					<header className="flex gap-2 p-2">
 						<IconSettings /> <h1 className="heading-sm">Game settings</h1>

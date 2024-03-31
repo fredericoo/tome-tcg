@@ -110,8 +110,20 @@ export const Card = ({
 	);
 };
 
-export const CardBack = ({ size }: { size: NonNullable<Variants['size']> }) => {
-	return <Image srcWidth={sizeToRenderedWidth[size]} className="h-full w-full" src="/card-back.png" alt="Card" />;
+interface CardBackProps extends ComponentPropsWithoutRef<'img'> {
+	size: NonNullable<Variants['size']>;
+}
+
+export const CardBack = ({ size, ...props }: CardBackProps) => {
+	return (
+		<Image
+			srcWidth={sizeToRenderedWidth[size]}
+			className="aspect-[63/88] h-full rounded-[1vh]"
+			src="/card-back.png"
+			alt="Card"
+			{...props}
+		/>
+	);
 };
 
 const cardFrontClass = cva({
