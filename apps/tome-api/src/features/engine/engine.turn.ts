@@ -73,7 +73,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				min: 0,
 				max: 1,
 				from: 'self',
-				message: 'Select a card to cast',
+				message: 'Prepare a spell or field',
 				availableColors: COLORS,
 				availableTypes: ['field', 'spell'],
 			},
@@ -225,7 +225,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				min: 1,
 				max: 1,
 				from: 'self',
-				message: 'Cast a spell from a stack.',
+				message: 'Attack with a spell',
 			},
 			onAction: function* ({ stacks, side }) {
 				const stack = stacks[0];

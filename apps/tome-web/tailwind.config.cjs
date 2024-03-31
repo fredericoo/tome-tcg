@@ -154,8 +154,8 @@ module.exports = {
 					'100%': { width: '0%' },
 				},
 				'card-preview': {
-					'0%': { transform: 'scale(0.9) translateY(-100%)' },
-					'100%': { transform: 'scale(1) translateY(-100%)' },
+					'0%': { transform: 'translateX(-50%) scale(0.9) translateY(-100%)' },
+					'100%': { transform: 'translateX(-50%) scale(1) translateY(-100%)' },
 				},
 				'card-effect': {
 					'0%, 100%': { transform: 'scale(1)' },

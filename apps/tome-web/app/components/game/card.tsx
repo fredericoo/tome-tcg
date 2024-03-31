@@ -80,8 +80,9 @@ export const Card = ({
 
 	return (
 		<motion.div
-			id={`#card-${card.key}`}
 			layoutId={card.key.toString()}
+			key={card.key}
+			initial={false}
 			animate={{ rotateY: isShownCard(card) ? 0 : 180 }}
 			layout="preserve-aspect"
 			className={cardClass({ size, className, interactive, highlight })}
@@ -91,7 +92,7 @@ export const Card = ({
 				<div
 					className={cardClass({
 						size: 'lg',
-						className: 'animate-card-preview pointer-events-none absolute -left-1/4 -top-2 z-50 shadow-xl',
+						className: 'animate-card-preview pointer-events-none absolute -top-2 left-1/2 z-50 shadow-xl',
 					})}
 				>
 					<CardFront card={card} size="lg" />
@@ -179,6 +180,8 @@ const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
 	);
 };
 
+export const getCardImageSrc = (image: string) => `/cards/${image}.png`;
+
 const CardImage = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
 	switch (size) {
 		case 'lg':
@@ -188,7 +191,7 @@ const CardImage = ({ data, size }: { data: CardData[keyof CardData]; size: NonNu
 					{data.image && (
 						<Image
 							srcWidth={sizeToRenderedWidth[size]}
-							src={`/cards/${data.image}.png`}
+							src={getCardImageSrc(data.image)}
 							alt=""
 							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
 						/>

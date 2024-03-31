@@ -26,6 +26,7 @@ import {
 import { getGameById } from './game.api';
 
 type GameRoomState = {
+	state: 'LOBBY' | 'PLAYING';
 	connections: {
 		sideA: { id: string; send: (data: any) => void } | undefined;
 		sideB: { id: string; send: (data: any) => void } | undefined;
@@ -185,7 +186,8 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 };
 
 const createGameRoom = (gameId: number) => {
-	const state: GameRoomState = {
+	const room: GameRoomState = {
+		state: 'LOBBY',
 		connections: { sideA: undefined, sideB: undefined },
 		lastState: undefined,
 	};
@@ -210,8 +212,8 @@ const createGameRoom = (gameId: number) => {
 		});
 		const handleGame = async () => {
 			for await (const iteration of gameInstance) {
-				state.lastState = iteration;
-				SIDES.forEach(side => state.connections[side]?.send(iteration));
+				room.lastState = iteration;
+				SIDES.forEach(side => room.connections[side]?.send(iteration));
 				await delay(350);
 			}
 		};
@@ -219,22 +221,30 @@ const createGameRoom = (gameId: number) => {
 	};
 
 	return {
-		state,
+		state: room,
 		join: (side: Side, connectionId: string, sendFn: (data: SanitisedIteration) => void) => {
-			state.connections[side] = {
+			room.connections[side] = {
 				id: connectionId,
 				send: (data: GameIterationResponse) => sendFn(sanitiseIteration(side, data)),
 			};
-			if (state.lastState) state.connections[side]?.send(state.lastState);
-			if (state.connections.sideA && state.connections.sideB) startGame();
+			if (room.lastState) room.connections[side]?.send(room.lastState);
+
+			if (room.state === 'LOBBY') {
+				const readyToStart =
+					process.env.NODE_ENV === 'development' || Boolean(room.connections.sideA && room.connections.sideB);
+				if (readyToStart) {
+					room.state = 'PLAYING';
+					startGame();
+				}
+			}
 		},
 		leave: (connectionId: string) => {
-			if (state.connections.sideA?.id === connectionId) {
-				state.connections.sideA = undefined;
+			if (room.connections.sideA?.id === connectionId) {
+				room.connections.sideA = undefined;
 				return { ok: true };
 			}
-			if (state.connections.sideB?.id === connectionId) {
-				state.connections.sideB = undefined;
+			if (room.connections.sideB?.id === connectionId) {
+				room.connections.sideB = undefined;
 				return { ok: true };
 			}
 			return { ok: false };
@@ -285,7 +295,10 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 				break;
 			}
 			case 'PLAYING': {
-				const room = runningGameRooms[channel];
+				let room = runningGameRooms[channel];
+				if (process.env.NODE_ENV !== 'development') {
+					room = room ?? createGameRoom(game.id);
+				}
 				if (!room) {
 					// This should never happen, but in case the server restarts with a `PLAYING` game in the db, we need to handle it.
 					ws.send({ error: 'Game room not found.' });

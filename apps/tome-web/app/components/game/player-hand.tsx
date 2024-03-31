@@ -1,4 +1,4 @@
-import { IconCircleCheck, IconCircleX } from '@tabler/icons-react';
+import { IconCircleCheck, IconPlayerSkipForward } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -8,6 +8,7 @@ import type {
 	SanitisedIteration,
 	SelectFromHandMessageSchema,
 } from '../../../../tome-api/src/features/game/game.pubsub';
+import { Button } from '../button';
 import { Card } from './card';
 
 interface PlayerHandProps {
@@ -78,17 +79,11 @@ export function PlayerHand({ relative, side, action, onSelectFromHand }: PlayerH
 				})}
 			</ol>
 			{isSelectingFromHand && (
-				<footer
-					aria-label="Actions"
-					className="relative mb-2 flex items-center justify-center gap-2 rounded-full bg-neutral-900/50 p-2 shadow-lg backdrop-blur-md backdrop-saturate-150"
-				>
+				<footer aria-label="Actions" className="relative flex items-center justify-center gap-2 shadow-lg">
 					{action.config.min === 0 && (
-						<button
-							className="relative flex items-center gap-2 rounded-full bg-red-600 py-2 pl-2 pr-4 text-white transition-all hover:bg-red-500 active:bg-red-600"
-							onClick={() => onSelectFromHand({ type: 'select_from_hand', cardKeys: [] })}
-						>
-							<IconCircleX /> Skip
-						</button>
+						<Button variant="outline" onClick={() => onSelectFromHand({ type: 'select_from_hand', cardKeys: [] })}>
+							<IconPlayerSkipForward /> <span>Skip</span>
+						</Button>
 					)}
 					{action.config.max !== 1 && (
 						<button

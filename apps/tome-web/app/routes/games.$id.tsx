@@ -8,9 +8,11 @@ import { create } from 'zustand';
 
 import { Board } from '../../../tome-api/src/features/engine/engine.board';
 import type { CompressedCombatStackItem, SanitisedIteration } from '../../../tome-api/src/features/game/game.pubsub';
-import { Card, isShownCard } from '../components/game/card';
+import { Badge } from '../components/badge';
+import { Card, getCardImageSrc, isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
 import { PlayerSide } from '../components/game/player-side';
+import { Image } from '../components/image';
 import { api } from '../lib/api';
 import { CardDataProvider, useCardData } from '../lib/card-data';
 import { useGameSub } from '../lib/game.utils';
@@ -50,7 +52,7 @@ export const useCombatStackStore = create<CombatStackStore>(set => ({
 }));
 
 const fieldClass = cva({
-	base: 'flex flex-grow items-center justify-center',
+	base: 'flex flex-grow items-center justify-center relative',
 	variants: {
 		active: {
 			red: 'bg-red-100',
@@ -73,6 +75,13 @@ const MiddleSection = ({ latestData }: { latestData: SanitisedIteration | undefi
 
 	return (
 		<section className={fieldClass({ active: activeColor })}>
+			{activeFieldCardData?.image && (
+				<Image
+					src={getCardImageSrc(activeFieldCardData.image)}
+					className="absolute inset-0 z-0 h-full w-full scale-125 object-cover opacity-30 blur-xl"
+					srcWidth="100vw"
+				/>
+			)}
 			<div className="flex-1" />
 			<CardPile cards={latestData?.board.field ?? []} last={2} size="sm" />
 			{latestData?.board.sideA.casting.field && (
@@ -126,7 +135,7 @@ const CombatStackAnimation = () => {
 				combatStack
 					.flatMap(combat => {
 						if (!combat.sourceKey) return undefined;
-						const card = document.querySelector(`#card-${combat.sourceKey}`);
+						const card = document.querySelector(`#stack-${combat.sourceKey}`);
 						const target = document.querySelector(`#${combat.target}-hp`);
 						if (!card || !target) return [];
 						const seq: AnimationSequence = [
@@ -172,21 +181,20 @@ export default function Page() {
 	return (
 		<CardDataProvider value={cardData}>
 			<CombatStackAnimation />
-			<div className="relative flex h-screen w-full flex-col overflow-hidden bg-neutral-100">
+			<div className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
 				{playerBoard?.action && (
-					<div className="animate-fade-in pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center bg-neutral-900/50 p-4">
+					<div className="animate-fade-in bg-neutral-12/50 pointer-events-none fixed inset-0 z-20 flex w-full items-center justify-center p-4">
 						<p
 							key={playerBoard.action.config.message}
-							className="animate-action font-lg font-bold text-white [text-shadow:0px_1px_0_black]"
+							className="animate-action display-sm text-white [text-shadow:0px_1px_0_black]"
 						>
 							{playerBoard.action.config.message}
 						</p>
 					</div>
 				)}
-				<nav className="rounded-6 absolute left-2 top-2 bg-white px-4 py-2 text-center shadow-lg">
-					<span>status: {status}</span>
+				<nav className="rounded-6 shadow-surface-md surface-neutral absolute left-2 top-2 bg-white p-2 text-center">
+					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
 					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
-					{status === 'connected' && <button onClick={() => sub?.close()}>Disconnect</button>}
 					{error && <span className="rounded-full bg-red-500 px-2 py-1">{error}</span>}
 				</nav>
 
