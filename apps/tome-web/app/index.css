@@ -34,6 +34,10 @@
 		height: 100%;
 		object-fit: inherit;
 	}
+
+	::selection {
+		@apply bg-accent-2 text-accent-11;
+	}
 }
 
 @layer components {
