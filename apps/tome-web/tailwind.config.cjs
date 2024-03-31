@@ -5,7 +5,7 @@ const asCssVar = require('@inploi/design-tokens/tokens').asCssVar({});
 /**
  * @param {keyof ReturnType<import("./app/lib/theme")['tokens']>} key
  */
-const token = key => asCssVar('reference', key);
+const token = key => `oklch(${asCssVar('reference', key)} / <alpha-value>)`;
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -23,50 +23,110 @@ module.exports = {
 			display: ['GT Walsheim Pro', 'sans-serif'],
 		},
 
+		borderRadius: {
+			1: '0.25rem',
+			2: '0.5rem',
+			3: '0.75rem',
+			4: '1rem',
+			5: '1.25rem',
+			6: '1.5rem',
+			7: '1.75rem',
+			8: '2rem',
+			12: '3rem',
+			16: '4rem',
+			full: '9999px',
+		},
+
+		colors: {
+			lowest: token('lowest'),
+			highest: token('highest'),
+			border: token('neutral-4'),
+			neutral: {
+				1: token('neutral-1'),
+				2: token('neutral-2'),
+				3: token('neutral-3'),
+				4: token('neutral-4'),
+				5: token('neutral-5'),
+				6: token('neutral-6'),
+				7: token('neutral-7'),
+				8: token('neutral-8'),
+				9: token('neutral-9'),
+				10: token('neutral-10'),
+				11: token('neutral-11'),
+				12: token('neutral-12'),
+			},
+			accent: {
+				1: token('accent-1'),
+				2: token('accent-2'),
+				3: token('accent-3'),
+				4: token('accent-4'),
+				5: token('accent-5'),
+				6: token('accent-6'),
+				7: token('accent-7'),
+				8: token('accent-8'),
+				9: token('accent-9'),
+				10: token('accent-10'),
+				11: token('accent-11'),
+				12: token('accent-12'),
+			},
+			negative: {
+				1: token('negative-1'),
+				2: token('negative-2'),
+				3: token('negative-3'),
+				4: token('negative-4'),
+				5: token('negative-5'),
+				6: token('negative-6'),
+				7: token('negative-7'),
+				8: token('negative-8'),
+				9: token('negative-9'),
+				10: token('negative-10'),
+				11: token('negative-11'),
+				12: token('negative-12'),
+			},
+			positive: {
+				1: token('positive-1'),
+				2: token('positive-2'),
+				3: token('positive-3'),
+				4: token('positive-4'),
+				5: token('positive-5'),
+				6: token('positive-6'),
+				7: token('positive-7'),
+				8: token('positive-8'),
+				9: token('positive-9'),
+				10: token('positive-10'),
+				11: token('positive-11'),
+				12: token('positive-12'),
+			},
+			warning: {
+				1: token('warning-1'),
+				2: token('warning-2'),
+				3: token('warning-3'),
+				4: token('warning-4'),
+				5: token('warning-5'),
+				6: token('warning-6'),
+				7: token('warning-7'),
+				8: token('warning-8'),
+				9: token('warning-9'),
+				10: token('warning-10'),
+				11: token('warning-11'),
+				12: token('warning-12'),
+			},
+		},
+
 		extend: {
-			colors: {
-				neutral: {
-					1: token('neutral-1'),
-					2: token('neutral-2'),
-					3: token('neutral-3'),
-					4: token('neutral-4'),
-					5: token('neutral-5'),
-					6: token('neutral-6'),
-					7: token('neutral-7'),
-					8: token('neutral-8'),
-					9: token('neutral-9'),
-					10: token('neutral-10'),
-					11: token('neutral-11'),
-					12: token('neutral-12'),
-				},
-				accent: {
-					1: token('accent-1'),
-					2: token('accent-2'),
-					3: token('accent-3'),
-					4: token('accent-4'),
-					5: token('accent-5'),
-					6: token('accent-6'),
-					7: token('accent-7'),
-					8: token('accent-8'),
-					9: token('accent-9'),
-					10: token('accent-10'),
-					11: token('accent-11'),
-					12: token('accent-12'),
-				},
-				error: {
-					1: token('error-1'),
-					2: token('error-2'),
-					3: token('error-3'),
-					4: token('error-4'),
-					5: token('error-5'),
-					6: token('error-6'),
-					7: token('error-7'),
-					8: token('error-8'),
-					9: token('error-9'),
-					10: token('error-10'),
-					11: token('error-11'),
-					12: token('error-12'),
-				},
+			transitionTimingFunction: {
+				'expo-out': 'cubic-bezier(0.16, 1, 0.3, 1)',
+			},
+			boxShadow: {
+				'surface-sm':
+					'inset 0 0 0 1px oklch(var(--lowest) / 0.25), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 2px 2px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 2px 2px 0px oklch(var(--tw-shadow-color) /0.01)',
+				'surface-md':
+					'inset 0 0 0 1px oklch(var(--lowest) / 0.25), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 6px 4px 0px oklch(var(--tw-shadow-color) /0.01)',
+				'surface-lg':
+					'inset 0 0 0 1px oklch(var(--lowest) / 0.25), 0px 1px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 3px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 6px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 11px 4px 0px oklch(var(--tw-shadow-color) /0.01), 0px 32px 24px -12px oklch(var(--tw-shadow-color) / 0.06)',
+				'surface-lg-inverted':
+					'inset 0 0 0 1px oklch(var(--lowest) / 0.25), 0px 0px 1px 0px oklch(var(--tw-shadow-color) / 0.04), 0px 0px 3px 0px oklch(var(--tw-shadow-color) / 0.03), 0px 0px 4px 0px oklch(var(--tw-shadow-color) / 0.02), 0px 0px 4px 0px oklch(var(--tw-shadow-color) /0.01), 0px 0px 24px -12px oklch(var(--tw-shadow-color) / 0.06)',
+				'surface-inset': 'inset 0 1px 1px 0 rgba(0, 0, 0, 0.1)',
 			},
 			keyframes: {
 				'fade-in': {
@@ -101,11 +161,12 @@ module.exports = {
 	},
 	plugins: [
 		require('tailwindcss-touch')(),
+		require('./app/lib/style.typography').textStylesPlugin,
 		plugin(({ addUtilities, matchUtilities }) => {
 			const frStyles = {
 				outline: 'none',
 				'--tw-ring-offset-width': '2px',
-				'--tw-ring-offset-color': 'white',
+				'--tw-ring-offset-color': "theme('colors.lowest')",
 				'--tw-ring-offset-shadow': '0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color)',
 				'--tw-ring-opacity': '1',
 				'--tw-ring-color': "theme('colors.accent.9')",
@@ -120,6 +181,15 @@ module.exports = {
 					}),
 				},
 				{ values: { balance: 'balance', pretty: 'pretty' } },
+			);
+
+			matchUtilities(
+				{
+					shadow: value => ({
+						'--tw-shadow-color': `var(--${value}-9)`,
+					}),
+				},
+				{ values: { positive: 'positive', negative: 'negative', neutral: 'neutral', accent: 'accent' } },
 			);
 
 			addUtilities({

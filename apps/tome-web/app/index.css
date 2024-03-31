@@ -5,15 +5,23 @@
 @layer base {
 	@font-face {
 		font-family: 'GT Walsheim Pro';
-		src: url('/fonts/GT-Walsheim-Pro-Bold.woff2') format('woff2');
-		font-weight: bold;
 		font-style: normal;
+		font-weight: 400;
+		src: url('/fonts/gt-walsheim-pro-regular-webfont.woff2') format('woff2');
 	}
+
 	@font-face {
 		font-family: 'GT Walsheim Pro';
-		src: url('/fonts/GT-Walsheim-Pro-Medium.woff2') format('woff2');
-		font-weight: normal;
 		font-style: normal;
+		font-weight: 500;
+		src: url('/fonts/gt-walsheim-pro-medium-webfont.woff2') format('woff2');
+	}
+
+	@font-face {
+		font-family: 'GT Walsheim Pro';
+		font-style: normal;
+		font-weight: 700;
+		src: url('/fonts/gt-walsheim-pro-bold-webfont.woff2') format('woff2');
 	}
 
 	:is(picture) {
@@ -27,6 +35,19 @@
 		object-fit: inherit;
 	}
 }
+
+@layer components {
+	.border,
+	.border-r,
+	.border-l,
+	.border-t,
+	.border-b,
+	.border-x,
+	.border-y {
+		@apply border-border;
+	}
+}
+
 .tabler-icon {
 	width: 20px;
 	height: 20px;

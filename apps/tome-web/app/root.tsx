@@ -6,7 +6,7 @@ import { generateColorThemeCss } from './lib/theme';
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" className="bg-lowest text-neutral-12 h-full">
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -14,7 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<Links />
 				<style id="theme">{generateColorThemeCss({ mode: 'light' })}</style>
 			</head>
-			<body className="font-body">
+			<body className="font-body flex min-h-full flex-col">
 				<svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="0" height="0">
 					<defs>
 						<symbol viewBox="0 0 100 175" stroke="none" fill="currentColor" id="bookmark-red">

@@ -4,14 +4,15 @@ import { VariantProps, cva } from 'cva';
 import * as React from 'react';
 
 const buttonVariants = cva({
-	base: 'button inline-flex items-center justify-center fr gap-2 whitespace-nowrap rounded-full text-md font-medium transition-all disabled:pointer-events-none disabled:opacity-50',
+	base: 'button flex items-center justify-center fr gap-2 whitespace-nowrap rounded-2 text-md font-medium transition-all ease-expo-out duration-200 disabled:pointer-events-none disabled:opacity-50',
 	variants: {
 		variant: {
-			accent: 'bg-accent-10 hover:bg-accent-11 active:bg-accent-12 text-accent-1',
-			destructive: 'bg-error-10 hover:bg-error-11 active:bg-error-12 text-error-1',
+			accent: 'bg-accent-10 hover:bg-accent-11 active:bg-accent-12 text-accent-1 shadow-surface-md shadow-accent',
+			destructive: 'bg-negative-10 hover:bg-negative-11 active:bg-negative-12 text-negative-1',
 			outline:
 				'border border-neutral-4 bg-transparent hover:bg-neutral-1 hover:border-neutral-5 active:border-neutral-6 text-neutral-12',
-			ghost: 'hover:bg-accent-3 hover:text-accent-11 active:bg-accent-4',
+			ghost:
+				'hover:bg-accent-3 hover:text-accent-11 active:bg-accent-4 hover:shadow-surface-md active:shadow-surface-md shadow-accent',
 			link: 'text-accent-10 underline-offset-4 hover:underline active:text-accent-11',
 		},
 		size: {

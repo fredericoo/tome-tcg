@@ -5,7 +5,7 @@ import { cva } from 'cva';
 import * as React from 'react';
 
 const avatarVariants = cva({
-	base: 'relative flex shrink-0 overflow-hidden ring-2 text-foreground ring-accent rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+	base: 'relative flex shrink-0 overflow-hidden ring-2 text-neutral-12 ring-neutral-1 rounded-full fr',
 	variants: {
 		size: {
 			xl: 'h-16 w-16',

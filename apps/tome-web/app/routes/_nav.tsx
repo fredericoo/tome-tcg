@@ -15,15 +15,17 @@ export const clientLoader = (async () => {
 	return { user: data };
 }) satisfies LoaderFunction;
 
+export type NavLoader = typeof clientLoader;
+
 export default function Layout() {
 	const { user } = useLoaderData<typeof clientLoader>();
 
 	return (
-		<main className="container mx-auto  max-w-screen-md">
+		<main className="container">
 			<nav className="flex border-b py-4">
 				<div className="flex-1" />
 				<Link to="/" className="fr flex items-center rounded-full px-2 transition-shadow">
-					<h1 className="text-md font-bold tracking-tight">Tome (alpha)</h1>
+					<h1 className="label-md">Tome (alpha)</h1>
 				</Link>
 				<div className="flex flex-1 items-center justify-end gap-2">
 					<UserAvatar user={user} />

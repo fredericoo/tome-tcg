@@ -3,10 +3,12 @@ import { IconPlus } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
 
+import { Badge, BadgeProps } from '../components/badge';
 import { Button } from '../components/button';
 import { GenericErrorBoundary } from '../components/generic-error-boundary';
 import { UserAvatar } from '../components/user-avatar';
 import { api } from '../lib/api';
+import { useNavLoaderData } from '../lib/user.utils';
 
 export const clientLoader = (async () => {
 	return defer({
@@ -17,40 +19,58 @@ export const clientLoader = (async () => {
 	});
 }) satisfies LoaderFunction;
 
+type GameStatus = NonNullable<Awaited<ReturnType<typeof api.me.games.get>>['data']>[number]['status'];
+const gameStatusBadgeProps: Record<GameStatus, BadgeProps> = {
+	CREATED: { colorScheme: 'warning', variant: 'default', children: 'Invited' },
+	FINISHED: { colorScheme: 'outline', variant: 'default', children: 'Finished' },
+	PLAYING: { colorScheme: 'positive', variant: 'default', children: 'Playing' },
+};
+
 export default function Page() {
 	const { games } = useLoaderData<typeof clientLoader>();
+	const { user } = useNavLoaderData();
 
 	return (
-		<section className="flex flex-col gap-2">
-			<header className="flex gap-4">
-				<h1 className="flex-grow text-lg font-bold tracking-tight">Ongoing games</h1>
-				<Button variant="outline" asChild>
-					<Link to="/games/new">
-						<IconPlus /> <span>Create game</span>
-					</Link>
-				</Button>
+		<section className="bg-neutral-2 rounded-6 flex max-w-md flex-col gap-2 p-2">
+			<header className="flex gap-4 p-2">
+				<div className="flex-grow pl-3">
+					<h1 className="heading-md pb-1">Ongoing games</h1>
+					<p className="body-sm text-neutral-10">Games currently being played, or that you’ve been invited to join</p>
+				</div>
+				<div className="flex items-center">
+					<Button variant="ghost" asChild>
+						<Link to="/games/new">
+							<IconPlus /> <span>Invite</span>
+						</Link>
+					</Button>
+				</div>
 			</header>
 			<Suspense fallback={<div>Loading games…</div>}>
 				<Await resolve={games} errorElement={<GenericErrorBoundary />}>
 					{games => (
-						<ul className="flex flex-col gap-4">
-							{games.map(game => (
-								<li key={game.id}>
-									<Link to={`/games/${game.id}`} className="fr flex gap-4 rounded-xl bg-neutral-100 p-4 transition-all">
-										<div className="flex flex-shrink flex-grow items-center gap-4">
-											<span className="flex flex-1 flex-row-reverse items-center gap-2">
-												<UserAvatar user={game.sideA} /> {game.sideA.username}
-											</span>
-											<span className="opacity-50">vs</span>
-											<span className="flex flex-1 items-center gap-2 ">
-												<UserAvatar user={game.sideB} /> {game.sideB.username}
-											</span>
-										</div>
+						<ul className="bg-lowest rounded-4 shadow-surface-md text-wrap shadow-neutral ring-neutral-9/10 flex flex-col ring-1">
+							{games.map(game => {
+								const opponent = game.sideA.id === user.id ? game.sideB : game.sideA;
+								return (
+									<li
+										key={game.id}
+										className="first-of-type:rounded-t-4 last-of-type:rounded-b-4 hover:bg-neutral-1 active:bg-neutral-2 [&:not(:last-of-type)]:border-b"
+									>
+										<Link
+											to={`/games/${game.id}`}
+											className="fr ease-expo-out flex items-center gap-4 rounded-[inherit] p-4 transition-all duration-300 hover:px-6"
+										>
+											<div className="flex flex-shrink flex-grow items-center gap-4 overflow-hidden">
+												<UserAvatar user={opponent} /> <span className="truncate">{opponent.username}</span>
+											</div>
 
-										<div className="flex-none">{game.status}</div>
-									</Link>
-								</li>
-							))}
+											<div className="flex-none">
+												<Badge {...gameStatusBadgeProps[game.status]} />
+											</div>
+										</Link>
+									</li>
+								);
+							})}
 						</ul>
 					)}
 				</Await>

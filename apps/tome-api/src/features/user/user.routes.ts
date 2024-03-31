@@ -37,7 +37,7 @@ export const userRoutes = new Elysia()
 				sideB: sideB,
 			})
 			.from(games)
-			.where(and(gameIncludesUser, eq(games.status, 'CREATED')))
+			.where(and(gameIncludesUser))
 			.innerJoin(sideA, eq(games.sideA, sideA.id))
 			.innerJoin(sideB, eq(games.sideB, sideB.id));
 	});
