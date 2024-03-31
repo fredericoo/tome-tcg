@@ -21,43 +21,43 @@ const badgeStyles = cva({
 		{
 			variant: 'default',
 			colorScheme: 'accent',
-			className: 'bg-accent-1 text-accent-10 shadow-surface-sm shadow-neutral ring-accent-9/30',
+			className: 'bg-accent-1 text-accent-10 shadow-surface-sm surface-neutral ring-accent-9/30',
 		},
 		{
 			variant: 'default',
 			colorScheme: 'positive',
-			className: 'bg-positive-1 text-positive-10 shadow-surface-sm shadow-positive ring-positive-9/30',
+			className: 'bg-positive-1 text-positive-10 shadow-surface-sm surface-positive ring-positive-9/30',
 		},
 		{
 			variant: 'default',
 			colorScheme: 'negative',
-			className: 'bg-negative-1 text-negative-10 shadow-surface-sm shadow-negative ring-negative-9/30',
+			className: 'bg-negative-1 text-negative-10 shadow-surface-sm surface-negative ring-negative-9/30',
 		},
 		{
 			variant: 'default',
 			colorScheme: 'warning',
-			className: 'bg-warning-1 text-warning-10 shadow-surface-sm shadow-warning ring-warning-9/30',
+			className: 'bg-warning-1 text-warning-10 shadow-surface-sm surface-warning ring-warning-9/30',
 		},
 		/** High contrast */
 		{
 			variant: 'highContrast',
 			colorScheme: 'accent',
-			className: 'bg-background-strong-primary text-copy-inverted shadow-accent shadow-surface-inset',
+			className: 'bg-background-strong-primary text-copy-inverted surface-accent shadow-surface-inset',
 		},
 		{
 			variant: 'highContrast',
 			colorScheme: 'positive',
-			className: 'bg-background-strong-positive text-copy-highcontrast-positive shadow-positive shadow-surface-inset',
+			className: 'bg-background-strong-positive text-copy-highcontrast-positive surface-positive shadow-surface-inset',
 		},
 		{
 			variant: 'highContrast',
 			colorScheme: 'negative',
-			className: 'bg-background-strong-negative text-copy-inverted shadow-negative shadow-surface-inset',
+			className: 'bg-background-strong-negative text-copy-inverted surface-negative shadow-surface-inset',
 		},
 		{
 			variant: 'highContrast',
 			colorScheme: 'warning',
-			className: 'bg-background-strong-warning text-copy-inverted shadow-warning shadow-surface-inset',
+			className: 'bg-background-strong-warning text-copy-inverted surface-warning shadow-surface-inset',
 		},
 	],
 	defaultVariants: {

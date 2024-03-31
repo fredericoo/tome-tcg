@@ -48,7 +48,7 @@ export default function Page() {
 			<Suspense fallback={<div>Loading games…</div>}>
 				<Await resolve={games} errorElement={<GenericErrorBoundary />}>
 					{games => (
-						<ul className="bg-lowest rounded-4 shadow-surface-md text-wrap shadow-neutral ring-neutral-9/10 flex flex-col ring-1">
+						<ul className="bg-lowest rounded-4 shadow-surface-md text-wrap surface-neutral ring-neutral-9/10 flex flex-col ring-1">
 							{games.map(game => {
 								const opponent = game.sideA.id === user.id ? game.sideB : game.sideA;
 								return (
