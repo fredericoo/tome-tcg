@@ -160,7 +160,7 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 export const getCardEffectHighlight = (card: GameCard): VfxIteration => ({
 	type: 'highlight',
 	durationMs: 300,
-	config: { type: 'effect', target: { type: 'card', card } },
+	config: { type: 'effect', target: { type: 'card', cardKey: card.key } },
 });
 
 export const useTriggerHooks = (game: GameState) => {

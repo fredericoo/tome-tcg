@@ -80,7 +80,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			},
 			onAction: async function* ({ side, cardKeys }) {
 				const cardKey = cardKeys[0];
-				invariant(cardKey !== undefined, 'No card key provided');
+				if (!cardKey) return;
 
 				const hand = game.board.players[side].hand;
 				const index = hand.findIndex(handCard => handCard.key === cardKey);
@@ -196,13 +196,13 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			yield* actions.vfx({
 				type: 'highlight',
 				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', card: winnerCard }, type: 'positive' },
+				config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
 			});
 		if (loserCard)
 			yield* actions.vfx({
 				type: 'highlight',
 				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', card: loserCard }, type: 'negative' },
+				config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
 			});
 
 		yield game;
@@ -273,13 +273,13 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			yield* actions.vfx({
 				type: 'highlight',
 				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', card: winnerCard }, type: 'positive' },
+				config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
 			});
 		if (loserCard)
 			yield* actions.vfx({
 				type: 'highlight',
 				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', card: loserCard }, type: 'negative' },
+				config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
 			});
 
 		const damageFromCard =
