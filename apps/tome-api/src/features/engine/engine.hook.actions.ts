@@ -6,7 +6,6 @@ import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const useGameActions = (game: GameIterationResponse) => ({
-	// TODO: how to discard _field_ cards, as they have no owner?
 	discard: function* ({ card, from }: { card: GameCard; from: GameCard[] }) {
 		const cardToMove = removeCard(from, card);
 		if (!cardToMove) return;
