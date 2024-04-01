@@ -16,7 +16,6 @@ export const ACTIVATABLE_HOOKS = [
 ] as const satisfies Array<keyof TurnHooks<true>>;
 
 export type TurnHooks<THasOwner extends boolean = false> = {
-	// TODO: implement these
 	onDiscard: (params: {
 		game: GameIterationResponse;
 		actions: HookActions;
@@ -146,12 +145,16 @@ export const useTriggerHooks = (game: GameIterationResponse) => {
 
 		if (fieldEffect) {
 			game.highlights.effect.add(currentField.key);
-			yield* fieldEffect({
-				...context,
-				thisCard: currentField,
-				opponentSide: undefined,
-				ownerSide: undefined,
-			} as any);
+			try {
+				yield* fieldEffect({
+					...context,
+					thisCard: currentField,
+					opponentSide: undefined,
+					ownerSide: undefined,
+				} as any);
+			} catch (e) {
+				console.error(`Error in ${currentField.name}’s ${params.hookName} effect:`, e);
+			}
 			game.highlights.effect.delete(currentField.key);
 		}
 
@@ -172,14 +175,17 @@ export const useTriggerHooks = (game: GameIterationResponse) => {
 			const cardEffect = spell.effects[params.hookName];
 			if (cardEffect) {
 				game.highlights.effect.add(spell.key);
-				console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
-
-				yield* cardEffect({
-					...context,
-					ownerSide,
-					opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
-					thisCard: spell,
-				} as any);
+				try {
+					yield* cardEffect({
+						...context,
+						ownerSide,
+						opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
+						thisCard: spell,
+					} as any);
+					console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
+				} catch (e) {
+					console.error(`Error in ${spell.name}’s ${params.hookName} effect:`, e);
+				}
 				game.highlights.effect.delete(spell.key);
 			}
 		}

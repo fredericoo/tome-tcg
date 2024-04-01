@@ -14,7 +14,6 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async functi
 	yield* actions.discard({
 		card: thisCard,
 		from: game.board.players[ownerSide].stacks[thisCardStack],
-		side: ownerSide,
 	});
 };
 

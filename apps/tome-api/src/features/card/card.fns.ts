@@ -34,7 +34,6 @@ export const deck: DbCard[] = [
 							yield* actions.discard({
 								card: cardToDiscard,
 								from: game.board.players[ownerSide].hand,
-								side: ownerSide,
 							});
 						},
 					},
@@ -75,7 +74,6 @@ export const deck: DbCard[] = [
 							yield* actions.discard({
 								card: cardToDiscard,
 								from: game.board.players[ownerSide].hand,
-								side: ownerSide,
 							});
 						},
 					},
@@ -115,7 +113,6 @@ export const deck: DbCard[] = [
 							yield* actions.discard({
 								card: cardToDiscard,
 								from: game.board.players[ownerSide].hand,
-								side: ownerSide,
 							});
 						},
 					},
@@ -160,7 +157,6 @@ export const deck: DbCard[] = [
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.green,
-					side: opponentSide,
 				});
 			},
 		},
@@ -179,7 +175,6 @@ export const deck: DbCard[] = [
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.red,
-					side: opponentSide,
 				});
 			},
 		},
@@ -198,7 +193,6 @@ export const deck: DbCard[] = [
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.blue,
-					side: opponentSide,
 				});
 			},
 		},
@@ -233,7 +227,6 @@ export const deck: DbCard[] = [
 									yield* actions.discard({
 										card: cardToDiscard,
 										from: game.board.players[side].stacks[stack],
-										side: side,
 									});
 								}
 							},
@@ -285,7 +278,6 @@ export const deck: DbCard[] = [
 				yield* actions.discard({
 					card: winnerCard,
 					from: game.board.players[opponentSide].stacks[stackToDiscardFrom],
-					side: opponentSide,
 				});
 			},
 		},
@@ -335,7 +327,6 @@ export const deck: DbCard[] = [
 							yield* actions.discard({
 								card: cardToDiscard,
 								from: game.board.players[opponentSide].hand,
-								side: opponentSide,
 							});
 						},
 					},
@@ -467,11 +458,10 @@ export const deck: DbCard[] = [
 						yield* actions.discard({
 							card: cardToDiscard,
 							from: game.board.players[side].stacks.green,
-							side,
 						});
 					}
 				}
-				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
 	},
@@ -547,10 +537,9 @@ export const deck: DbCard[] = [
 		heal: 8,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard, loserSide }) {
-				const winnerSide = loserSide === 'sideA' ? 'sideB' : 'sideA';
+			onClashLose: async function* ({ actions, game, winnerCard }) {
 				if (!winnerCard) return;
-				yield* actions.discard({ card: winnerCard, from: game.board.field, side: winnerSide });
+				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
 	},
@@ -565,7 +554,7 @@ export const deck: DbCard[] = [
 			onDealDamage: async function* ({ actions, game }) {
 				const fieldEffect = topOf(game.board.field);
 				if (!fieldEffect) return;
-				yield* actions.discard({ card: fieldEffect, from: game.board.field, side: 'sideA' });
+				yield* actions.discard({ card: fieldEffect, from: game.board.field });
 			},
 		},
 	},
@@ -645,7 +634,6 @@ export const deck: DbCard[] = [
 				yield* actions.discard({
 					card: thisCard,
 					from: game.board.players[ownerSide].stacks[thisStack],
-					side: ownerSide,
 				});
 			},
 		},
@@ -747,7 +735,7 @@ export const deck: DbCard[] = [
 			},
 			onClashLose: async function* ({ actions, game, winnerCard }) {
 				if (!winnerCard) return;
-				yield* actions.discard({ card: winnerCard, from: game.board.field, side: 'sideA' });
+				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
 	},

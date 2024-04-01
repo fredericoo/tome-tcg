@@ -50,13 +50,13 @@ export type SanitisedIteration = {
 		phase: Board['phase'];
 		field: PubSubCard[];
 		highlights: Record<string, 'effect' | 'negative' | 'positive'>;
+		discardPile: PubSubCard[];
 	} & Record<
 		Side,
 		{
 			hp: number;
 			casting: Partial<Record<'field' | SpellColor, PubSubCard>>;
 			drawPile: PubSubCard[];
-			discardPile: PubSubCard[];
 			hand: PubSubCard[];
 			stacks: Record<SpellColor, PubSubCard[]>;
 			action?: GameAction;
@@ -108,6 +108,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 	const iteration: SanitisedIteration = {
 		side: playerSide,
 		board: {
+			discardPile: [],
 			combatStack:
 				originalIteration.board.phase === 'damage' ?
 					originalIteration.turn.combatStack.map(item => ({
@@ -123,7 +124,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			sideA: {
 				hp: originalIteration.board.players.sideA.hp,
 				casting: {},
-				discardPile: [],
+
 				drawPile: [],
 				hand: [],
 				stacks: {
@@ -135,7 +136,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 			sideB: {
 				hp: originalIteration.board.players.sideB.hp,
 				casting: {},
-				discardPile: [],
+
 				drawPile: [],
 				hand: [],
 				stacks: {
@@ -158,7 +159,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationRes
 		const showCard = showCardFromSide(side);
 		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
 		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
-		iteration.board[side].discardPile = originalIteration.board.players[side].discardPile.map(hideCard);
+		iteration.board.discardPile = originalIteration.board.discardPile.map(hideCard);
 		iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
 		// everyone can see the stacks
 		COLORS.forEach(stack => {

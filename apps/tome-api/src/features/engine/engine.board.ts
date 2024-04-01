@@ -10,11 +10,11 @@ export type Board = {
 			stacks: Record<SpellColor, SpellCard[]>;
 			hand: GameCard[];
 			drawPile: GameCard[];
-			discardPile: GameCard[];
 			casting: Partial<Record<SpellColor, SpellCard>> & { field?: FieldCard };
 		}
 	>;
 	field: FieldCard[];
+	discardPile: GameCard[];
 };
 
 export const shuffle = (deck: GameCard[]) => {
@@ -48,7 +48,6 @@ export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: Db
 			side,
 			hp: 100,
 			hand: [],
-			discardPile: [],
 			casting: {},
 			drawPile: deck.map(card => ({ ...card, key: cardIndex++ })),
 			stacks: {
@@ -64,6 +63,7 @@ export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: Db
 	return {
 		phase: 'draw',
 		field: [],
+		discardPile: [],
 		players: {
 			sideA: initialiseBoardSide(decks.sideA, 'sideA'),
 			sideB: initialiseBoardSide(decks.sideB, 'sideB'),

@@ -204,7 +204,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		});
 
 		if (winnerCard) game.board.field.push(winnerCard);
-		if (loserCard) game.board.players[loserSide].discardPile.push(loserCard);
+		if (loserCard) game.board.discardPile.push(loserCard);
 		game.board.players[winnerSide].casting.field = undefined;
 		game.board.players[loserSide].casting.field = undefined;
 		game.highlights.positive.clear();
