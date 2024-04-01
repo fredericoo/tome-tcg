@@ -133,10 +133,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
 		color: 'blue',
 		effects: {
-			beforeDamage: async function* ({ game, thisCard }) {
+			beforeDamage: async function* ({ game, thisCard, cardEffectHighlight }) {
 				for (const side of SIDES) {
 					if (game.turn[side].spellAttack?.slot === 'blue') {
 						game.turn.combatStack.push({ source: thisCard, target: side, type: 'heal', value: 10 });
+						yield cardEffectHighlight;
 						yield game;
 					}
 				}
@@ -151,9 +152,10 @@ export const deck: DbCard[] = [
 		colors: ['blue'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.green);
 				if (!cardToDiscard) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.green,
@@ -473,7 +475,7 @@ export const deck: DbCard[] = [
 		attack: 7,
 		description: 'When this spell deals damage, activate the effect of your top GREEN card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
 				const card = topOf(game.board.players[ownerSide].stacks.green);
 				if (!card) return;
 
@@ -481,7 +483,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
 				}
 			},
 		},
@@ -494,7 +496,7 @@ export const deck: DbCard[] = [
 		attack: 7,
 		description: 'When this spell deals damage, activate the effect of your top BLUE card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
 				const card = topOf(game.board.players[ownerSide].stacks.blue);
 				if (!card) return;
 
@@ -502,7 +504,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
 				}
 			},
 		},
@@ -515,7 +517,7 @@ export const deck: DbCard[] = [
 		attack: 7,
 		description: 'When this spell deals damage, activate the effect of your top RED card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
 				const card = topOf(game.board.players[ownerSide].stacks.red);
 				if (!card) return;
 
@@ -523,7 +525,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
 				}
 			},
 		},

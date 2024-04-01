@@ -1,11 +1,14 @@
 import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
-import { GameAction, GameCard, GameIterationResponse, Side } from './engine.game';
+import { GameAction, GameCard, GameState, Side, VfxIteration } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
-export const useGameActions = (game: GameIterationResponse) => ({
+export const useGameActions = (game: GameState) => ({
+	vfx: function* (vfx: VfxIteration) {
+		yield vfx;
+	},
 	discard: function* ({ card, from }: { card: GameCard; from: GameCard[] }) {
 		const cardToMove = removeCard(from, card);
 		if (!cardToMove) return;
@@ -72,7 +75,7 @@ export const useGameActions = (game: GameIterationResponse) => ({
 		});
 		yield game;
 
-		async function* yieldAsResolved(): AsyncGenerator<GameIterationResponse> {
+		async function* yieldAsResolved(): AsyncGenerator<GameState> {
 			const actionsLeft = objectEntries(actionEntries).map(([_, { promise }]) => promise.completed);
 			if (!actionsLeft.length) return yield game;
 

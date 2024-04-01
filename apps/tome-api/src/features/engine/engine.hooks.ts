@@ -1,6 +1,16 @@
 import { exhaustive, pill } from '../../lib/utils';
 import { Board, topOf } from './engine.board';
-import { COLORS, FieldCard, GameCard, GameIterationResponse, SIDES, Side, SpellCard } from './engine.game';
+import {
+	COLORS,
+	FieldCard,
+	GameCard,
+	GameIteration,
+	GameState,
+	SIDES,
+	Side,
+	SpellCard,
+	VfxIteration,
+} from './engine.game';
 import { HookActions } from './engine.hook.actions';
 
 /** Hooks that can be activated on demand by other cards. */
@@ -17,107 +27,121 @@ export const ACTIVATABLE_HOOKS = [
 
 export type TurnHooks<THasOwner extends boolean = false> = {
 	onDiscard: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onDraw: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onReveal: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onDealDamage: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onHeal: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onClashLose: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 		winnerCard: (THasOwner extends true ? SpellCard : FieldCard) | undefined;
 		loserSide: Side;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	onClashWin: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 		loserCard: (THasOwner extends true ? SpellCard : FieldCard) | undefined;
 		winnerSide: Side;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeDraw: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeCast: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeReveal: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeSpell: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeCombat: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	beforeDamage: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 	afterDamage: (params: {
-		game: GameIterationResponse;
+		game: GameState;
 		actions: HookActions;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-	}) => AsyncGenerator<GameIterationResponse>;
+		cardEffectHighlight: VfxIteration;
+	}) => AsyncGenerator<GameIteration>;
 };
 
 const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
@@ -133,10 +157,16 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 	}
 };
 
-export const useTriggerHooks = (game: GameIterationResponse) => {
+export const getCardEffectHighlight = (card: GameCard): VfxIteration => ({
+	type: 'highlight',
+	durationMs: 300,
+	config: { type: 'effect', target: { type: 'card', card } },
+});
+
+export const useTriggerHooks = (game: GameState) => {
 	async function* triggerTurnHook<THook extends keyof TurnHooks>(params: {
 		hookName: THook;
-		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide' | 'opponentSide' | 'thisCard'>;
+		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide' | 'opponentSide' | 'thisCard' | 'cardEffectHighlight'>;
 	}) {
 		const context = params.context;
 		const board = game.board;
@@ -144,18 +174,17 @@ export const useTriggerHooks = (game: GameIterationResponse) => {
 		const fieldEffect = currentField?.effects[params.hookName];
 
 		if (fieldEffect) {
-			game.highlights.effect.add(currentField.key);
 			try {
 				yield* fieldEffect({
 					...context,
 					thisCard: currentField,
 					opponentSide: undefined,
 					ownerSide: undefined,
+					triggerCardEffectVfx: getCardEffectHighlight(currentField),
 				} as any);
 			} catch (e) {
 				console.error(`Error in ${currentField.name}’s ${params.hookName} effect:`, e);
 			}
-			game.highlights.effect.delete(currentField.key);
 		}
 
 		const effectStacks: Array<[SpellCard[], Side]> = [
@@ -174,19 +203,18 @@ export const useTriggerHooks = (game: GameIterationResponse) => {
 
 			const cardEffect = spell.effects[params.hookName];
 			if (cardEffect) {
-				game.highlights.effect.add(spell.key);
 				try {
 					yield* cardEffect({
 						...context,
 						ownerSide,
 						opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
 						thisCard: spell,
+						effectVfx: getCardEffectHighlight(spell),
 					} as any);
 					console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
 				} catch (e) {
 					console.error(`Error in ${spell.name}’s ${params.hookName} effect:`, e);
 				}
-				game.highlights.effect.delete(spell.key);
 			}
 		}
 	}

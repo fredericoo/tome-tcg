@@ -1,7 +1,7 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { Board, createGameBoard } from './engine.board';
 import { useGameActions } from './engine.hook.actions';
-import { TurnHooks } from './engine.hooks';
+import { TurnHooks, getCardEffectHighlight } from './engine.hooks';
 import { handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
 
@@ -26,7 +26,7 @@ export type DynamicCombatValue = {
 		opponentSide,
 		thisCard,
 	}: {
-		game: GameIterationResponse;
+		game: GameState;
 		ownerSide: Side;
 		opponentSide: Side;
 		thisCard: SpellCard;
@@ -70,24 +70,56 @@ export type GameAction = {
 	};
 }[keyof PlayerActionMap];
 
-export type GameIterationResponse = {
+export type GameState = {
+	type: 'state';
 	finishedTurns: Turn[];
 	turn: Turn;
 	board: Board;
-	/** Highlighted card keys */
-	highlights: {
-		positive: Set<number>;
-		negative: Set<number>;
-		effect: Set<number>;
-	};
-	arrows: Array<{
-		from: GameCard;
-		to: GameCard;
-	}>;
 	actions: {
 		[K in Side]?: GameAction;
 	};
 };
+
+type VfxEntity =
+	| {
+			type: 'player';
+			side: Side;
+	  }
+	| {
+			type: 'card';
+			cardKey: number;
+	  }
+	| {
+			type: 'stack';
+			stack: SpellColor;
+			side: Side;
+	  };
+
+interface BaseVfx {
+	type: string;
+	durationMs: number;
+}
+
+interface VfxHighlight extends BaseVfx {
+	type: 'highlight';
+	config: {
+		type: 'positive' | 'negative' | 'effect';
+		target: VfxEntity;
+	};
+}
+
+interface VfxAttack extends BaseVfx {
+	type: 'attack';
+	config: {
+		type: 'positive' | 'negative' | 'effect';
+		source: VfxEntity;
+		target: VfxEntity;
+	};
+}
+
+export type VfxIteration = VfxHighlight | VfxAttack;
+
+export type GameIteration = GameState | VfxIteration;
 
 export type CombatStackItem =
 	| {
@@ -173,7 +205,7 @@ export async function* runClashEffects({
 	winnerSide: Side;
 	loserSide: Side;
 	actions: ReturnType<typeof useGameActions>;
-	game: GameIterationResponse;
+	game: GameState;
 }) {
 	if (winnerCard && loserCard && loserCard.type !== winnerCard.type)
 		throw new Error('Clash needs two cards of the same type');
@@ -190,6 +222,7 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'field' ? loserCard : undefined,
 				winnerSide,
+				cardEffectHighlight: getCardEffectHighlight(winnerCard),
 			});
 			break;
 		}
@@ -204,6 +237,7 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'spell' ? loserCard : undefined,
 				winnerSide,
+				cardEffectHighlight: getCardEffectHighlight(winnerCard),
 			});
 			break;
 		}
@@ -220,6 +254,7 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'field' ? loserCard : undefined,
 				loserSide,
+				cardEffectHighlight: getCardEffectHighlight(loserCard),
 			});
 			break;
 		}
@@ -234,19 +269,19 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'spell' ? loserCard : undefined,
 				loserSide,
+				cardEffectHighlight: getCardEffectHighlight(loserCard),
 			});
 			break;
 		}
 	}
 }
 
-export const initialiseGame = (board: Board): GameIterationResponse => ({
+export const initialiseGame = (board: Board): GameState => ({
+	type: 'state',
 	board,
 	finishedTurns: [],
 	turn: initialiseTurn(),
 	actions: {},
-	highlights: { effect: new Set(), negative: new Set(), positive: new Set() },
-	arrows: [],
 });
 
 export const getCardColors = (card: GameCard): SpellColor[] => {
@@ -265,6 +300,7 @@ export type GameSettings = {
 	emptySlotAttack: number;
 	/** Delay after declaring a new turn phase */
 	phaseDelayMs: number;
+	effectHighlightMs: number;
 };
 
 export const createGameInstance = ({ decks, settings }: { decks: Record<Side, DbCard[]>; settings: GameSettings }) => {

@@ -12,7 +12,6 @@ import type {
 } from '../../../../tome-api/src/features/game/game.pubsub';
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
 import { CardData, useCardData } from '../../lib/card-data';
-import { useHighlightedCardsStore } from '../../routes/games.$id';
 import { Image } from '../image';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
@@ -75,8 +74,7 @@ export const Card = ({
 }: CardProps) => {
 	const isHovered = useHoveredCard(s => s.hoveredCard === card.key);
 	const setHovered = useHoveredCard(s => s.setHoveredCard);
-	const pubsubHighlight = useHighlightedCardsStore(s => s.highlightedCards[card.key]);
-	const highlight = highlightOverride || pubsubHighlight;
+	const highlight = highlightOverride;
 
 	return (
 		<motion.div

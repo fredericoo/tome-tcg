@@ -4,8 +4,9 @@ import { Board, topOf } from './engine.board';
 import {
 	COLORS,
 	CombatStackItem,
-	GameIterationResponse,
+	GameIteration,
 	GameSettings,
+	GameState,
 	SIDES,
 	Side,
 	Turn,
@@ -14,7 +15,7 @@ import {
 	runClashEffects,
 } from './engine.game';
 import { useGameActions } from './engine.hook.actions';
-import { useTriggerHooks } from './engine.hooks';
+import { getCardEffectHighlight, useTriggerHooks } from './engine.hooks';
 
 const initialiseTurnSide = (): Turn[Side] => ({
 	draws: [],
@@ -33,10 +34,10 @@ export const initialiseTurn = () => {
 };
 
 type HandleTurnParmas = {
-	game: GameIterationResponse;
+	game: GameState;
 	settings: GameSettings;
 };
-export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<GameIterationResponse> {
+export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<GameIteration> {
 	const { game, settings } = params;
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = useGameActions(game);
@@ -153,6 +154,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 						opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
 						ownerSide: side,
 						thisCard: card,
+						cardEffectHighlight: getCardEffectHighlight(card),
 					});
 				}
 			}
@@ -172,6 +174,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					opponentSide: undefined,
 					ownerSide: undefined,
 					thisCard: fieldCard,
+					cardEffectHighlight: getCardEffectHighlight(fieldCard),
 				});
 			}
 		}
@@ -189,8 +192,19 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		const winnerCard = game.board.players[winnerSide].casting.field;
 		const loserCard = game.board.players[loserSide].casting.field;
 
-		if (winnerCard) game.highlights.positive.add(winnerCard.key);
-		if (loserCard) game.highlights.negative.add(loserCard.key);
+		if (winnerCard)
+			yield* actions.vfx({
+				type: 'highlight',
+				durationMs: settings.effectHighlightMs,
+				config: { target: { type: 'card', card: winnerCard }, type: 'positive' },
+			});
+		if (loserCard)
+			yield* actions.vfx({
+				type: 'highlight',
+				durationMs: settings.effectHighlightMs,
+				config: { target: { type: 'card', card: loserCard }, type: 'negative' },
+			});
+
 		yield game;
 		delay(1000);
 
@@ -207,8 +221,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		if (loserCard) game.board.discardPile.push(loserCard);
 		game.board.players[winnerSide].casting.field = undefined;
 		game.board.players[loserSide].casting.field = undefined;
-		game.highlights.positive.clear();
-		game.highlights.negative.clear();
 		yield game;
 	}
 
@@ -257,8 +269,18 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		const winnerCard = game.turn[winnerSide].spellAttack?.card ?? null;
 		const loserCard = game.turn[loserSide].spellAttack?.card ?? null;
 
-		if (winnerCard) game.highlights.positive.add(winnerCard.key);
-		if (loserCard) game.highlights.negative.add(loserCard.key);
+		if (winnerCard)
+			yield* actions.vfx({
+				type: 'highlight',
+				durationMs: settings.effectHighlightMs,
+				config: { target: { type: 'card', card: winnerCard }, type: 'positive' },
+			});
+		if (loserCard)
+			yield* actions.vfx({
+				type: 'highlight',
+				durationMs: settings.effectHighlightMs,
+				config: { target: { type: 'card', card: loserCard }, type: 'negative' },
+			});
 
 		const damageFromCard =
 			winnerCard?.attack ?
@@ -304,8 +326,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			loserCard,
 			winnerCard,
 		});
-		game.highlights.positive.clear();
-		game.highlights.negative.clear();
 
 		/**
 		 * DAMAGE PHASE
@@ -338,7 +358,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 async function* resolveCombatDamage(
 	actions: ReturnType<typeof useGameActions>,
 	combatItem: CombatStackItem & { type: 'damage' },
-	game: GameIterationResponse,
+	game: GameState,
 ) {
 	yield* actions.damagePlayer({ side: combatItem.target, amount: combatItem.value });
 	switch (combatItem.source?.type) {
@@ -351,6 +371,7 @@ async function* resolveCombatDamage(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
+				cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 			});
 			break;
 		}
@@ -364,6 +385,7 @@ async function* resolveCombatDamage(
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
+					cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 				});
 			}
 			break;
@@ -374,7 +396,7 @@ async function* resolveCombatDamage(
 async function* resolveCombatHealing(
 	actions: ReturnType<typeof useGameActions>,
 	combatItem: CombatStackItem & { type: 'heal' },
-	game: GameIterationResponse,
+	game: GameState,
 ) {
 	yield* actions.healPlayer({ side: combatItem.target, amount: combatItem.value });
 	switch (combatItem.source?.type) {
@@ -387,6 +409,7 @@ async function* resolveCombatHealing(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
+				cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 			});
 			break;
 		}
@@ -400,6 +423,7 @@ async function* resolveCombatHealing(
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
+					cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 				});
 			}
 			break;

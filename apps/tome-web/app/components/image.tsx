@@ -39,12 +39,11 @@ const endsWithOneOf = (str: string, suffixes: string[]) => {
 };
 
 export const Image = ({ alt, src, srcWidth, ...props }: ImageProps) => {
-	if (import.meta.env.MODE === 'development') {
-		return <img src={src} alt={alt} {...props} />;
-	}
 	return (
 		<picture {...props}>
-			{src && endsWithOneOf(src, IMAGE_COMPRESS_EXTENSIONS) && <Sources srcWidth={srcWidth} src={src} />}
+			{import.meta.env.MODE !== 'development' && src && endsWithOneOf(src, IMAGE_COMPRESS_EXTENSIONS) && (
+				<Sources srcWidth={srcWidth} src={src} />
+			)}
 			<img src={src} alt={alt} />
 		</picture>
 	);

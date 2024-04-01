@@ -14,12 +14,15 @@ import { Board } from '../engine/engine.board';
 import {
 	COLORS,
 	CombatStackItem,
+	FieldCard,
 	GameAction,
 	GameCard,
-	GameIterationResponse,
+	GameIteration,
+	GameState,
 	SIDES,
 	Side,
 	SpellColor,
+	VfxIteration,
 	createGameInstance,
 	getCardColors,
 } from '../engine/engine.game';
@@ -31,7 +34,7 @@ type GameRoomState = {
 		sideA: { id: string; send: (data: any) => void } | undefined;
 		sideB: { id: string; send: (data: any) => void } | undefined;
 	};
-	lastState: GameIterationResponse | undefined;
+	lastState: GameState | undefined;
 };
 
 /** Card info that gets sent over the websockets connection */
@@ -42,14 +45,13 @@ export type PubSubShownCard = PubSubShownFieldCard | PubSubShownSpellCard;
 export type PubSubCard = PubSubHiddenCard | PubSubShownCard;
 
 export type CompressedCombatStackItem = DistributiveOmit<CombatStackItem, 'source'> & { sourceKey: number | null };
-export type SanitisedIteration = {
+
+export type SanitisedGameState = {
+	type: 'state';
 	side: Side;
 	board: {
-		attackStacks?: Record<Side, SpellColor | null>;
-		combatStack?: CompressedCombatStackItem[];
 		phase: Board['phase'];
 		field: PubSubCard[];
-		highlights: Record<string, 'effect' | 'negative' | 'positive'>;
 		discardPile: PubSubCard[];
 	} & Record<
 		Side,
@@ -64,11 +66,20 @@ export type SanitisedIteration = {
 	>;
 };
 
+type SanitisedVfx = VfxIteration;
+
+type SanitisedIteration = SanitisedGameState | SanitisedVfx;
+
 export type PubSubError = { error: string };
 
-const createCardActions = ({ game }: { game: GameIterationResponse }) => {
+const createCardActions = ({ game }: { game: GameState }) => {
 	return {
 		hideCard: (card: GameCard): PubSubHiddenCard => ({ key: card.key }),
+		showFieldCard: (card: FieldCard) => ({
+			key: card.key,
+			id: card.id,
+			type: card.type,
+		}),
 		showCardFromSide:
 			(ownerSide: Side) =>
 			(card: GameCard): PubSubShownCard => {
@@ -100,90 +111,72 @@ const createCardActions = ({ game }: { game: GameIterationResponse }) => {
  * Clears data that’s not supposed to make it to end users.
  * E.g.: Deck cards are never supposed to be sent to the client.
  */
-const sanitiseIteration = (playerSide: Side, originalIteration: GameIterationResponse) => {
-	const { hideCard, showCardFromSide } = createCardActions({
-		game: originalIteration,
-	});
+const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): SanitisedIteration => {
+	switch (originalIteration.type) {
+		case 'state': {
+			const { hideCard, showCardFromSide, showFieldCard } = createCardActions({
+				game: originalIteration,
+			});
 
-	const iteration: SanitisedIteration = {
-		side: playerSide,
-		board: {
-			discardPile: [],
-			combatStack:
-				originalIteration.board.phase === 'damage' ?
-					originalIteration.turn.combatStack.map(item => ({
-						target: item.target,
-						value: item.value,
-						type: item.type,
-						sourceKey: item.source?.key ?? null,
-					}))
-				:	undefined,
-			highlights: {},
-			field: originalIteration.board.field.map(showCardFromSide('sideA')),
-			phase: originalIteration.board.phase,
-			sideA: {
-				hp: originalIteration.board.players.sideA.hp,
-				casting: {},
-
-				drawPile: [],
-				hand: [],
-				stacks: {
-					blue: [],
-					green: [],
-					red: [],
+			const iteration: SanitisedGameState = {
+				type: 'state',
+				side: playerSide,
+				board: {
+					discardPile: [],
+					field: originalIteration.board.field.map(showFieldCard),
+					phase: originalIteration.board.phase,
+					sideA: {
+						hp: originalIteration.board.players.sideA.hp,
+						casting: {},
+						drawPile: [],
+						hand: [],
+						stacks: {
+							blue: [],
+							green: [],
+							red: [],
+						},
+					},
+					sideB: {
+						hp: originalIteration.board.players.sideB.hp,
+						casting: {},
+						drawPile: [],
+						hand: [],
+						stacks: {
+							blue: [],
+							green: [],
+							red: [],
+						},
+					},
 				},
-			},
-			sideB: {
-				hp: originalIteration.board.players.sideB.hp,
-				casting: {},
+			};
 
-				drawPile: [],
-				hand: [],
-				stacks: {
-					blue: [],
-					green: [],
-					red: [],
-				},
-			},
-		},
-	};
+			SIDES.forEach(side => {
+				const showCard = showCardFromSide(side);
+				const hideUnlessOwner = side === playerSide ? showCard : hideCard;
+				iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
+				iteration.board.discardPile = originalIteration.board.discardPile.map(hideCard);
+				iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
+				// everyone can see the stacks
+				COLORS.forEach(stack => {
+					iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
 
-	const highlightTypes = ['effect', 'positive', 'negative'] as const;
-	for (const type of highlightTypes) {
-		for (const cardKey of originalIteration.highlights[type]) {
-			iteration.board.highlights[cardKey] = type;
+					const casting = originalIteration.board.players[side].casting[stack];
+					if (casting) {
+						iteration.board[side].casting[stack] = hideCard(casting);
+					}
+				});
+				const castingField = originalIteration.board.players[side].casting.field;
+				if (castingField) {
+					iteration.board[side].casting.field = hideCard(castingField);
+				}
+				iteration.board[side].action = originalIteration.actions[side];
+			});
+			return iteration;
 		}
+		case 'attack':
+		case 'highlight':
+			return originalIteration;
 	}
-
-	SIDES.forEach(side => {
-		const showCard = showCardFromSide(side);
-		const hideUnlessOwner = side === playerSide ? showCard : hideCard;
-		iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
-		iteration.board.discardPile = originalIteration.board.discardPile.map(hideCard);
-		iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
-		// everyone can see the stacks
-		COLORS.forEach(stack => {
-			iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
-
-			const casting = originalIteration.board.players[side].casting[stack];
-			if (casting) {
-				iteration.board[side].casting[stack] = hideCard(casting);
-			}
-		});
-		const castingField = originalIteration.board.players[side].casting.field;
-		if (castingField) {
-			iteration.board[side].casting.field = hideCard(castingField);
-		}
-		iteration.board[side].action = originalIteration.actions[side];
-	});
-
-	if (originalIteration.board.phase === 'combat') {
-		iteration.board.attackStacks = {
-			sideA: originalIteration.turn.sideA.spellAttack?.slot ?? null,
-			sideB: originalIteration.turn.sideB.spellAttack?.slot ?? null,
-		};
-	}
-	return iteration;
 };
 
 const createGameRoom = (gameId: number) => {
@@ -209,13 +202,18 @@ const createGameRoom = (gameId: number) => {
 				startingCards: game.startingCards,
 				phaseDelayMs: game.phaseDelayMs,
 				emptySlotAttack: 10,
+				effectHighlightMs: 300,
 			},
 		});
 		const handleGame = async () => {
 			for await (const iteration of gameInstance) {
-				room.lastState = iteration;
-				SIDES.forEach(side => room.connections[side]?.send(iteration));
-				await delay(350);
+				// only set last state if iteration is a game state
+				if ('board' in iteration) {
+					room.lastState = iteration;
+				}
+				SIDES.forEach(side => {
+					return room.connections[side]?.send(iteration);
+				});
 			}
 		};
 		handleGame();
@@ -226,7 +224,7 @@ const createGameRoom = (gameId: number) => {
 		join: (side: Side, connectionId: string, sendFn: (data: SanitisedIteration) => void) => {
 			room.connections[side] = {
 				id: connectionId,
-				send: (data: GameIterationResponse) => sendFn(sanitiseIteration(side, data)),
+				send: (data: GameState) => sendFn(sanitiseIteration(side, data)),
 			};
 			if (room.lastState) room.connections[side]?.send(room.lastState);
 
@@ -413,10 +411,10 @@ async function* validateAction({
 	message,
 	side,
 }: {
-	action: NonNullable<NonNullable<GameIterationResponse['actions']>[Side]>;
+	action: NonNullable<NonNullable<GameState['actions']>[Side]>;
 	message: unknown;
 	side: Side;
-	game: GameIterationResponse;
+	game: GameState;
 	logSuccess: (message: string) => void;
 }) {
 	switch (action.type) {
