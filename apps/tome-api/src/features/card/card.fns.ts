@@ -903,7 +903,9 @@ export const deck: DbCard[] = [
 			'If this spell is beaten in combat, the damage that would have been caused to you is caused to the opponent instead. If this spell is not beaten in combat, discard it.',
 		effects: {
 			onClashWin: async function* ({ actions, game, thisCard, ownerSide }) {
-				yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!currentColor) return;
+				yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks[currentColor] });
 			},
 			onClashLose: async function* ({ game, ownerSide, opponentSide }) {
 				for (const combat of game.turn.combatStack) {
