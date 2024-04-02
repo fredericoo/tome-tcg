@@ -226,6 +226,12 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 
 			if (winnerCard) yield* actions.moveTopCard(game.board.players[winnerSide].casting.field, game.board.field);
 			if (loserCard) yield* actions.discard({ card: loserCard, from: game.board.players[loserSide].casting.field });
+		} else {
+			// if no winner, discard both cards
+			if (topField.sideA)
+				yield* actions.discard({ card: topField.sideA, from: game.board.players.sideA.casting.field });
+			if (topField.sideB)
+				yield* actions.discard({ card: topField.sideB, from: game.board.players.sideB.casting.field });
 		}
 	}
 
