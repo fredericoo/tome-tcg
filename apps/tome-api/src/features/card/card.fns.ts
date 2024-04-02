@@ -212,6 +212,7 @@ export const deck: DbCard[] = [
 		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, game, thisCard, cardEffectHighlight }) {
+				yield cardEffectHighlight;
 				const selectStackAndDiscard = (side: Side) => {
 					const stacksWithCards = COLORS.filter(stack => game.board.players[side].stacks[stack].length > 0);
 					if (stacksWithCards.length === 0) return;
@@ -248,7 +249,6 @@ export const deck: DbCard[] = [
 				if (ownerDiscard) yield* ownerDiscard;
 				const opponentDiscard = selectStackAndDiscard('sideB');
 				if (opponentDiscard) yield* opponentDiscard;
-				yield cardEffectHighlight;
 				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
 			},
 		},
@@ -942,11 +942,11 @@ export const deck: DbCard[] = [
 				yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks[currentColor] });
 			},
 			onClashLose: async function* ({ game, ownerSide, opponentSide, cardEffectHighlight }) {
+				yield cardEffectHighlight;
 				for (const combat of game.turn.combatStack) {
 					if (combat.type !== 'damage') continue;
 					if (combat.target !== ownerSide) continue;
 					combat.target = opponentSide;
-					yield cardEffectHighlight;
 				}
 			},
 		},
