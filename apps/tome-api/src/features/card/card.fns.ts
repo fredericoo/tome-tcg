@@ -208,7 +208,8 @@ export const deck: DbCard[] = [
 		id: '11',
 		type: 'field',
 		name: 'Void Space',
-		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
+		description:
+			'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
 		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, game, thisCard, cardEffectHighlight }) {
@@ -249,7 +250,7 @@ export const deck: DbCard[] = [
 				if (ownerDiscard) yield* ownerDiscard;
 				const opponentDiscard = selectStackAndDiscard('sideB');
 				if (opponentDiscard) yield* opponentDiscard;
-				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
 	},
@@ -467,7 +468,7 @@ export const deck: DbCard[] = [
 		color: 'red',
 		description:
 			'When this card is revealed, discard 1 GREEN card from your hand (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
-			// TODO: Implement discard from hand
+		// TODO: Implement discard from hand
 		effects: {
 			beforeCast: async function* ({ game, actions, thisCard, cardEffectHighlight }) {
 				for (const side of SIDES) {
@@ -572,7 +573,7 @@ export const deck: DbCard[] = [
 		description: 'Whenever this spell deals damage, remove the top field effect from play.',
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) { 
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const fieldEffect = topOf(game.board.field);
 				if (!fieldEffect) return;
 				yield cardEffectHighlight;
@@ -849,7 +850,10 @@ export const deck: DbCard[] = [
 				if (!currentColor) return;
 				yield cardEffectHighlight;
 				yield* actions.draw({ sides: [ownerSide] });
-				yield* actions.discard({ card: topOf(game.board.field), from: game.board.players[ownerSide].stacks[currentColor] });
+				yield* actions.discard({
+					card: thisCard,
+					from: game.board.players[ownerSide].stacks[currentColor],
+				});
 			},
 		},
 	},
@@ -859,14 +863,15 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['red'],
 		attack: 8,
-		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
 		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'green' || fieldToDiscard?.color === null) {
 					yield cardEffectHighlight;
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
 		},
@@ -877,14 +882,15 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['blue'],
 		attack: 8,
-		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a RED or NEUTRAL [FIELD] spell to the discard pile.',
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a RED or NEUTRAL [FIELD] spell to the discard pile.',
 		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'red' || fieldToDiscard?.color === null) {
 					yield cardEffectHighlight;
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
 		},
@@ -895,13 +901,14 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 8,
-		description: 'After a successful attack, you *may* (NOT IMPLEMENTED) send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'blue' || fieldToDiscard?.color === null) {
 					yield cardEffectHighlight;
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field, side: ownerSide });
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
 		},
@@ -913,9 +920,9 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Spells deal +2X damage during combat, where X is the size of the field effect stack',
 		effects: {
-			beforeCombat: async function* ({ turn, game, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, cardEffectHighlight }) {
 				const fieldEffectStack = game.board.field.length;
-				for (const combat of turn.combatStack) {
+				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.type !== 'damage') continue;
 					if (combat.source.type !== 'spell') continue;
@@ -971,14 +978,20 @@ export const deck: DbCard[] = [
 					sides: [ownerSide],
 					action: {
 						type: 'select_from_hand',
-						config: { from: 'self', max: 1, min: 1, type: 'any', message: 'Discard a card from your hand' },
+						config: {
+							from: 'self',
+							max: 1,
+							min: 1,
+							availableTypes: CARD_TYPES,
+							availableColors: COLORS,
+							message: 'Discard a card from your hand',
+						},
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
 							yield* actions.discard({
 								card: cardToDiscard,
 								from: game.board.players[ownerSide].hand,
-								side: ownerSide,
 							});
 						},
 					},
@@ -1057,7 +1070,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue'],
 		attack: 0,
-		description: 'Whener this spell is revealed, remove all cards being revealed this turn from play. (NOT IMPLEMENTED)',
+		description:
+			'Whener this spell is revealed, remove all cards being revealed this turn from play. (NOT IMPLEMENTED)',
 		effects: {},
 	},
 	{
@@ -1279,7 +1293,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue', 'red'],
 		attack: 0,
-		description: 'If attacking with “Bokutou”, add 7X to the attack where X is the number of “Form” cards you have active.',
+		description:
+			'If attacking with “Bokutou”, add 7X to the attack where X is the number of “Form” cards you have active.',
 		effects: {},
 	},
 	{
@@ -1438,7 +1453,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 30,
-		description: 'You must have at least 3 cards in your hand to play this card. When this card is revealed, discard 2 cards from your hand.',
+		description:
+			'You must have at least 3 cards in your hand to play this card. When this card is revealed, discard 2 cards from your hand.',
 		effects: {},
 	},
 	{
@@ -1464,7 +1480,8 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Raise the Stakes',
 		type: 'field',
 		color: null,
-		description: 'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
+		description:
+			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
 		effects: {},
 	},
 	{
@@ -1473,7 +1490,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 10,
-		description: 'After successfully dealing damage with this card, choose one of your opponent\'s stacks. Place this card on top of that stack.',
+		description:
+			"After successfully dealing damage with this card, choose one of your opponent's stacks. Place this card on top of that stack.",
 		effects: {},
 	},
 ];
