@@ -47,6 +47,7 @@ export type PubSubCard = PubSubHiddenCard | PubSubShownCard;
 export type CompressedCombatStackItem = DistributiveOmit<CombatStackItem, 'source'> & { sourceKey: number | null };
 
 export type SanitisedGameState = {
+	sentAt: number;
 	type: 'state';
 	side: Side;
 	board: {
@@ -119,6 +120,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 			});
 
 			const iteration: SanitisedGameState = {
+				sentAt: Date.now(),
 				type: 'state',
 				side: playerSide,
 				board: {

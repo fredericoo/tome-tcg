@@ -142,6 +142,13 @@ const GameError = () => {
 	);
 };
 
+const Ping = () => {
+	const sentAt = useGameStore(s => s.state?.sentAt);
+	const now = Date.now();
+	const ping = sentAt ? now - sentAt : undefined;
+	return <div className="label-xs text-neutral-10 px-2">{ping}ms</div>;
+};
+
 export default function Page() {
 	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub } = useGameSub(game.id);
@@ -151,8 +158,9 @@ export default function Page() {
 			<div className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
 				<PlayerActionOverlay />
 
-				<nav className="rounded-6 shadow-surface-md surface-neutral absolute left-2 top-2 bg-white p-2 text-center">
+				<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 flex items-center gap-2 bg-white p-2 ring-1">
 					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
+					<Ping />
 					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
 					<GameError />
 				</nav>
