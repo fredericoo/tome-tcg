@@ -4,7 +4,6 @@ import { createGameBoard } from './engine.board';
 import { COLORS, SIDES, Side, SpellColor, initialiseGame } from './engine.game';
 import { useGameActions } from './engine.hook.actions';
 import { useTriggerHooks } from './engine.hooks';
-import { initialiseTurn } from './engine.turn';
 
 test('trigger all effects of fields and spells from both sides', async () => {
 	const effect = mock((ownerSide: undefined | [Side, SpellColor]) => ownerSide);
@@ -47,9 +46,8 @@ test('trigger all effects of fields and spells from both sides', async () => {
 
 	const actions = useGameActions(game);
 	const { triggerTurnHook } = useTriggerHooks(game);
-	const turn = initialiseTurn({ finishedTurns: [] });
 
-	const hooks = triggerTurnHook({ hookName: 'beforeCast', context: { game, actions, turn } });
+	const hooks = triggerTurnHook({ hookName: 'beforeCast', context: { game, actions } });
 	// wait until the generator is done
 	for await (const _ of hooks) void 0;
 
