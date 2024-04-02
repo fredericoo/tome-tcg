@@ -800,7 +800,8 @@ export const deck: DbCard[] = [
 			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
 				const cardToDiscard = topOf(game.board.players[ownerSide].stacks.green);
 				if (!cardToDiscard) {
-					yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+					// this is a spell so the from is the stack and not the field
+					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
 					return;
 				}
 				yield* actions.discard({ card: cardToDiscard, from: game.board.players[ownerSide].stacks.green });
@@ -819,7 +820,7 @@ export const deck: DbCard[] = [
 				yield* actions.draw({ sides: [ownerSide] });
 			},
 			beforeCombat: async function* ({ actions, game, thisCard }) {
-				yield* actions.discard({ card: thisCard, from: game.board.field, side: 'sideA' });
+				yield* actions.discard({ card: thisCard, from: game.board.field });
 			}
 		},
 	},
@@ -924,7 +925,7 @@ export const deck: DbCard[] = [
 		effects: {
 			beforeCombat: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) {
-					yield* actions.discard({ card: thisCard, from: game.board.field, side: ownerSide });
+					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
 					return;
 				}
 				yield* actions.playerAction({
