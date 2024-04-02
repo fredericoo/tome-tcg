@@ -10,7 +10,7 @@ export type Board = {
 			stacks: Record<SpellColor, SpellCard[]>;
 			hand: GameCard[];
 			drawPile: GameCard[];
-			casting: Partial<Record<SpellColor, SpellCard>> & { field?: FieldCard };
+			casting: Record<SpellColor, SpellCard[]> & { field: FieldCard[] };
 		}
 	>;
 	field: FieldCard[];
@@ -44,11 +44,11 @@ export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
 export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: DbCard[] } }): Board => {
 	let cardIndex = 0;
 	const initialiseBoardSide = (deck: DbCard[], side: Side): Board['players'][Side] => {
-		const boardSide = {
+		const boardSide: Board['players'][Side] = {
 			side,
 			hp: 100,
 			hand: [],
-			casting: {},
+			casting: { blue: [], field: [], green: [], red: [] },
 			drawPile: deck.map(card => ({ ...card, key: cardIndex++ })),
 			stacks: {
 				blue: [],

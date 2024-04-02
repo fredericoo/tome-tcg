@@ -1,3 +1,4 @@
+import { IconHeart, IconHeartBroken } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { cva } from 'cva';
 import { useState } from 'react';
@@ -9,7 +10,6 @@ import { invariant } from '../../../../tome-api/src/lib/utils';
 import { useGameStore } from '../../lib/game.utils';
 import { Badge } from '../badge';
 import { AnimatedNumber } from './animated-number';
-import { Card } from './card';
 import { CardPile } from './card-pile';
 
 const stackClass = cva({
@@ -17,7 +17,7 @@ const stackClass = cva({
 	variants: {
 		stack: { red: 'bg-[#FE4D00]', green: 'bg-[#A1BE3F]', blue: 'bg-[#5F6DEE]' },
 		interactive: {
-			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/20 cursor-pointer transition-shadow',
+			true: 'ring-0 ring-transparent hover:scale-110 hover:shadow-lg cursor-pointer transition-all ease-expo-out duration-300',
 		},
 		combat: {
 			used: 'scale-110',
@@ -27,16 +27,18 @@ const stackClass = cva({
 });
 
 const ActionProgressBar = ({ action }: { action?: GameAction }) => {
-	if (!action) return <div className="bg-accent-3 relative h-1 w-full"></div>;
-	const now = Date.now();
-	const durationMs = action.timesOutAt - now;
+	if (!action) return <div className="bg-accent-12/10 relative h-1 w-full"></div>;
+	const currentTime = Date.now();
+	const totalDuration = action.timesOutAt - action.requestedAt;
+	const elapsedTime = currentTime - action.requestedAt;
+	const progress = (elapsedTime / totalDuration) * 100;
+	const remainingTime = action.timesOutAt - currentTime;
 
-	// return seconds remaining
 	return (
-		<div className="bg-accent-3 relative h-1 w-full">
+		<div className="bg-accent-12/10 relative h-1 w-full">
 			<div
-				style={{ animationDuration: `${durationMs}ms` }}
-				className="animate-to-zero-width bg-accent-9 absolute h-full rounded-full"
+				style={{ animationDuration: `${remainingTime}ms`, width: `${100 - progress}%` }}
+				className="animate-to-zero-width shadow-accent-9/50 bg-accent-9 absolute h-full rounded-r-full shadow-[0_0_6px]"
 			/>
 		</div>
 	);
@@ -57,6 +59,7 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 	const boardSide = useGameStore(
 		s => s.state?.board[{ self: s.state.side, opponent: opposingSide(s.state.side) }[relative]],
 	);
+	const hp = boardSide?.hp ?? 0;
 
 	const [selectedStacks, setSelectedStacks] = useState<Set<SpellColor>>(new Set());
 	if (selectedStacks.size > 0 && playerAction?.type !== 'select_spell_stack') setSelectedStacks(new Set());
@@ -101,12 +104,15 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 								className={stackClass({
 									stack,
 									interactive: canSelectStack,
-									className: clsx({ 'relative z-20': canSelectStack }),
+									className: clsx('relative', { 'z-20': canSelectStack }),
 								})}
 							>
+								<div className="absolute bottom-3 right-3 rounded-full border border-white/25 px-2 py-0.5 text-xs text-white">
+									10
+								</div>
 								{casting && (
-									<div className="absolute translate-y-1/2">
-										<Card size="sm" card={casting} />
+									<div className="pointer-events-none absolute z-10 translate-y-1/2">
+										<CardPile size="sm" cards={casting} last={casting.length} />
 									</div>
 								)}
 								<CardPile cards={boardSide?.stacks[stack] ?? []} last={2} size="sm" />
@@ -117,15 +123,10 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 			</ol>
 
 			<Badge id={absoluteSide ? `${absoluteSide}-hp` : undefined} className="flex items-center gap-2">
-				<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path
-						d="M1.35248 4.90532C1.35248 2.94498 2.936 1.35248 4.89346 1.35248C6.25769 1.35248 6.86058 1.92336 7.50002 2.93545C8.13946 1.92336 8.74235 1.35248 10.1066 1.35248C12.064 1.35248 13.6476 2.94498 13.6476 4.90532C13.6476 6.74041 12.6013 8.50508 11.4008 9.96927C10.2636 11.3562 8.92194 12.5508 8.00601 13.3664C7.94645 13.4194 7.88869 13.4709 7.83291 13.5206C7.64324 13.6899 7.3568 13.6899 7.16713 13.5206C7.11135 13.4709 7.05359 13.4194 6.99403 13.3664C6.0781 12.5508 4.73641 11.3562 3.59926 9.96927C2.39872 8.50508 1.35248 6.74041 1.35248 4.90532Z"
-						fill="currentColor"
-						fillRule="evenodd"
-						clipRule="evenodd"
-					></path>
-				</svg>
-				<AnimatedNumber className="text-md font-bold tracking-tight">{boardSide?.hp ?? 0}</AnimatedNumber>
+				{hp > 0 ?
+					<IconHeart />
+				:	<IconHeartBroken />}
+				<AnimatedNumber className="text-md font-bold tracking-tight">{hp}</AnimatedNumber>
 			</Badge>
 
 			<div

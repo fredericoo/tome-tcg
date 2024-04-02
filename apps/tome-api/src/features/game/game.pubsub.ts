@@ -59,7 +59,7 @@ export type SanitisedGameState = {
 		Side,
 		{
 			hp: number;
-			casting: Partial<Record<'field' | SpellColor, PubSubCard>>;
+			casting: Record<'field' | SpellColor, PubSubCard[]>;
 			drawPile: PubSubCard[];
 			hand: PubSubCard[];
 			stacks: Record<SpellColor, PubSubCard[]>;
@@ -109,6 +109,8 @@ const createCardActions = ({ game }: { game: GameState }) => {
 	};
 };
 
+const STACKS_AND_FIELD = [...COLORS, 'field' as const];
+
 /**
  * Clears data that’s not supposed to make it to end users.
  * E.g.: Deck cards are never supposed to be sent to the client.
@@ -131,7 +133,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 					phase: originalIteration.board.phase,
 					sideA: {
 						hp: originalIteration.board.players.sideA.hp,
-						casting: {},
+						casting: { blue: [], field: [], green: [], red: [] },
 						drawPile: [],
 						hand: [],
 						stacks: {
@@ -142,7 +144,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 					},
 					sideB: {
 						hp: originalIteration.board.players.sideB.hp,
-						casting: {},
+						casting: { blue: [], field: [], green: [], red: [] },
 						drawPile: [],
 						hand: [],
 						stacks: {
@@ -154,27 +156,32 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 				},
 			};
 
-			SIDES.forEach(side => {
+			for (const side of SIDES) {
 				const showCard = showCardFromSide(side);
 				const hideUnlessOwner = side === playerSide ? showCard : hideCard;
 				iteration.board[side].drawPile = originalIteration.board.players[side].drawPile.map(hideCard);
 				iteration.board.discardPile = originalIteration.board.discardPile.map(hideCard);
 				iteration.board[side].hand = originalIteration.board.players[side].hand.map(hideUnlessOwner);
-				// everyone can see the stacks
-				COLORS.forEach(stack => {
-					iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
 
+				for (const stack of STACKS_AND_FIELD) {
 					const casting = originalIteration.board.players[side].casting[stack];
-					if (casting) {
-						iteration.board[side].casting[stack] = hideCard(casting);
+					switch (originalIteration.board.phase) {
+						case 'prepare':
+							iteration.board.castPile.push(...casting.map(hideCard));
+							break;
+						case 'reveal':
+						case 'field-clash':
+							iteration.board[side].casting[stack].push(...casting.map(showCard));
+							break;
 					}
-				});
-				const castingField = originalIteration.board.players[side].casting.field;
-				if (castingField) {
-					iteration.board[side].casting.field = hideCard(castingField);
+
+					if (stack !== 'field') {
+						iteration.board[side].stacks[stack] = originalIteration.board.players[side].stacks[stack].map(showCard);
+					}
 				}
+
 				iteration.board[side].action = originalIteration.actions[side];
-			});
+			}
 			return iteration;
 		}
 		case 'attack':

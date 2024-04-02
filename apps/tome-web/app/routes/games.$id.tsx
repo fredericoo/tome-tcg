@@ -2,9 +2,10 @@ import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import { IconExclamationCircle } from '@tabler/icons-react';
 import { cva } from 'cva';
+import { motion } from 'framer-motion';
 
 import { Badge } from '../components/badge';
-import { Card, getCardImageSrc, isShownCard } from '../components/game/card';
+import { getCardImageSrc, isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
 import { PlayerActionOverlay } from '../components/game/player-action-overlay';
 import { PlayerHand } from '../components/game/player-hand';
@@ -29,7 +30,7 @@ export const clientLoader = (async ({ params }) => {
 	return data;
 }) satisfies ClientLoaderFunction;
 
-const fieldClass = cva({
+const middleSectionClass = cva({
 	base: 'flex flex-grow items-center justify-center relative',
 	variants: {
 		active: {
@@ -47,6 +48,7 @@ const fieldClass = cva({
 const MiddleSection = () => {
 	const cardData = useCardData();
 	const field = useGameStore(s => s.state?.board.field);
+	const castPile = useGameStore(s => s.state?.board.castPile);
 	const sideACastingField = useGameStore(s => s.state?.board.sideA.casting.field);
 	const sideBCastingField = useGameStore(s => s.state?.board.sideB.casting.field);
 	const activeFieldCard = field?.at(-1);
@@ -55,24 +57,34 @@ const MiddleSection = () => {
 	const activeColor = activeFieldCardData?.type === 'field' ? activeFieldCardData.color ?? undefined : undefined;
 
 	return (
-		<section className={fieldClass({ active: activeColor })}>
+		<section className={middleSectionClass({ active: activeColor })}>
 			{activeFieldCardData?.image && (
-				<Image
-					src={getCardImageSrc(activeFieldCardData.image)}
-					className="absolute inset-0 z-0 h-full w-full scale-125 object-cover opacity-30 blur-xl"
-					srcWidth="100vw"
-				/>
+				<motion.div
+					key={activeFieldCardData.image}
+					initial={{ opacity: 0, scale: 0 }}
+					animate={{ opacity: 0.3, scale: 1 }}
+					className="pointer-events-none absolute inset-0 z-0"
+				>
+					<Image
+						src={getCardImageSrc(activeFieldCardData.image)}
+						className=" h-full w-full scale-125 object-cover blur-xl"
+						srcWidth="100vw"
+					/>
+				</motion.div>
 			)}
-			<div className="flex-1" />
+			<div className="flex flex-1 justify-end px-4">
+				<CardPile variant="scattered" cards={castPile ?? []} last={castPile?.length ?? 0} size="sm" />
+			</div>
+
 			<CardPile cards={field ?? []} last={2} size="sm" />
 			{sideACastingField && (
-				<div className="absolute -translate-x-1/2">
-					<Card key={sideACastingField.key} size="sm" card={sideACastingField} />
+				<div className="pointer-events-none absolute -translate-x-1/2">
+					<CardPile cards={sideACastingField} size="sm" last={sideACastingField.length} />
 				</div>
 			)}
 			{sideBCastingField && (
-				<div className="absolute translate-x-1/2">
-					<Card key={sideBCastingField.key} size="sm" card={sideBCastingField} />
+				<div className="pointer-events-none absolute translate-x-1/2">
+					<CardPile cards={sideBCastingField} size="sm" last={sideBCastingField.length} />
 				</div>
 			)}
 			<TurnPhaseMeter />
@@ -136,7 +148,7 @@ const GameError = () => {
 	if (!error) return null;
 
 	return (
-		<div className="bg-negative-8 p-2 text-center text-white">
+		<div className="bg-negative-9 text-lowest rounded-1 flex items-center gap-2 p-2">
 			<IconExclamationCircle /> <span>{error}</span>
 		</div>
 	);
@@ -144,6 +156,7 @@ const GameError = () => {
 
 const Ping = () => {
 	const sentAt = useGameStore(s => s.state?.sentAt);
+	if (!sentAt) return null;
 	const now = Date.now();
 	const ping = sentAt ? now - sentAt : undefined;
 	return <div className="label-xs text-neutral-10 px-2">{ping}ms</div>;

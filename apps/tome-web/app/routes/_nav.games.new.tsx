@@ -30,11 +30,8 @@ export const clientLoader = (async ({ request }) => {
 
 export const clientAction = (async ({ request }) => {
 	const formData = await request.formData();
-	const opponentId = formData.get('opponent_id')?.toString();
-	if (!opponentId) return { ok: false, error: 'Opponent is required' } as const;
-
-	const { error } = await api.games.index.post({ opponentId });
-	if (error) return { ok: false, error: error.value } as const;
+	const { error } = await api.games.index.post(Object.fromEntries(formData.entries()) as any);
+	if (error) return { ok: false, error: JSON.stringify(error.value) } as const;
 
 	return redirect('/');
 }) satisfies ActionFunction;
@@ -77,7 +74,7 @@ export default function Page() {
 										return (
 											<li key={user.id}>
 												<label htmlFor={id} className="flex items-center gap-2">
-													<input id={id} type="radio" name="opponent_id" value={user.id} />
+													<input id={id} type="radio" name="opponentId" value={user.id} />
 													<UserAvatar user={user} />
 													<span>{user.username}</span>
 												</label>

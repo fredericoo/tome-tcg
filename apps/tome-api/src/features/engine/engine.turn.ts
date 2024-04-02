@@ -89,7 +89,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 
 				if (card.type === 'field') {
 					hand.splice(index, 1);
-					game.board.players[side].casting.field = card;
+					game.board.players[side].casting.field.push(card);
 					game.turn[side].casts.field.push(card);
 					return;
 				}
@@ -99,7 +99,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					const stack = card.colors[0];
 					invariant(stack, `Card “${card.name}” has undefined color`);
 					hand.splice(index, 1);
-					game.board.players[side].casting[stack] = card;
+					game.board.players[side].casting[stack].push(card);
 					game.turn[side].casts[stack].push(card);
 					yield game;
 					return;
@@ -126,7 +126,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 								const stack = stacks[0];
 								invariant(stack, 'Expected exactly one stack');
 								hand.splice(index, 1);
-								game.board.players[side].casting[stack] = card;
+								game.board.players[side].casting[stack].push(card);
 								game.turn[side].casts[stack].push(card);
 								yield game;
 							},
@@ -158,8 +158,10 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					});
 				}
 			}
-			game.board.players[side].stacks[stack].push(...castCards);
-			game.board.players[side].casting[stack] = undefined;
+			while (game.board.players[side].casting[stack].length > 0) {
+				yield* actions.moveTopCard(game.board.players[side].casting[stack], game.board.players[side].stacks[stack]);
+				await delay(250);
+			}
 		}
 	}
 	yield game;
@@ -181,47 +183,50 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	}
 
 	yield* setPhase('field-clash');
-	const fieldClash = resolveFieldClash({
-		cardA: game.board.players.sideA.casting.field,
-		cardB: game.board.players.sideB.casting.field,
-	});
-	// only resolve if there was a clash
-	if (fieldClash.won !== null) {
-		const winnerSide = fieldClash.won;
-		const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
-		const winnerCard = game.board.players[winnerSide].casting.field;
-		const loserCard = game.board.players[loserSide].casting.field;
-
-		if (winnerCard)
-			yield* actions.vfx({
-				type: 'highlight',
-				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
-			});
-		if (loserCard)
-			yield* actions.vfx({
-				type: 'highlight',
-				durationMs: settings.effectHighlightMs,
-				config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
-			});
-
-		yield game;
-		delay(1000);
-
-		yield* runClashEffects({
-			actions,
-			game,
-			winnerSide,
-			loserSide,
-			loserCard,
-			winnerCard,
+	while (game.board.players.sideA.casting.field.length > 0 || game.board.players.sideB.casting.field.length > 0) {
+		const topField = {
+			sideA: topOf(game.board.players.sideA.casting.field),
+			sideB: topOf(game.board.players.sideB.casting.field),
+		};
+		const fieldClash = resolveFieldClash({
+			cardA: topField.sideA,
+			cardB: topField.sideB,
 		});
+		// only resolve if there was a clash
+		if (fieldClash.won !== null) {
+			const winnerSide = fieldClash.won;
+			const loserSide = winnerSide === 'sideA' ? 'sideB' : 'sideA';
+			const winnerCard = topField[winnerSide];
+			const loserCard = topField[loserSide];
 
-		if (winnerCard) game.board.field.push(winnerCard);
-		if (loserCard) game.board.discardPile.push(loserCard);
-		game.board.players[winnerSide].casting.field = undefined;
-		game.board.players[loserSide].casting.field = undefined;
-		yield game;
+			if (winnerCard)
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: settings.effectHighlightMs,
+					config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
+				});
+			if (loserCard)
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: settings.effectHighlightMs,
+					config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
+				});
+
+			yield game;
+			delay(1000);
+
+			yield* runClashEffects({
+				actions,
+				game,
+				winnerSide,
+				loserSide,
+				loserCard,
+				winnerCard,
+			});
+
+			if (winnerCard) yield* actions.moveTopCard(game.board.players[winnerSide].casting.field, game.board.field);
+			if (loserCard) yield* actions.discard({ card: loserCard, from: game.board.players[loserSide].casting.field });
+		}
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game } });

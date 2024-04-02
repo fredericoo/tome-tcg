@@ -52,6 +52,7 @@ module.exports = {
 		},
 
 		colors: {
+			current: 'currentColor',
 			white: token('white'),
 			black: token('black'),
 			lowest: token('lowest'),
@@ -150,8 +151,7 @@ module.exports = {
 					'100%': { opacity: '1' },
 				},
 				'to-zero-width': {
-					'0%': { width: '100%' },
-					'100%': { width: '0%' },
+					to: { width: '0%' },
 				},
 				'card-preview': {
 					'0%': { transform: 'translateX(-50%) scale(0.9) translateY(-100%)' },
@@ -167,7 +167,7 @@ module.exports = {
 				},
 			},
 			animation: {
-				'to-zero-width': 'to-zero-width 0.5s ease-out both',
+				'to-zero-width': 'to-zero-width 0.5s linear both',
 				'card-preview': 'card-preview 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
 				'card-effect': 'card-effect 0.3s cubic-bezier(0.16, 1, 0.3, 1) infinite',
 				action: 'action 1.2s cubic-bezier(0.16, 1, 0.3, 1) both',

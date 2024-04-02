@@ -1,5 +1,4 @@
 import { and, eq, or } from 'drizzle-orm';
-import { createInsertSchema } from 'drizzle-typebox';
 import { Elysia, error, t } from 'elysia';
 
 import { db } from '../../db';
@@ -8,9 +7,6 @@ import { takeFirst, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
 import { gamePubSub } from './game.pubsub';
-
-const InsertGameSchema = createInsertSchema(games);
-const gameConfigs = ['castTimeoutMs', 'phaseDelayMs', 'startingCards', 'spellTimeoutMs'] as const;
 
 export const gameRoutes = new Elysia({ prefix: '/games' })
 	.use(withUser)
@@ -46,6 +42,14 @@ export const gameRoutes = new Elysia({ prefix: '/games' })
 			return createdGame;
 		},
 		{
-			body: t.Composite([t.Object({ opponentId: t.String() }), t.Pick(InsertGameSchema, gameConfigs)]),
+			body: t.Composite([
+				t.Object({
+					opponentId: t.String(),
+					castTimeoutMs: t.Numeric(),
+					phaseDelayMs: t.Numeric(),
+					startingCards: t.Numeric(),
+					spellTimeoutMs: t.Numeric(),
+				}),
+			]),
 		},
 	);

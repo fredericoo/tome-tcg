@@ -16,29 +16,31 @@ import { Image } from '../image';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 
+const CARD_RATIO = 63 / 88;
+
 const sizeToRenderedWidth = {
-	// 0.7159090909 * 12vh
-	sm: '8.59vh',
-	// 0.7159090909 * 15vh
-	md: '10.73vh',
-	// 0.7159090909 * 33vh
-	lg: '23.62vh',
+	sm: CARD_RATIO * 12 + 'vh',
+	md: CARD_RATIO * 15 + 'vh',
+	lg: CARD_RATIO * 33 + 'vh',
 };
+
+export const cardSizeToClass = {
+	sm: 'h-[12vh] aspect-[63/88]',
+	md: 'h-[15vh] aspect-[63/88]',
+	lg: 'h-[33vh] aspect-[63/88]',
+};
+
 export const cardClass = cva({
 	base: 'select-none transition-shadow overflow-hidden rounded-[1vh] ring-1 ring-[#4F3739]/20',
 	variants: {
-		size: {
-			lg: 'h-[33vh] aspect-[63/88]',
-			md: 'h-[15vh] aspect-[63/88]',
-			sm: 'h-[12vh] aspect-[63/88]',
-		},
+		size: cardSizeToClass,
 		interactive: {
 			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/80 cursor-pointer',
 		},
 		highlight: {
 			effect: 'animate-card-effect',
-			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20 bg-red-500',
-			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20 bg-green-500',
+			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20 bg-negative-9',
+			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20 bg-positive-9',
 		},
 	},
 	defaultVariants: {
