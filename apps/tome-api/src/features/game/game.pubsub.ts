@@ -218,8 +218,10 @@ const createGameRoom = (gameId: number) => {
 		});
 		const handleGame = async () => {
 			for await (const iteration of gameInstance) {
+				if (typeof iteration !== 'object') console.error('🚨 Iteration is not an object', iteration);
+
 				// only set last state if iteration is a game state
-				if ('board' in iteration) {
+				if (typeof iteration === 'object' && 'board' in iteration) {
 					room.lastState = iteration;
 				}
 				SIDES.forEach(side => {
