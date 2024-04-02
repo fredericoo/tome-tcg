@@ -1112,7 +1112,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red'],
 		attack: 10,
-		description: 'If Eldritch Blast (https://www.notion.so/Eldritch-Blast-3892a7ae6830411da392903c16ea5271?pvs=21) is in play on your side of the field, add +10 Attack to Eldritch Blast',
+		description: 'If Eldritch Blast is in play on your side of the field, add +10 Attack to Eldritch Blast',
 		effects: {},
 	},
 	{
@@ -1121,7 +1121,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue'],
 		attack: 10,
-		description: 'If attacking with Eldritch Blast (https://www.notion.so/Eldritch-Blast-3892a7ae6830411da392903c16ea5271?pvs=21),   Draw 2',
+		description: 'If attacking with Eldritch Blast,   Draw 2',
 		effects: {},
 	},
 	{
@@ -1130,7 +1130,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 10,
-		description: 'If you successfully damaged an enemy using Eldritch Blast (https://www.notion.so/Eldritch-Blast-3892a7ae6830411da392903c16ea5271?pvs=21) , heal 20hp',
+		description: 'If you successfully damaged an enemy using Eldritch Blast, heal 20hp',
 		effects: {},
 	},
 	{
