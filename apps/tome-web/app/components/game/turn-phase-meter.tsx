@@ -3,7 +3,15 @@ import clsx from 'clsx';
 import { Board } from '../../../../tome-api/src/features/engine/engine.board';
 import { useGameStore } from '../../lib/game.utils';
 
-const PHASES: Array<Board['phase']> = ['draw', 'cast', 'reveal', 'spell', 'combat', 'damage'];
+const PHASES: Array<Board['phase']> = [
+	'draw',
+	'prepare',
+	'reveal',
+	'field-clash',
+	'cast-spell',
+	'spell-clash',
+	'damage',
+];
 
 export const TurnPhaseMeter = () => {
 	const currentPhase = useGameStore(s => s.state?.board.phase);

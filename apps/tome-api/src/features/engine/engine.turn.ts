@@ -62,7 +62,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	yield* actions.draw({ sides: ['sideA', 'sideB'] });
 
 	yield* triggerTurnHook({ hookName: 'beforeCast', context: { actions, game } });
-	yield* setPhase('cast');
+	yield* setPhase('prepare');
 	// Spooky cast from hand action with multi-threading state LOL
 	yield* actions.playerAction({
 		sides: ['sideA', 'sideB'],
@@ -180,7 +180,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		}
 	}
 
-	/** Field card resolution */
+	yield* setPhase('field-clash');
 	const fieldClash = resolveFieldClash({
 		cardA: game.board.players.sideA.casting.field,
 		cardB: game.board.players.sideB.casting.field,
@@ -225,7 +225,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game } });
-	yield* setPhase('spell');
+	yield* setPhase('cast-spell');
 
 	yield* actions.playerAction({
 		sides: ['sideA', 'sideB'],
@@ -260,7 +260,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	 *  - Calculates damage
 	 */
 	yield* triggerTurnHook({ hookName: 'beforeCombat', context: { actions, game } });
-	yield* setPhase('combat');
+	yield* setPhase('spell-clash');
 	const spellClash = resolveSpellClash({ spellA: game.turn.sideA.spellAttack, spellB: game.turn.sideB.spellAttack });
 
 	if (spellClash.won) {

@@ -51,6 +51,7 @@ export type SanitisedGameState = {
 	type: 'state';
 	side: Side;
 	board: {
+		castPile: PubSubHiddenCard[];
 		phase: Board['phase'];
 		field: PubSubCard[];
 		discardPile: PubSubCard[];
@@ -124,6 +125,7 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 				type: 'state',
 				side: playerSide,
 				board: {
+					castPile: [],
 					discardPile: [],
 					field: originalIteration.board.field.map(showFieldCard),
 					phase: originalIteration.board.phase,

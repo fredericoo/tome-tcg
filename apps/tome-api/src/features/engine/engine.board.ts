@@ -1,7 +1,7 @@
 import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
-	phase: 'draw' | 'cast' | 'reveal' | 'spell' | 'combat' | 'damage';
+	phase: 'draw' | 'prepare' | 'reveal' | 'field-clash' | 'cast-spell' | 'spell-clash' | 'damage';
 	players: Record<
 		Side,
 		{
