@@ -816,12 +816,12 @@ export const deck: DbCard[] = [
 		attack: 30,
 		description: 'When this card is revealed, draw one card. Then discard this card.',
 		effects: {
-			onReveal: async function* ({ actions, ownerSide }) {
+			onReveal: async function* ({ actions, game, ownerSide, thisCard }) {
+				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!currentColor) return;
 				yield* actions.draw({ sides: [ownerSide] });
+				yield* actions.discard({ card: topOf(game.board.field), from: game.board.players[ownerSide].stacks[currentColor] });
 			},
-			beforeCombat: async function* ({ actions, game, thisCard }) {
-				yield* actions.discard({ card: thisCard, from: game.board.field });
-			}
 		},
 	},
 	{
