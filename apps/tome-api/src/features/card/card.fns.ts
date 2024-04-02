@@ -11,10 +11,11 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'blue'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or RED (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide }) {
+			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
+				yield cardEffectHighlight;
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -51,10 +52,11 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 RED or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide }) {
+			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
+				yield cardEffectHighlight;
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -90,10 +92,11 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['blue', 'green'],
-		description: 'When this card is revealed, discard 1 card from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide }) {
+			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
+				yield cardEffectHighlight;
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -171,9 +174,10 @@ export const deck: DbCard[] = [
 		colors: ['green'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.red);
 				if (!cardToDiscard) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.red,
@@ -189,9 +193,10 @@ export const deck: DbCard[] = [
 		colors: ['red'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.blue);
 				if (!cardToDiscard) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.blue,
@@ -203,10 +208,12 @@ export const deck: DbCard[] = [
 		id: '11',
 		type: 'field',
 		name: 'Void Space',
-		description: 'Before combat, each player chooses one of their spell slots, and discards the top card from it.',
+		description:
+			'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
 		color: null,
 		effects: {
-			beforeCombat: async function* ({ actions, game }) {
+			beforeCombat: async function* ({ actions, game, thisCard, cardEffectHighlight }) {
+				yield cardEffectHighlight;
 				const selectStackAndDiscard = (side: Side) => {
 					const stacksWithCards = COLORS.filter(stack => game.board.players[side].stacks[stack].length > 0);
 					if (stacksWithCards.length === 0) return;
@@ -243,6 +250,7 @@ export const deck: DbCard[] = [
 				if (ownerDiscard) yield* ownerDiscard;
 				const opponentDiscard = selectStackAndDiscard('sideB');
 				if (opponentDiscard) yield* opponentDiscard;
+				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
 	},
@@ -251,7 +259,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		name: 'Overgrown root',
 		image: 'overgrown-root',
-		description: '4X attack, where X is the number of cards in this stack.',
+		description: '6X attack, where X is the number of cards in this stack.',
 		attack: {
 			label: '6X',
 			getValue({ game, ownerSide, thisCard }) {
@@ -271,12 +279,13 @@ export const deck: DbCard[] = [
 		attack: 5,
 		description: 'If this spell is beaten, discard the card that beat it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard, opponentSide }) {
+			onClashLose: async function* ({ actions, game, winnerCard, opponentSide, cardEffectHighlight }) {
 				if (!winnerCard) return;
 				const stackToDiscardFrom = COLORS.find(stack =>
 					game.board.players[opponentSide].stacks[stack].includes(winnerCard),
 				);
 				if (!stackToDiscardFrom) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({
 					card: winnerCard,
 					from: game.board.players[opponentSide].stacks[stackToDiscardFrom],
@@ -288,13 +297,14 @@ export const deck: DbCard[] = [
 		id: '13',
 		type: 'field',
 		name: 'Unstable Ground',
-		description: 'If both players attack with the same spell stack, both take 10 damage.',
+		description: 'If both players attack with the same spell colour, both take 10 damage.',
 		color: null,
 		effects: {
-			beforeDamage: async function* ({ thisCard, game }) {
+			beforeDamage: async function* ({ thisCard, game, cardEffectHighlight }) {
 				if (game.turn.sideA.spellAttack?.slot === game.turn.sideB.spellAttack?.slot) {
 					game.turn.combatStack.push({ source: thisCard, target: 'sideA', type: 'damage', value: 10 });
 					game.turn.combatStack.push({ source: thisCard, target: 'sideB', type: 'damage', value: 10 });
+					yield cardEffectHighlight;
 					yield game;
 				}
 			},
@@ -308,8 +318,9 @@ export const deck: DbCard[] = [
 		attack: 6,
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game, opponentSide, ownerSide }) {
+			onDealDamage: async function* ({ actions, game, opponentSide, ownerSide, cardEffectHighlight }) {
 				if (game.board.players[opponentSide].hand.length === 0) return;
+				yield cardEffectHighlight;
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -346,11 +357,12 @@ export const deck: DbCard[] = [
 		color: 'red',
 		description: 'After combat, the player who has the least HP draws one card.',
 		effects: {
-			afterDamage: async function* ({ game, actions }) {
+			afterDamage: async function* ({ game, actions, cardEffectHighlight }) {
 				const playerA = game.board.players.sideA;
 				const playerB = game.board.players.sideB;
 				if (playerA.hp === playerB.hp) return;
 				const playerWithLeastHp = playerA.hp < playerB.hp ? playerA : playerB;
+				yield cardEffectHighlight;
 				yield* actions.draw({ sides: [playerWithLeastHp.side] });
 			},
 		},
@@ -363,10 +375,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a red spell, draw 1 card',
 		color: 'red',
 		effects: {
-			beforeDamage: async function* ({ actions, game }) {
+			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'red') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'red') drawingSides.push('sideB');
+				yield cardEffectHighlight;
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -379,10 +392,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a blue spell, draw 1 card',
 		color: 'blue',
 		effects: {
-			beforeDamage: async function* ({ actions, game }) {
+			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'blue') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'blue') drawingSides.push('sideB');
+				yield cardEffectHighlight;
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -394,10 +408,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a green spell, draw 1 card',
 		color: 'green',
 		effects: {
-			beforeDamage: async function* ({ actions, game }) {
+			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'green') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'green') drawingSides.push('sideB');
+				yield cardEffectHighlight;
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -411,7 +426,7 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
 		effects: {
-			beforeCombat: async function* ({ game }) {
+			beforeCombat: async function* ({ game, cardEffectHighlight }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -419,6 +434,7 @@ export const deck: DbCard[] = [
 					if (!combat.source.colors.includes('green')) continue;
 					combat.value += 5;
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
 		},
@@ -451,18 +467,21 @@ export const deck: DbCard[] = [
 		type: 'field',
 		color: 'red',
 		description:
-			'Can only be cast on top of a GREEN field spell (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
+			'When this card is revealed, discard 1 GREEN card from your hand (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
+		// TODO: Implement discard from hand
 		effects: {
-			beforeCast: async function* ({ game, actions, thisCard }) {
+			beforeCast: async function* ({ game, actions, thisCard, cardEffectHighlight }) {
 				for (const side of SIDES) {
 					const cardToDiscard = topOf(game.board.players[side].stacks.green);
 					if (cardToDiscard) {
+						yield cardEffectHighlight;
 						yield* actions.discard({
 							card: cardToDiscard,
 							from: game.board.players[side].stacks.green,
 						});
 					}
 				}
+				yield cardEffectHighlight;
 				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
@@ -472,7 +491,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Earth',
 		type: 'spell',
 		colors: ['red'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top GREEN card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
@@ -493,7 +512,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Water',
 		type: 'spell',
 		colors: ['green'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top BLUE card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
@@ -514,7 +533,7 @@ export const deck: DbCard[] = [
 		name: 'Syphon Fire',
 		type: 'spell',
 		colors: ['blue'],
-		attack: 7,
+		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top RED card.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
@@ -536,11 +555,12 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 5,
-		heal: 8,
+		heal: 6,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard }) {
+			onClashLose: async function* ({ actions, game, winnerCard, cardEffectHighlight }) {
 				if (!winnerCard) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
@@ -553,9 +573,10 @@ export const deck: DbCard[] = [
 		description: 'Whenever this spell deals damage, remove the top field effect from play.',
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game }) {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
 				const fieldEffect = topOf(game.board.field);
 				if (!fieldEffect) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({ card: fieldEffect, from: game.board.field });
 			},
 		},
@@ -567,19 +588,20 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		colors: ['green', 'blue'],
 		description:
-			'When this spell is placed in the GREEN stack, this card has +10 Attack. When this spell is placed in the BLUE stack, draw a card',
+			'When this spell is placed in the GREEN stack, this card has +5 Attack. When this spell is placed in the BLUE stack, draw a card',
 		attack: {
 			label: '8',
 			getValue({ game, ownerSide, thisCard }) {
 				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) {
-					return 18;
+					return 13;
 				}
 				return 8;
 			},
 		},
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard, cardEffectHighlight }) {
 				if (topOf(game.board.players[ownerSide].stacks.blue) === thisCard) {
+					yield cardEffectHighlight;
 					yield* actions.draw({ sides: [ownerSide] });
 				}
 			},
@@ -595,12 +617,12 @@ export const deck: DbCard[] = [
 			getValue({ game, ownerSide, thisCard }) {
 				const redStack = game.board.players[ownerSide].stacks.red;
 				if (redStack.length === 1 && topOf(redStack) === thisCard) {
-					return 20;
+					return 15;
 				}
 				return 10;
 			},
 		},
-		description: 'If this is the only card in your RED slot, this card has +10 attack',
+		description: 'If this is the only card in your RED slot, this card has +5 attack',
 		effects: {},
 	},
 	{
@@ -630,9 +652,10 @@ export const deck: DbCard[] = [
 		description:
 			'X Attack, where X is the sum of the two other spell slots attacks. When this spell deals damage, discard it.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, thisCard, ownerSide }) {
+			onDealDamage: async function* ({ actions, game, thisCard, ownerSide, cardEffectHighlight }) {
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({
 					card: thisCard,
 					from: game.board.players[ownerSide].stacks[thisStack],
@@ -651,7 +674,7 @@ export const deck: DbCard[] = [
 			'If this spell is chosen as an attack, any damage caused during combat is nulled. Remove this card from play after used in combat.',
 		colors: ['blue'],
 		effects: {
-			beforeDamage: async function* ({ game, ownerSide, thisCard }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
@@ -659,6 +682,7 @@ export const deck: DbCard[] = [
 						combat.value = 0;
 					}
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -668,32 +692,33 @@ export const deck: DbCard[] = [
 		id: '38',
 		name: 'Violent Instinct',
 		type: 'spell',
-		attack: 20,
+		attack: 15,
 		colors: ['red'],
 		description:
 			'If this spell is chosen as an attack, any damage caused during combat is doubled. Remove this card from play after used in combat.',
 		effects: {
-			beforeDamage: async function* ({ game, ownerSide, thisCard }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
 					if (combat.type !== 'damage') continue;
 					combat.value *= 2;
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{ id: '39', name: 'Fireball', type: 'spell', attack: 10, colors: ['red'], description: '', effects: {} },
-	{ id: '40', name: 'Flaming Sword', type: 'spell', attack: 10, colors: ['red'], description: '', effects: {} },
-	{ id: '41', name: 'Flaming Bow', type: 'spell', attack: 10, colors: ['red'], description: '', effects: {} },
-	{ id: '42', name: 'Ice Shard', type: 'spell', attack: 10, colors: ['blue'], description: '', effects: {} },
-	{ id: '42', name: 'Frost Bow', type: 'spell', attack: 10, colors: ['blue'], description: '', effects: {} },
-	{ id: '43', name: 'Frozen Sword', type: 'spell', attack: 10, colors: ['blue'], description: '', effects: {} },
-	{ id: '44', name: 'Earth Spike', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
-	{ id: '45', name: 'Metal Bullet', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
-	{ id: '46', name: 'Steel Sword', type: 'spell', attack: 10, colors: ['green'], description: '', effects: {} },
+	{ id: '39', name: 'Fireball', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	{ id: '40', name: 'Flaming Sword', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	{ id: '41', name: 'Flaming Bow', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	{ id: '42', name: 'Ice Shard', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	{ id: '42', name: 'Frost Bow', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	{ id: '43', name: 'Frozen Sword', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	{ id: '44', name: 'Earth Spike', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
+	{ id: '45', name: 'Metal Bullet', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
+	{ id: '46', name: 'Steel Sword', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
 	{
 		id: '47',
 		name: 'Necromancy',
@@ -703,7 +728,7 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is used in combat, prevents any damage from being caused to you this turn, then discard it.',
 		effects: {
-			beforeCombat: async function* ({ game, ownerSide, thisCard }) {
+			beforeCombat: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
@@ -711,6 +736,7 @@ export const deck: DbCard[] = [
 						combat.value = 0;
 					}
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -725,7 +751,7 @@ export const deck: DbCard[] = [
 		description:
 			'Green spells have +5 attack. If this field effect fails to be placed, also removes the field effect who overtook it.',
 		effects: {
-			beforeCombat: async function* ({ game }) {
+			beforeCombat: async function* ({ game, cardEffectHighlight }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -733,10 +759,12 @@ export const deck: DbCard[] = [
 					if (!combat.source.colors.includes('green')) continue;
 					combat.value += 5;
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
-			onClashLose: async function* ({ actions, game, winnerCard }) {
+			onClashLose: async function* ({ actions, game, winnerCard, cardEffectHighlight }) {
 				if (!winnerCard) return;
+				yield cardEffectHighlight;
 				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
@@ -749,7 +777,7 @@ export const deck: DbCard[] = [
 		description:
 			'Each player’s damage is increased by 5X, where X is the number of active spells they own with the word “Fire” in their title, and this card.',
 		effects: {
-			beforeCombat: async function* ({ game }) {
+			beforeCombat: async function* ({ game, cardEffectHighlight }) {
 				for (const side of SIDES) {
 					const activeSpells = COLORS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
@@ -762,6 +790,7 @@ export const deck: DbCard[] = [
 						}
 					}
 				}
+				yield cardEffectHighlight;
 				yield game;
 			},
 		},
@@ -774,15 +803,201 @@ export const deck: DbCard[] = [
 		description:
 			'At the beggining of each turn, each player heals 2X HP, where X is the number of active spells they own with the name “Wood” in their title.',
 		effects: {
-			beforeDraw: async function* ({ game, actions }) {
+			beforeDraw: async function* ({ game, actions, cardEffectHighlight }) {
 				for (const side of SIDES) {
 					const activeSpells = COLORS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
 						.filter(Boolean);
 					const woodSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('wood'));
 					const healAmount = 2 * woodSpells.length;
+					yield cardEffectHighlight;
 					yield* actions.healPlayer({ side, amount: healAmount });
 				}
+			},
+		},
+	},
+	{
+		id: '55',
+		name: 'Burning flame',
+		type: 'spell',
+		colors: ['red'],
+		attack: 18,
+		description:
+			'Every time this spell deals damage, discard the top card from the GREEN stack. If there’s no more cards to discard, discard Burning flame.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, thisCard, cardEffectHighlight }) {
+				const cardToDiscard = topOf(game.board.players[ownerSide].stacks.green);
+				if (!cardToDiscard) {
+					yield cardEffectHighlight;
+					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
+					return;
+				}
+				yield cardEffectHighlight;
+				yield* actions.discard({ card: cardToDiscard, from: game.board.players[ownerSide].stacks.green });
+			},
+		},
+	},
+	{
+		id: '57',
+		name: 'Wind Sceptre',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 30,
+		description: 'When this card is revealed, draw one card. Then discard this card.',
+		effects: {
+			onReveal: async function* ({ actions, game, ownerSide, thisCard, cardEffectHighlight }) {
+				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!currentColor) return;
+				yield cardEffectHighlight;
+				yield* actions.draw({ sides: [ownerSide] });
+				yield* actions.discard({
+					card: thisCard,
+					from: game.board.players[ownerSide].stacks[currentColor],
+				});
+			},
+		},
+	},
+	{
+		id: '58',
+		name: 'Fire Starter',
+		type: 'spell',
+		colors: ['red'],
+		attack: 8,
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
+		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
+		effects: {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'green' || fieldToDiscard?.color === null) {
+					yield cardEffectHighlight;
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+				}
+			},
+		},
+	},
+	{
+		id: '59',
+		name: 'Extinguishing Spray',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 8,
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a RED or NEUTRAL [FIELD] spell to the discard pile.',
+		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
+		effects: {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'red' || fieldToDiscard?.color === null) {
+					yield cardEffectHighlight;
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+				}
+			},
+		},
+	},
+	{
+		id: '60',
+		name: 'Parched Earth',
+		type: 'spell',
+		colors: ['green'],
+		attack: 8,
+		description:
+			'After a successful attack, you *may* (NOT IMPLEMENTED) send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
+		effects: {
+			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+				const fieldToDiscard = topOf(game.board.field);
+				if (fieldToDiscard?.color === 'blue' || fieldToDiscard?.color === null) {
+					yield cardEffectHighlight;
+					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+				}
+			},
+		},
+	},
+	{
+		id: '61',
+		name: 'Wobbly bridge',
+		type: 'field',
+		color: 'green',
+		description: 'Spells deal +2X damage during combat, where X is the size of the field effect stack',
+		effects: {
+			beforeCombat: async function* ({ game, cardEffectHighlight }) {
+				const fieldEffectStack = game.board.field.length;
+				for (const combat of game.turn.combatStack) {
+					if (!combat.source) continue;
+					if (combat.type !== 'damage') continue;
+					if (combat.source.type !== 'spell') continue;
+					combat.value += 2 * fieldEffectStack;
+				}
+				yield cardEffectHighlight;
+				yield game;
+			},
+		},
+	},
+	{
+		id: '62',
+		name: 'Mirror shield',
+		type: 'spell',
+		colors: [],
+		attack: 0,
+		description:
+			'If this spell is beaten in combat, the damage that would have been caused to you is caused to the opponent instead. If this spell is not beaten in combat, discard it.',
+		effects: {
+			onClashWin: async function* ({ actions, game, thisCard, ownerSide, cardEffectHighlight }) {
+				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!currentColor) return;
+				yield cardEffectHighlight;
+				yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks[currentColor] });
+			},
+			onClashLose: async function* ({ game, ownerSide, opponentSide, cardEffectHighlight }) {
+				yield cardEffectHighlight;
+				for (const combat of game.turn.combatStack) {
+					if (combat.type !== 'damage') continue;
+					if (combat.target !== ownerSide) continue;
+					combat.target = opponentSide;
+				}
+			},
+		},
+	},
+	{
+		id: '63',
+		name: 'Cannon Fire',
+		type: 'spell',
+		colors: ['red'],
+		attack: 25,
+		description:
+			'When this spell is used in combat, select a card from your hand and discard it. If you don’t have cards to discard, discard Cannon Fire instead.',
+		effects: {
+			beforeCombat: async function* ({ game, actions, ownerSide, thisCard, cardEffectHighlight }) {
+				if (game.board.players[ownerSide].hand.length === 0) {
+					yield cardEffectHighlight;
+					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
+					return;
+				}
+				yield cardEffectHighlight;
+				yield* actions.playerAction({
+					sides: [ownerSide],
+					action: {
+						type: 'select_from_hand',
+						config: {
+							from: 'self',
+							max: 1,
+							min: 1,
+							availableTypes: CARD_TYPES,
+							availableColors: COLORS,
+							message: 'Discard a card from your hand',
+						},
+						onAction: function* ({ cardKeys }) {
+							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
+							invariant(cardToDiscard, 'Card to discard not found');
+							yield* actions.discard({
+								card: cardToDiscard,
+								from: game.board.players[ownerSide].hand,
+							});
+						},
+					},
+					timeoutMs: 10000,
+					onTimeout: noop,
+				});
 			},
 		},
 	},
@@ -838,6 +1053,445 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Tome of nature',
 		description: 'Green field effects are triggered twice (NOT IMPLEMENTED)',
 		attack: 12,
+		effects: {},
+	},
+	{
+		id: '51',
+		name: 'Magic Shield of Flame',
+		type: 'spell',
+		colors: ['red'],
+		attack: 5,
+		description: 'If this spell is beaten, negate the effect of the card that beat it. (NOT IMPLEMENTED)',
+		effects: {},
+	},
+	{
+		id: '52',
+		name: 'Uncast',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 0,
+		description:
+			'Whener this spell is revealed, remove all cards being revealed this turn from play. (NOT IMPLEMENTED)',
+		effects: {},
+	},
+	{
+		id: '53',
+		name: 'Fields of mana',
+		type: 'field',
+		color: 'blue',
+		description: 'During cast phase, players can cast one more card. Players cannot cast two cards for the same slot.',
+		effects: {},
+	},
+	{
+		id: '54',
+		name: 'Blue wand',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 8,
+		description: 'BLUE field effects trigger twice',
+		effects: {},
+	},
+	{
+		id: '56',
+		name: 'Barren Land',
+		type: 'field',
+		color: null,
+		description: 'Spells have no effects',
+		effects: {},
+	},
+	{
+		id: '64',
+		name: 'Bull’s eye shot',
+		type: 'spell',
+		colors: [],
+		attack: 0,
+		description: '4X Attack, where X is the number of  NEUTRAL cards in play.',
+		effects: {},
+	},
+	{
+		id: '65',
+		name: 'Tsunami',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 0,
+		description: 'X Attack, where X is the combined number of every player’s BLUE spell stacks',
+		effects: {},
+	},
+	{
+		id: '66',
+		name: 'Community Hall',
+		type: 'field',
+		color: null,
+		description: 'The player with the fewest HP draws one more card during the draw phase',
+		effects: {},
+	},
+	{
+		id: '67',
+		name: 'Hilltop observatory',
+		type: 'field',
+		color: null,
+		description: 'The player with the lowest combined stack of spells keeps their hand revealed',
+		effects: {},
+	},
+	{
+		id: '68',
+		name: 'Back to Square One',
+		type: 'field',
+		color: null,
+		description: 'All spells have 10 Attack',
+		effects: {},
+	},
+	{
+		id: '69',
+		name: 'Upheaval',
+		type: 'spell',
+		colors: [],
+		attack: 25,
+		description: 'If Field Spell Stack == 0 Else 0 Attack',
+		effects: {},
+	},
+	{
+		id: '70',
+		name: 'Eldritch Blast',
+		type: 'spell',
+		colors: ['blue', 'green', 'red'],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '71',
+		name: 'Agonising Blast',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: 'If Eldritch Blast is in play on your side of the field, add +10 Attack to Eldritch Blast',
+		effects: {},
+	},
+	{
+		id: '72',
+		name: 'Blessed Blast',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		description: 'If attacking with Eldritch Blast,   Draw 2',
+		effects: {},
+	},
+	{
+		id: '73',
+		name: 'Leeching Blast',
+		type: 'spell',
+		colors: ['green'],
+		attack: 10,
+		description: 'If you successfully damaged an enemy using Eldritch Blast, heal 20hp',
+		effects: {},
+	},
+	{
+		id: '74',
+		name: 'Blast Zone',
+		type: 'field',
+		color: 'red',
+		description: 'Trigger all “Blast” spells effects twice',
+		effects: {},
+	},
+	{
+		id: '75',
+		name: 'Inverse Field',
+		type: 'field',
+		color: 'blue',
+		description: 'Healing does damage and Damage does healing',
+		effects: {},
+	},
+	{
+		id: '76',
+		name: 'Healing Rain',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 0,
+		description: 'Heal all wizards by 15 HP',
+		effects: {},
+	},
+	{
+		id: '77',
+		name: 'Heal through pain',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: 5,
+		description:
+			'Can only be played if the Field stack is ≥ 3 and the current top Field is BLUE. If the opponent wizard is healed by one of your cards, deal 25 damage to the opposing wizard.',
+		effects: {},
+	},
+	{
+		id: '78',
+		name: 'Heated Shuffle',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: 'If it’s possible, move the top card from your BLUE/GREEN stack to your GREEN/BLUE stack.',
+		effects: {},
+	},
+	{
+		id: '79',
+		name: 'Flooded Shuffle',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		description: 'If it’s possible, move the top card from your RED/GREEN stack to your GREEN/RED stack.',
+		effects: {},
+	},
+	{
+		id: '80',
+		name: 'Sharp Shuffle',
+		type: 'spell',
+		colors: ['green'],
+		attack: 10,
+		description: 'If it’s possible, move the top card from your BLUE/RED stack to your RED/BLUE stack.',
+		effects: {},
+	},
+	{
+		id: '81',
+		name: 'Tactical Flamevine',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: 8,
+		description:
+			'If attacked with this spell and lost combat with a RED/GREEN attack, you may move this spell to the top of the GREEN/RED slot',
+		effects: {},
+	},
+	{
+		id: '82',
+		name: 'Tactical Chillflare',
+		type: 'spell',
+		colors: ['blue', 'red'],
+		attack: 8,
+		description:
+			'If attacked with this spell and lost combat with a RED/BLUE attack, you may move this spell to the top of the BLUE/RED slot',
+		effects: {},
+	},
+	{
+		id: '83',
+		name: 'Tactical Frostleaf',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 8,
+		description:
+			'If attacked with this spell and lost combat with a BLUE/GREEN attack, you may move this spell to the top of the GREEN/BLUE slot',
+		effects: {},
+	},
+	{
+		id: '84',
+		name: 'Bokutou',
+		type: 'spell',
+		colors: [],
+		attack: 0,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '85',
+		name: 'Long Form',
+		type: 'spell',
+		colors: ['blue', 'red'],
+		attack: 0,
+		description:
+			'If attacking with “Bokutou”, add 7X to the attack where X is the number of “Form” cards you have active.',
+		effects: {},
+	},
+	{
+		id: '86',
+		name: 'Short Form',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 0,
+		description: 'If you successfully attacked with “Bokutou”, draw 3 cards',
+		effects: {},
+	},
+	{
+		id: '87',
+		name: 'Red Orb',
+		type: 'spell',
+		colors: ['red'],
+		attack: 11,
+		description: 'When cast on top of another Orb, +9 Attack',
+		effects: {},
+	},
+	{
+		id: '88',
+		name: 'Blue Orb',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 11,
+		description: 'When cast on top of another Orb, Draw 2 cards',
+		effects: {},
+	},
+	{
+		id: '89',
+		name: 'Green Orb',
+		type: 'spell',
+		colors: ['green'],
+		attack: 11,
+		description: 'When cast on top of another orb, Heals 20 HP',
+		effects: {},
+	},
+	{
+		id: '90',
+		name: 'Purple Orb',
+		type: 'spell',
+		colors: ['blue', 'red'],
+		attack: 11,
+		description: 'When cast on top of another orb, discard the current field effect',
+		effects: {},
+	},
+	{
+		id: '91',
+		name: 'Brown Orb',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: 11,
+		description: 'When cast on top of another orb, choose a stack colour, and remove the top of that opponent’s stack.',
+		effects: {},
+	},
+	{
+		id: '92',
+		name: 'Yellow Orb',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 11,
+		description: 'When cast on top of another orb, deals 10 damage to the opponent',
+		effects: {},
+	},
+	{
+		id: '93',
+		name: 'Dull Orb',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '94',
+		name: 'Marble field',
+		type: 'field',
+		color: null,
+		description: 'All “Orb” cards effect activate without needing an “Orb” card below them',
+		effects: {},
+	},
+	{
+		id: '95',
+		name: 'Dull Blade',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '96',
+		name: 'Dull Sword',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '97',
+		name: 'Dull Spear',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '98',
+		name: 'Whetstone',
+		type: 'field',
+		color: 'blue',
+		description:
+			'All “Dull” spells get +5 Attack. If successfully damaged with a “Dull” spell, your opponent takes 2X damage where X is the number of “Dull” spells you control',
+		effects: {},
+	},
+	{
+		id: '99',
+		name: 'Melting Forge',
+		type: 'field',
+		color: 'red',
+		description:
+			'During the Draw Phase, you may discard up to 3 active “Dull” cards you control, and draw as many cards in addition to your normal draw',
+		effects: {},
+	},
+	{
+		id: '100',
+		name: 'Repurposing Field',
+		type: 'field',
+		color: 'green',
+		description: 'If Attacking with a “Dull” card, choose one spell on the field and add it back to its owner’s hand',
+		effects: {},
+	},
+	{
+		id: '101',
+		name: 'Balanced Grounds',
+		type: 'field',
+		color: null,
+		description: '“Dull” Spells gain +10 Attack. If successfully damaged with a “Dull” spell, heal 10HP',
+		effects: {},
+	},
+	{
+		id: '102',
+		name: 'Healing Staff',
+		type: 'spell',
+		colors: ['green'],
+		attack: 8,
+		description: 'Every time a player draws a card, you gain 2 HP',
+		effects: {},
+	},
+	{
+		id: '103',
+		name: 'Greater Sword',
+		type: 'spell',
+		colors: [],
+		attack: 30,
+		description:
+			'You must have at least 3 cards in your hand to play this card. When this card is revealed, discard 2 cards from your hand.',
+		effects: {},
+	},
+	{
+		id: '104',
+		name: 'Chain Lightning',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 20,
+		description: 'Deal 20 damage to your own wizard.',
+		effects: {},
+	},
+	{
+		id: '105',
+		name: 'Earthquake',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: 30,
+		description: 'Deal 30 damage to your own wizard.',
+		effects: {},
+	},
+	{
+		id: '106',
+		name: 'Raise the Stakes',
+		type: 'field',
+		color: null,
+		description:
+			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
+		effects: {},
+	},
+	{
+		id: '107',
+		name: 'Hex',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description:
+			"After successfully dealing damage with this card, choose one of your opponent's stacks. Place this card on top of that stack.",
 		effects: {},
 	},
 ];
