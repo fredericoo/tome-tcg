@@ -2,7 +2,7 @@ import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
 import { CARD_TYPES, COLORS, DbCard, SIDES, Side } from '../engine/engine.game';
 import { ACTIVATABLE_HOOKS, effectVfx } from '../engine/engine.hooks';
-import { removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
+import { orbAttackValue, removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
 
 export const deck: DbCard[] = [
 	{
@@ -1002,6 +1002,96 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
+
+	{
+		id: '87',
+		name: 'Red Orb',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another Orb, +9 Attack',
+		effects: {},
+	},
+	{
+		id: '88',
+		name: 'Blue Orb',
+		type: 'spell',
+		colors: ['blue'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another Orb, Draw 2 cards',
+		effects: {},
+	},
+	{
+		id: '89',
+		name: 'Green Orb',
+		type: 'spell',
+		colors: ['green'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another orb, Heals 20 HP',
+		effects: {},
+	},
+	{
+		id: '90',
+		name: 'Purple Orb',
+		type: 'spell',
+		colors: ['blue', 'red'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another orb, discard the current field effect',
+		effects: {},
+	},
+	{
+		id: '91',
+		name: 'Brown Orb',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another orb, choose a stack colour, and remove the top of that opponent’s stack.',
+		effects: {},
+	},
+	{
+		id: '92',
+		name: 'Yellow Orb',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: {
+			label: '11',
+			getValue: orbAttackValue,
+		},
+		description: 'When cast on top of another orb, deals 10 damage to the opponent',
+		effects: {},
+	},
+	{
+		id: '93',
+		name: 'Dull Orb',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '94',
+		name: 'Marble field',
+		type: 'field',
+		color: null,
+		description: 'All “Orb” cards effect activate without needing an “Orb” card below them',
+		effects: {},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -1307,77 +1397,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If you successfully attacked with “Bokutou”, draw 3 cards',
 		effects: {},
 	},
-	{
-		id: '87',
-		name: 'Red Orb',
-		type: 'spell',
-		colors: ['red'],
-		attack: 11,
-		description: 'When cast on top of another Orb, +9 Attack',
-		effects: {},
-	},
-	{
-		id: '88',
-		name: 'Blue Orb',
-		type: 'spell',
-		colors: ['blue'],
-		attack: 11,
-		description: 'When cast on top of another Orb, Draw 2 cards',
-		effects: {},
-	},
-	{
-		id: '89',
-		name: 'Green Orb',
-		type: 'spell',
-		colors: ['green'],
-		attack: 11,
-		description: 'When cast on top of another orb, Heals 20 HP',
-		effects: {},
-	},
-	{
-		id: '90',
-		name: 'Purple Orb',
-		type: 'spell',
-		colors: ['blue', 'red'],
-		attack: 11,
-		description: 'When cast on top of another orb, discard the current field effect',
-		effects: {},
-	},
-	{
-		id: '91',
-		name: 'Brown Orb',
-		type: 'spell',
-		colors: ['green', 'red'],
-		attack: 11,
-		description: 'When cast on top of another orb, choose a stack colour, and remove the top of that opponent’s stack.',
-		effects: {},
-	},
-	{
-		id: '92',
-		name: 'Yellow Orb',
-		type: 'spell',
-		colors: ['blue', 'green'],
-		attack: 11,
-		description: 'When cast on top of another orb, deals 10 damage to the opponent',
-		effects: {},
-	},
-	{
-		id: '93',
-		name: 'Dull Orb',
-		type: 'spell',
-		colors: [],
-		attack: 10,
-		description: '',
-		effects: {},
-	},
-	{
-		id: '94',
-		name: 'Marble field',
-		type: 'field',
-		color: null,
-		description: 'All “Orb” cards effect activate without needing an “Orb” card below them',
-		effects: {},
-	},
+
 	{
 		id: '95',
 		name: 'Dull Blade',
