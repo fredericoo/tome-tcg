@@ -15,7 +15,7 @@ import {
 	runClashEffects,
 } from './engine.game';
 import { useGameActions } from './engine.hook.actions';
-import { getCardEffectHighlight, useTriggerHooks } from './engine.hooks';
+import { useTriggerHooks } from './engine.hooks';
 
 const initialiseTurnSide = (): Turn[Side] => ({
 	draws: [],
@@ -154,7 +154,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 						opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
 						ownerSide: side,
 						thisCard: card,
-						cardEffectHighlight: getCardEffectHighlight(card),
 					});
 				}
 			}
@@ -176,7 +175,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					opponentSide: undefined,
 					ownerSide: undefined,
 					thisCard: fieldCard,
-					cardEffectHighlight: getCardEffectHighlight(fieldCard),
 				});
 			}
 		}
@@ -199,18 +197,18 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			const winnerCard = topField[winnerSide];
 			const loserCard = topField[loserSide];
 
-			if (winnerCard)
-				yield* actions.vfx({
-					type: 'highlight',
-					durationMs: settings.effectHighlightMs,
-					config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
-				});
-			if (loserCard)
-				yield* actions.vfx({
-					type: 'highlight',
-					durationMs: settings.effectHighlightMs,
-					config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
-				});
+			// if (winnerCard)
+			// 	yield* actions.vfx({
+			// 		type: 'highlight',
+			// 		durationMs: settings.effectHighlightMs,
+			// 		config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
+			// 	});
+			// if (loserCard)
+			// 	yield* actions.vfx({
+			// 		type: 'highlight',
+			// 		durationMs: settings.effectHighlightMs,
+			// 		config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
+			// 	});
 
 			yield game;
 			delay(1000);
@@ -382,7 +380,6 @@ async function* resolveCombatDamage(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
-				cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 			});
 			break;
 		}
@@ -396,7 +393,6 @@ async function* resolveCombatDamage(
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
-					cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 				});
 			}
 			break;
@@ -420,7 +416,6 @@ async function* resolveCombatHealing(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
-				cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 			});
 			break;
 		}
@@ -434,7 +429,6 @@ async function* resolveCombatHealing(
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
 					thisCard: combatItem.source,
-					cardEffectHighlight: getCardEffectHighlight(combatItem.source),
 				});
 			}
 			break;

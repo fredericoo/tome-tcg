@@ -1,7 +1,7 @@
 import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
 import { CARD_TYPES, COLORS, DbCard, SIDES, Side } from '../engine/engine.game';
-import { ACTIVATABLE_HOOKS } from '../engine/engine.hooks';
+import { ACTIVATABLE_HOOKS, effectVfx } from '../engine/engine.hooks';
 import { removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
 
 export const deck: DbCard[] = [
@@ -13,9 +13,10 @@ export const deck: DbCard[] = [
 		colors: ['red', 'blue'],
 		description: 'When this card is revealed, discard 1 BLUE or RED (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
+
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -54,9 +55,9 @@ export const deck: DbCard[] = [
 		colors: ['red', 'green'],
 		description: 'When this card is revealed, discard 1 RED or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -94,9 +95,9 @@ export const deck: DbCard[] = [
 		colors: ['blue', 'green'],
 		description: 'When this card is revealed, discard 1 BLUE or GREEN (NOT IMPLEMENTED) spell from your hand.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, cardEffectHighlight }) {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -136,11 +137,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
 		color: 'blue',
 		effects: {
-			beforeDamage: async function* ({ game, thisCard, cardEffectHighlight }) {
+			beforeDamage: async function* ({ game, thisCard, actions }) {
 				for (const side of SIDES) {
 					if (game.turn[side].spellAttack?.slot === 'blue') {
 						game.turn.combatStack.push({ source: thisCard, target: side, type: 'heal', value: 10 });
-						yield cardEffectHighlight;
+						yield* actions.vfx(effectVfx(thisCard));
 						yield game;
 					}
 				}
@@ -155,10 +156,10 @@ export const deck: DbCard[] = [
 		colors: ['blue'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, thisCard }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.green);
 				if (!cardToDiscard) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.green,
@@ -174,10 +175,10 @@ export const deck: DbCard[] = [
 		colors: ['green'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, thisCard }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.red);
 				if (!cardToDiscard) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.red,
@@ -193,10 +194,10 @@ export const deck: DbCard[] = [
 		colors: ['red'],
 		attack: 8,
 		effects: {
-			onDealDamage: async function* ({ actions, opponentSide, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, opponentSide, game, thisCard }) {
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.blue);
 				if (!cardToDiscard) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({
 					card: cardToDiscard,
 					from: game.board.players[opponentSide].stacks.blue,
@@ -212,8 +213,8 @@ export const deck: DbCard[] = [
 			'Before combat, each player chooses one of their spell slots, and discards the top card from it. Then discard this card.',
 		color: null,
 		effects: {
-			beforeCombat: async function* ({ actions, game, thisCard, cardEffectHighlight }) {
-				yield cardEffectHighlight;
+			beforeCombat: async function* ({ actions, game, thisCard }) {
+				yield* actions.vfx(effectVfx(thisCard));
 				const selectStackAndDiscard = (side: Side) => {
 					const stacksWithCards = COLORS.filter(stack => game.board.players[side].stacks[stack].length > 0);
 					if (stacksWithCards.length === 0) return;
@@ -279,13 +280,13 @@ export const deck: DbCard[] = [
 		attack: 5,
 		description: 'If this spell is beaten, discard the card that beat it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard, opponentSide, cardEffectHighlight }) {
+			onClashLose: async function* ({ actions, game, winnerCard, opponentSide, thisCard }) {
 				if (!winnerCard) return;
 				const stackToDiscardFrom = COLORS.find(stack =>
 					game.board.players[opponentSide].stacks[stack].includes(winnerCard),
 				);
 				if (!stackToDiscardFrom) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({
 					card: winnerCard,
 					from: game.board.players[opponentSide].stacks[stackToDiscardFrom],
@@ -300,11 +301,11 @@ export const deck: DbCard[] = [
 		description: 'If both players attack with the same spell colour, both take 10 damage.',
 		color: null,
 		effects: {
-			beforeDamage: async function* ({ thisCard, game, cardEffectHighlight }) {
+			beforeDamage: async function* ({ thisCard, game, actions }) {
 				if (game.turn.sideA.spellAttack?.slot === game.turn.sideB.spellAttack?.slot) {
 					game.turn.combatStack.push({ source: thisCard, target: 'sideA', type: 'damage', value: 10 });
 					game.turn.combatStack.push({ source: thisCard, target: 'sideB', type: 'damage', value: 10 });
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield game;
 				}
 			},
@@ -318,9 +319,9 @@ export const deck: DbCard[] = [
 		attack: 6,
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game, opponentSide, ownerSide, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, opponentSide, ownerSide, thisCard }) {
 				if (game.board.players[opponentSide].hand.length === 0) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {
@@ -357,12 +358,12 @@ export const deck: DbCard[] = [
 		color: 'red',
 		description: 'After combat, the player who has the least HP draws one card.',
 		effects: {
-			afterDamage: async function* ({ game, actions, cardEffectHighlight }) {
+			afterDamage: async function* ({ game, actions, thisCard }) {
 				const playerA = game.board.players.sideA;
 				const playerB = game.board.players.sideB;
 				if (playerA.hp === playerB.hp) return;
 				const playerWithLeastHp = playerA.hp < playerB.hp ? playerA : playerB;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: [playerWithLeastHp.side] });
 			},
 		},
@@ -375,11 +376,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a red spell, draw 1 card',
 		color: 'red',
 		effects: {
-			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			beforeDamage: async function* ({ actions, game, thisCard }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'red') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'red') drawingSides.push('sideB');
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -392,11 +393,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a blue spell, draw 1 card',
 		color: 'blue',
 		effects: {
-			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			beforeDamage: async function* ({ actions, game, thisCard }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'blue') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'blue') drawingSides.push('sideB');
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -408,11 +409,11 @@ export const deck: DbCard[] = [
 		description: 'Whenever you attack with a green spell, draw 1 card',
 		color: 'green',
 		effects: {
-			beforeDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			beforeDamage: async function* ({ actions, game, thisCard }) {
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'green') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'green') drawingSides.push('sideB');
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: drawingSides });
 			},
 		},
@@ -426,7 +427,7 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
 		effects: {
-			beforeCombat: async function* ({ game, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, thisCard, actions }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -434,7 +435,7 @@ export const deck: DbCard[] = [
 					if (!combat.source.colors.includes('green')) continue;
 					combat.value += 5;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 		},
@@ -470,18 +471,18 @@ export const deck: DbCard[] = [
 			'When this card is revealed, discard 1 GREEN card from your hand (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
 		// TODO: Implement discard from hand
 		effects: {
-			beforeCast: async function* ({ game, actions, thisCard, cardEffectHighlight }) {
+			beforeCast: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
 					const cardToDiscard = topOf(game.board.players[side].stacks.green);
 					if (cardToDiscard) {
-						yield cardEffectHighlight;
+						yield* actions.vfx(effectVfx(thisCard));
 						yield* actions.discard({
 							card: cardToDiscard,
 							from: game.board.players[side].stacks.green,
 						});
 					}
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
@@ -494,7 +495,7 @@ export const deck: DbCard[] = [
 		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top GREEN card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
 				const card = topOf(game.board.players[ownerSide].stacks.green);
 				if (!card) return;
 
@@ -502,7 +503,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
 		},
@@ -515,7 +516,7 @@ export const deck: DbCard[] = [
 		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top BLUE card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
 				const card = topOf(game.board.players[ownerSide].stacks.blue);
 				if (!card) return;
 
@@ -523,7 +524,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
 		},
@@ -536,7 +537,7 @@ export const deck: DbCard[] = [
 		attack: 8,
 		description: 'When this spell deals damage, activate the effect of your top RED card.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, opponentSide, thisCard }) {
 				const card = topOf(game.board.players[ownerSide].stacks.red);
 				if (!card) return;
 
@@ -544,7 +545,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard, cardEffectHighlight });
+					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
 		},
@@ -558,9 +559,9 @@ export const deck: DbCard[] = [
 		heal: 6,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard, cardEffectHighlight }) {
+			onClashLose: async function* ({ actions, game, winnerCard, thisCard }) {
 				if (!winnerCard) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
@@ -573,10 +574,10 @@ export const deck: DbCard[] = [
 		description: 'Whenever this spell deals damage, remove the top field effect from play.',
 		colors: ['green'],
 		effects: {
-			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
 				const fieldEffect = topOf(game.board.field);
 				if (!fieldEffect) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: fieldEffect, from: game.board.field });
 			},
 		},
@@ -599,9 +600,9 @@ export const deck: DbCard[] = [
 			},
 		},
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, thisCard, cardEffectHighlight }) {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (topOf(game.board.players[ownerSide].stacks.blue) === thisCard) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.draw({ sides: [ownerSide] });
 				}
 			},
@@ -652,10 +653,10 @@ export const deck: DbCard[] = [
 		description:
 			'X Attack, where X is the sum of the two other spell slots attacks. When this spell deals damage, discard it.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, thisCard, ownerSide, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, thisCard, ownerSide }) {
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({
 					card: thisCard,
 					from: game.board.players[ownerSide].stacks[thisStack],
@@ -674,7 +675,7 @@ export const deck: DbCard[] = [
 			'If this spell is chosen as an attack, any damage caused during combat is nulled. Remove this card from play after used in combat.',
 		colors: ['blue'],
 		effects: {
-			beforeDamage: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
@@ -682,7 +683,7 @@ export const deck: DbCard[] = [
 						combat.value = 0;
 					}
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -697,14 +698,14 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is chosen as an attack, any damage caused during combat is doubled. Remove this card from play after used in combat.',
 		effects: {
-			beforeDamage: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
 					if (combat.type !== 'damage') continue;
 					combat.value *= 2;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -728,7 +729,7 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is used in combat, prevents any damage from being caused to you this turn, then discard it.',
 		effects: {
-			beforeCombat: async function* ({ game, ownerSide, thisCard, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
@@ -736,7 +737,7 @@ export const deck: DbCard[] = [
 						combat.value = 0;
 					}
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -751,7 +752,7 @@ export const deck: DbCard[] = [
 		description:
 			'Green spells have +5 attack. If this field effect fails to be placed, also removes the field effect who overtook it.',
 		effects: {
-			beforeCombat: async function* ({ game, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, actions, thisCard }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -759,12 +760,12 @@ export const deck: DbCard[] = [
 					if (!combat.source.colors.includes('green')) continue;
 					combat.value += 5;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
-			onClashLose: async function* ({ actions, game, winnerCard, cardEffectHighlight }) {
+			onClashLose: async function* ({ actions, game, winnerCard, thisCard }) {
 				if (!winnerCard) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: winnerCard, from: game.board.field });
 			},
 		},
@@ -777,7 +778,7 @@ export const deck: DbCard[] = [
 		description:
 			'Each player’s damage is increased by 5X, where X is the number of active spells they own with the word “Fire” in their title, and this card.',
 		effects: {
-			beforeCombat: async function* ({ game, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
 					const activeSpells = COLORS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
@@ -790,7 +791,7 @@ export const deck: DbCard[] = [
 						}
 					}
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 		},
@@ -803,14 +804,14 @@ export const deck: DbCard[] = [
 		description:
 			'At the beggining of each turn, each player heals 2X HP, where X is the number of active spells they own with the name “Wood” in their title.',
 		effects: {
-			beforeDraw: async function* ({ game, actions, cardEffectHighlight }) {
+			beforeDraw: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
 					const activeSpells = COLORS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
 						.filter(Boolean);
 					const woodSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('wood'));
 					const healAmount = 2 * woodSpells.length;
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.healPlayer({ side, amount: healAmount });
 				}
 			},
@@ -825,14 +826,14 @@ export const deck: DbCard[] = [
 		description:
 			'Every time this spell deals damage, discard the top card from the GREEN stack. If there’s no more cards to discard, discard Burning flame.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, ownerSide, thisCard, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
 				const cardToDiscard = topOf(game.board.players[ownerSide].stacks.green);
 				if (!cardToDiscard) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
 					return;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: cardToDiscard, from: game.board.players[ownerSide].stacks.green });
 			},
 		},
@@ -845,10 +846,10 @@ export const deck: DbCard[] = [
 		attack: 30,
 		description: 'When this card is revealed, draw one card. Then discard this card.',
 		effects: {
-			onReveal: async function* ({ actions, game, ownerSide, thisCard, cardEffectHighlight }) {
+			onReveal: async function* ({ actions, game, ownerSide, thisCard }) {
 				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!currentColor) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: [ownerSide] });
 				yield* actions.discard({
 					card: thisCard,
@@ -867,10 +868,10 @@ export const deck: DbCard[] = [
 			'After a successful attack, you *may* (NOT IMPLEMENTED) send a GREEN or NEUTRAL [FIELD] spell to the discard pile.',
 		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
 		effects: {
-			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'green' || fieldToDiscard?.color === null) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
@@ -886,10 +887,10 @@ export const deck: DbCard[] = [
 			'After a successful attack, you *may* (NOT IMPLEMENTED) send a RED or NEUTRAL [FIELD] spell to the discard pile.',
 		// TODO: confirmation of "activate <spellname> effect?" for cards worded MAY
 		effects: {
-			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'red' || fieldToDiscard?.color === null) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
@@ -904,10 +905,10 @@ export const deck: DbCard[] = [
 		description:
 			'After a successful attack, you *may* (NOT IMPLEMENTED) send a BLUE or NEUTRAL [FIELD] spell to the discard pile.',
 		effects: {
-			onDealDamage: async function* ({ actions, game, cardEffectHighlight }) {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'blue' || fieldToDiscard?.color === null) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
 				}
 			},
@@ -920,7 +921,7 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Spells deal +2X damage during combat, where X is the size of the field effect stack',
 		effects: {
-			beforeCombat: async function* ({ game, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, thisCard, actions }) {
 				const fieldEffectStack = game.board.field.length;
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
@@ -928,7 +929,7 @@ export const deck: DbCard[] = [
 					if (combat.source.type !== 'spell') continue;
 					combat.value += 2 * fieldEffectStack;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 		},
@@ -942,14 +943,14 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is beaten in combat, the damage that would have been caused to you is caused to the opponent instead. If this spell is not beaten in combat, discard it.',
 		effects: {
-			onClashWin: async function* ({ actions, game, thisCard, ownerSide, cardEffectHighlight }) {
+			onClashWin: async function* ({ actions, game, thisCard, ownerSide }) {
 				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!currentColor) return;
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks[currentColor] });
 			},
-			onClashLose: async function* ({ game, ownerSide, opponentSide, cardEffectHighlight }) {
-				yield cardEffectHighlight;
+			onClashLose: async function* ({ game, ownerSide, opponentSide, actions, thisCard }) {
+				yield* actions.vfx(effectVfx(thisCard));
 				for (const combat of game.turn.combatStack) {
 					if (combat.type !== 'damage') continue;
 					if (combat.target !== ownerSide) continue;
@@ -967,13 +968,13 @@ export const deck: DbCard[] = [
 		description:
 			'When this spell is used in combat, select a card from your hand and discard it. If you don’t have cards to discard, discard Cannon Fire instead.',
 		effects: {
-			beforeCombat: async function* ({ game, actions, ownerSide, thisCard, cardEffectHighlight }) {
+			beforeCombat: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) {
-					yield cardEffectHighlight;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
 					return;
 				}
-				yield cardEffectHighlight;
+				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.playerAction({
 					sides: [ownerSide],
 					action: {

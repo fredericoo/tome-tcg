@@ -32,7 +32,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onDraw: (params: {
 		game: GameState;
@@ -40,7 +39,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onReveal: (params: {
 		game: GameState;
@@ -48,7 +46,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onDealDamage: (params: {
 		game: GameState;
@@ -56,7 +53,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onHeal: (params: {
 		game: GameState;
@@ -64,7 +60,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onClashLose: (params: {
 		game: GameState;
@@ -74,7 +69,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 		winnerCard: (THasOwner extends true ? SpellCard : FieldCard) | undefined;
 		loserSide: Side;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	onClashWin: (params: {
 		game: GameState;
@@ -84,7 +78,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 		loserCard: (THasOwner extends true ? SpellCard : FieldCard) | undefined;
 		winnerSide: Side;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeDraw: (params: {
 		game: GameState;
@@ -92,7 +85,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCast: (params: {
 		game: GameState;
@@ -100,7 +92,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeReveal: (params: {
 		game: GameState;
@@ -108,7 +99,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeSpell: (params: {
 		game: GameState;
@@ -116,7 +106,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCombat: (params: {
 		game: GameState;
@@ -124,7 +113,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	beforeDamage: (params: {
 		game: GameState;
@@ -132,7 +120,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 	afterDamage: (params: {
 		game: GameState;
@@ -140,7 +127,6 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
-		cardEffectHighlight: VfxIteration;
 	}) => AsyncGenerator<GameIteration>;
 };
 
@@ -157,7 +143,7 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 	}
 };
 
-export const getCardEffectHighlight = (card: GameCard): VfxIteration => ({
+export const effectVfx = (card: GameCard): VfxIteration => ({
 	type: 'highlight',
 	durationMs: 300,
 	config: { type: 'effect', target: { type: 'card', cardKey: card.key } },
@@ -166,7 +152,7 @@ export const getCardEffectHighlight = (card: GameCard): VfxIteration => ({
 export const useTriggerHooks = (game: GameState) => {
 	async function* triggerTurnHook<THook extends keyof TurnHooks>(params: {
 		hookName: THook;
-		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide' | 'opponentSide' | 'thisCard' | 'cardEffectHighlight'>;
+		context: Omit<Parameters<TurnHooks[THook]>[0], 'ownerSide' | 'opponentSide' | 'thisCard'>;
 	}) {
 		const context = params.context;
 		const board = game.board;
@@ -180,7 +166,6 @@ export const useTriggerHooks = (game: GameState) => {
 					thisCard: currentField,
 					opponentSide: undefined,
 					ownerSide: undefined,
-					triggerCardEffectVfx: getCardEffectHighlight(currentField),
 				} as any);
 			} catch (e) {
 				console.error(`Error in ${currentField.name}’s ${params.hookName} effect:`, e);
@@ -209,7 +194,6 @@ export const useTriggerHooks = (game: GameState) => {
 						ownerSide,
 						opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
 						thisCard: spell,
-						effectVfx: getCardEffectHighlight(spell),
 					} as any);
 					console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
 				} catch (e) {
