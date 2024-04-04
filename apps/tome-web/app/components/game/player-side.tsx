@@ -11,6 +11,7 @@ import { useGameStore } from '../../lib/game.utils';
 import { Badge } from '../badge';
 import { AnimatedNumber } from './animated-number';
 import { CardPile } from './card-pile';
+import { getVfxId } from './vfx-canvas';
 
 const stackClass = cva({
 	base: 'rounded-4 shadow-surface-inset p-2',
@@ -74,7 +75,7 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 					const casting = boardSide?.casting[stack];
 					const topOfStack = boardSide?.stacks[stack].at(-1);
 					return (
-						<li key={stack}>
+						<li key={stack} id={absoluteSide ? getVfxId({ type: 'stack', side: absoluteSide, stack }) : undefined}>
 							<button
 								id={`stack-${topOfStack?.key || stack}`}
 								disabled={!canSelectStack}
@@ -122,7 +123,10 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 				})}
 			</ol>
 
-			<Badge id={absoluteSide ? `${absoluteSide}-hp` : undefined} className="flex items-center gap-2">
+			<Badge
+				id={absoluteSide ? getVfxId({ type: 'player', side: absoluteSide }) : undefined}
+				className="flex items-center gap-2"
+			>
 				{hp > 0 ?
 					<IconHeart />
 				:	<IconHeartBroken />}

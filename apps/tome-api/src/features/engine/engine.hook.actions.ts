@@ -22,7 +22,7 @@ export const useGameActions = (game: GameState) => ({
 			yield {
 				type: 'highlight',
 				config: { type: 'atk_up', target: { type: 'card', cardKey: combatItem.source.key } },
-				durationMs: 300,
+				durationMs: 100 * amount,
 			};
 		}
 	},
@@ -39,7 +39,7 @@ export const useGameActions = (game: GameState) => ({
 			yield {
 				type: 'highlight',
 				config: { type: 'atk_down', target: { type: 'card', cardKey: combatItem.source.key } },
-				durationMs: 300,
+				durationMs: 100 * amount,
 			};
 		}
 	},

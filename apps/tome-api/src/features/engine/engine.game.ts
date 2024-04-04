@@ -80,7 +80,7 @@ export type GameState = {
 	};
 };
 
-type VfxEntity =
+export type VfxEntity =
 	| {
 			type: 'player';
 			side: Side;

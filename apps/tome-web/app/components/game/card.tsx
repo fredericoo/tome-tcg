@@ -13,6 +13,7 @@ import type {
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
 import { CardData, useCardData } from '../../lib/card-data';
 import { Image } from '../image';
+import { getVfxId } from './vfx-canvas';
 
 export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' in card;
 
@@ -54,7 +55,7 @@ type HoveredCardStore = {
 	hoveredCard: number | null;
 	setHoveredCard: (cardKey: number | null) => void;
 };
-const useHoveredCard = create<HoveredCardStore>(set => ({
+export const useHoveredCard = create<HoveredCardStore>(set => ({
 	hoveredCard: null,
 	setHoveredCard: cardKey => set({ hoveredCard: cardKey }),
 }));
@@ -80,6 +81,7 @@ export const Card = ({
 
 	return (
 		<motion.div
+			id={getVfxId({ type: 'card', cardKey: card.key })}
 			layoutId={card.key.toString()}
 			key={card.key}
 			initial={false}

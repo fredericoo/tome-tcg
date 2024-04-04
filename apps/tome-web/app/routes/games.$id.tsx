@@ -3,6 +3,7 @@ import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react'
 import { IconExclamationCircle } from '@tabler/icons-react';
 import { cva } from 'cva';
 import { motion } from 'framer-motion';
+import { useRef } from 'react';
 
 import { Badge } from '../components/badge';
 import { getCardImageSrc, isShownCard } from '../components/game/card';
@@ -11,6 +12,7 @@ import { PlayerActionOverlay } from '../components/game/player-action-overlay';
 import { PlayerHand } from '../components/game/player-hand';
 import { PlayerSide } from '../components/game/player-side';
 import { TurnPhaseMeter } from '../components/game/turn-phase-meter';
+import { VfxCanvas } from '../components/game/vfx-canvas';
 import { Image } from '../components/image';
 import { api } from '../lib/api';
 import { CardDataProvider, useCardData } from '../lib/card-data';
@@ -165,13 +167,13 @@ const Ping = () => {
 export default function Page() {
 	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub } = useGameSub(game.id);
-
+	const boardRef = useRef<HTMLDivElement>(null);
 	return (
 		<CardDataProvider value={cardData}>
-			<div className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
+			<div ref={boardRef} className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
 				<PlayerActionOverlay />
 
-				<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 flex items-center gap-2 bg-white p-2 ring-1">
+				<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 z-50 flex items-center gap-2 bg-white p-2 ring-1">
 					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
 					<Ping />
 					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
@@ -186,6 +188,7 @@ export default function Page() {
 				<PlayerSide onSelectStack={p => sub?.send(p)} relative="self" />
 				<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="self" />
 			</div>
+			<VfxCanvas boardRef={boardRef.current} />
 		</CardDataProvider>
 	);
 }

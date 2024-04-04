@@ -69,10 +69,9 @@ export type SanitisedGameState = {
 };
 
 type SanitisedVfx = VfxIteration;
+export type PubSubError = { type: 'error'; error: string };
 
-type SanitisedIteration = SanitisedGameState | SanitisedVfx;
-
-export type PubSubError = { error: string };
+export type SanitisedIteration = SanitisedGameState | SanitisedVfx | PubSubError;
 
 const createCardActions = ({ game }: { game: GameState }) => {
 	return {
@@ -274,14 +273,14 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 		const user = ws.data.user;
 
 		if (!user) {
-			ws.send({ error: 'Unauthorised' });
+			ws.send({ type: 'error', error: 'Unauthorised' });
 			return;
 		}
 		const channel = ws.data.params.id;
 
 		const game = await getGameById(Number(channel), user);
 		if (!game) {
-			ws.send({ error: 'Game not found' });
+			ws.send({ type: 'error', error: 'Game not found' });
 			return;
 		}
 
@@ -291,7 +290,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			: undefined;
 
 		if (!sideToJoin) {
-			ws.send({ error: 'Unauthorised' });
+			ws.send({ type: 'error', error: 'Unauthorised' });
 			return;
 		}
 
@@ -354,14 +353,14 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 		const user = ws.data.user;
 
 		if (!user) {
-			ws.send({ error: 'Unauthorised' });
+			ws.send({ type: 'error', error: 'Unauthorised' });
 			return;
 		}
 		const channel = ws.data.params.id;
 		const game = await getGameById(Number(channel), user);
 		const ongoingGame = runningGameRooms[channel];
 		if (!game || !ongoingGame) {
-			ws.send({ error: 'Game not found' });
+			ws.send({ type: 'error', error: 'Game not found' });
 			return;
 		}
 
@@ -371,13 +370,13 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			: undefined;
 
 		if (!userSide) {
-			ws.send({ error: 'Unauthorised' });
+			ws.send({ type: 'error', error: 'Unauthorised' });
 			return;
 		}
 
 		const action = ongoingGame.state.lastState?.actions[userSide];
 		if (!action) {
-			ws.send({ error: 'Action not requested' });
+			ws.send({ type: 'error', error: 'Action not requested' });
 			return;
 		}
 
@@ -399,7 +398,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 			const errorMessage = error instanceof Error ? error.message : 'Invalid Action';
 			console.log(`⚡ (${channel}) “${user.username ?? user.id}”:`, errorMessage);
 			console.error(error);
-			ws.send({ error: errorMessage });
+			ws.send({ type: 'error', error: errorMessage });
 			return;
 		}
 	},
