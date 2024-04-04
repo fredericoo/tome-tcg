@@ -1680,4 +1680,26 @@ export const notImplementedCards: DbCard[] = [
 			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
 		effects: {},
 	},
+	{
+		id: '108',
+		name: 'Lucky Clover Wand',
+		type: 'spell',
+		colors: ['green', 'blue'],
+		description: 'if the sum of the attack of your other stacks is divisible by 7, this card has +28 attack',
+		attack: {
+			label: '7',
+			getValue: params => {
+				const { game, ownerSide, thisCard } = params;
+				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!thisStack) return 7;
+				const otherStackCards = COLORS.filter(stack => stack !== thisStack)
+					.map(stack => game.board.players[ownerSide].stacks[stack])
+					.map(topOf)
+					.filter(Boolean);
+				const sum = otherStackCards.reduce((acc, card) => acc + resolveCombatValue(card.attack, params), 0);
+				return sum % 7 === 0 ? 35 : 7;
+			},
+		},
+		effects: {},
+	},
 ];
