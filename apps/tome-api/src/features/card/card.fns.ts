@@ -1719,10 +1719,11 @@ export const notImplementedCards: DbCard[] = [
 		},
 		effects: {},
 	},
+	// Potion and Phial archetype
 	{
 		id: '110',
 		name: 'Apothecary',
-		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
+		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not dis',
 		type: 'field',
 		color: 'green',
 		effects: {
@@ -1793,5 +1794,52 @@ export const notImplementedCards: DbCard[] = [
 			},
 			afterDamage: removeIfUsedInCombat,
 		},
+	},
+	{
+		id: '114',
+		name: 'Greedy Fire',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: '2X',
+			getValue: ({ game, ownerSide }) => {
+				const owner = game.board.players[ownerSide];
+				const cardsInHand = owner.hand.length;
+				return 2 * cardsInHand;
+			}
+		},
+		description: 'On reveal, return the top card of the stack this card will be placed. This card\'s attack is equal to the number of cards in your hand X 2',
+		effects: {},
+	},
+	{
+		id: '115',
+		name: 'Quenching Water',
+		type: 'spell',
+		colors: ['blue'],
+		attack: {
+			label: '5X',
+		},
+		description: 'On reveal, discard cards from your hand. This card\'s attack is equal to the number of cards discarded X 5',
+		effects: {},
+	},
+	{
+		id: '116',
+		name: 'Stable Earth',
+		type: 'spell',
+		colors: ['green'],
+		attack: {
+			label: 'X',
+			getValue: ({ game, ownerSide }) => {
+				const blueStackCount = game.board.players[ownerSide].stacks.blue.length;
+				const redStackCount = game.board.players[ownerSide].stacks.red.length;
+				const greenStackCount = game.board.players[ownerSide].stacks.green.length;
+				if (blueStackCount === redStackCount && redStackCount === greenStackCount) {
+					return 30;
+				}
+				return 5;
+			},
+		},
+		description: 'If all stacks have the same number of cards, this card has 30 attack. Otherwise it has 5 attack',
+		effects: {},
 	},
 ];
