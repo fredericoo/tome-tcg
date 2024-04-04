@@ -422,15 +422,14 @@ export const deck: DbCard[] = [
 		colors: [],
 		attack: {
 			label: '5+X',
-			getValue(params) {
-				const { game, ownerSide, thisCard } = params;
+			getValue({ game, ownerSide, thisCard, opponentSide }) {
 				const stack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!stack) return 5;
 				const cardBelow = game.board.players[ownerSide].stacks[stack].find(
 					(_, index) => game.board.players[ownerSide].stacks[stack][index + 1] === thisCard,
 				);
 				if (!cardBelow) return 5;
-				return resolveCombatValue(cardBelow.attack, { ...params, thisCard: cardBelow }) + 5;
+				return resolveCombatValue(cardBelow.attack, { game, opponentSide, ownerSide, thisCard: cardBelow }) + 5;
 			},
 		},
 		description: 'Where X is the attack of the card below this.',
@@ -1688,15 +1687,17 @@ export const notImplementedCards: DbCard[] = [
 		description: 'if the sum of the attack of your other stacks is divisible by 7, this card has +28 attack',
 		attack: {
 			label: '7',
-			getValue: params => {
-				const { game, ownerSide, thisCard } = params;
+			getValue: ({ game, ownerSide, thisCard, opponentSide }) => {
 				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!thisStack) return 7;
 				const otherStackCards = COLORS.filter(stack => stack !== thisStack)
 					.map(stack => game.board.players[ownerSide].stacks[stack])
 					.map(topOf)
 					.filter(Boolean);
-				const sum = otherStackCards.reduce((acc, card) => acc + resolveCombatValue(card.attack, params), 0);
+				const sum = otherStackCards.reduce(
+					(acc, card) => acc + resolveCombatValue(card.attack, { game, opponentSide, ownerSide, thisCard: card }),
+					0,
+				);
 				return sum % 7 === 0 ? 35 : 7;
 			},
 		},
