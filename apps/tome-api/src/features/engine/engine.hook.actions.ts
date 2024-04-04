@@ -66,7 +66,7 @@ export const useGameActions = (game: GameState) => ({
 		};
 		yield game;
 	},
-	damagePlayer: async function* ({ side, amount }: { side: Side; amount: number }) {
+	damagePlayer: function* ({ side, amount }: { side: Side; amount: number }): Generator<GameIteration> {
 		game.board.players[side].hp -= amount;
 		yield {
 			type: 'highlight',
