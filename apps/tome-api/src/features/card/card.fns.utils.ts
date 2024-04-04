@@ -30,7 +30,7 @@ export const orbAttackValue: Extract<SpellCard['attack'], object>['getValue'] = 
 	const shouldActivate = isMarbleFieldActive || topOf(game.board.players[ownerSide].stacks[thisStack]) === thisCard;
 	if (shouldActivate) {
 		const cardUnderThis = game.board.players[ownerSide].stacks[thisStack][1];
-		if (cardUnderThis?.name.includes('Orb')) return 20;
+		if (cardUnderThis?.name.toLowerCase().includes('orb')) return 20;
 	}
 	return 11;
 };

@@ -1,6 +1,6 @@
 import { objectEntries } from '../../lib/type-utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
-import { GameAction, GameCard, GameState, Side, VfxIteration } from './engine.game';
+import { CombatStackItem, GameAction, GameCard, GameIteration, GameState, Side, VfxIteration } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 
@@ -8,6 +8,40 @@ import { PlayerAction, playerAction } from './engine.turn.actions';
 export const useGameActions = (game: GameState) => ({
 	vfx: function* (vfx: VfxIteration) {
 		yield vfx;
+	},
+	increaseCombatDamage: function* ({
+		combatItem,
+		amount,
+	}: {
+		combatItem: CombatStackItem;
+		amount: number;
+	}): Generator<VfxIteration> {
+		const newValue = combatItem.value + amount;
+		if (newValue !== combatItem.value && combatItem.source) {
+			combatItem.value = newValue;
+			yield {
+				type: 'highlight',
+				config: { type: 'atk_up', target: { type: 'card', cardKey: combatItem.source.key } },
+				durationMs: 300,
+			};
+		}
+	},
+	decreaseCombatDamage: function* ({
+		combatItem,
+		amount,
+	}: {
+		combatItem: CombatStackItem;
+		amount: number;
+	}): Generator<VfxIteration> {
+		const newValue = Math.max(0, amount - combatItem.value);
+		if (newValue !== combatItem.value && combatItem.source) {
+			combatItem.value = newValue;
+			yield {
+				type: 'highlight',
+				config: { type: 'atk_down', target: { type: 'card', cardKey: combatItem.source.key } },
+				durationMs: 300,
+			};
+		}
 	},
 	discard: function* ({ card, from }: { card: GameCard; from: GameCard[] }) {
 		const cardToMove = removeCard(from, card);
@@ -23,12 +57,22 @@ export const useGameActions = (game: GameState) => ({
 		moveBottomCard(from, to);
 		yield game;
 	},
-	healPlayer: function* ({ side, amount }: { side: Side; amount: number }) {
+	healPlayer: function* ({ side, amount }: { side: Side; amount: number }): Generator<GameIteration> {
 		game.board.players[side].hp = Math.min(game.board.players[side].hp + amount, 100);
+		yield {
+			type: 'highlight',
+			config: { type: 'hp_up', target: { type: 'player', side } },
+			durationMs: 300,
+		};
 		yield game;
 	},
 	damagePlayer: async function* ({ side, amount }: { side: Side; amount: number }) {
 		game.board.players[side].hp -= amount;
+		yield {
+			type: 'highlight',
+			config: { type: 'hp_down', target: { type: 'player', side } },
+			durationMs: 300,
+		};
 		yield game;
 	},
 	draw: async function* ({ sides }: { sides: Side[] }) {
@@ -77,7 +121,7 @@ export const useGameActions = (game: GameState) => ({
 
 		async function* yieldAsResolved(): AsyncGenerator<GameState> {
 			const actionsLeft = objectEntries(actionEntries).map(([_, { promise }]) => promise.completed);
-			if (!actionsLeft.length) return yield game;
+			if (!actionsLeft.length) return;
 
 			const finished = await Promise.race(actionsLeft);
 			// another action can have taken effect meanwhile

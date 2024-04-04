@@ -11,7 +11,7 @@ export const deck: DbCard[] = [
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'blue'],
-		description: 'When this card is revealed, discard 1 BLUE or RED (NOT IMPLEMENTED) spell from your hand.',
+		description: 'When this card is revealed, discard 1 BLUE or RED spell from your hand.',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				if (game.board.players[ownerSide].hand.length === 0) return;
@@ -25,7 +25,7 @@ export const deck: DbCard[] = [
 							from: 'self',
 							max: 1,
 							min: 1,
-							availableColors: COLORS,
+							availableColors: ['blue', 'red'],
 							availableTypes: CARD_TYPES,
 							skippable: false,
 							message: 'Discard a card from your hand',
@@ -350,7 +350,6 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-
 	{
 		id: '16',
 		type: 'field',
@@ -1092,6 +1091,218 @@ export const deck: DbCard[] = [
 		description: 'All “Orb” cards effect activate without needing an “Orb” card below them',
 		effects: {},
 	},
+	{
+		id: '65',
+		name: 'Tsunami',
+		type: 'spell',
+		colors: ['blue'],
+		attack: {
+			label: 'X',
+			getValue: ({ game }) => game.board.players.sideA.stacks.blue.length + game.board.players.sideB.stacks.blue.length,
+		},
+		description: 'X Attack, where X is the combined number of cards in both player’s BLUE spell stacks',
+		effects: {},
+	},
+	{
+		id: '52',
+		name: 'Uncast',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 0,
+		description: 'Whenever this spell is revealed, remove all cards being revealed this turn from play.',
+		effects: {
+			onReveal: async function* ({ game, actions, thisCard }) {
+				for (const stack of [...COLORS, 'field' as const])
+					for (const card of game.board.players.sideA.casting[stack]) {
+						yield* actions.vfx(effectVfx(thisCard));
+						yield* actions.discard({ card, from: game.board.players.sideA.casting[stack] });
+					}
+			},
+		},
+	},
+	{
+		id: '64',
+		name: 'Bull’s eye shot',
+		type: 'spell',
+		colors: [],
+		attack: {
+			label: '4X',
+			getValue: ({ game }) => {
+				let multiplier = 0;
+				if (topOf(game.board.field)?.color === null) multiplier++;
+				for (const stack of COLORS) {
+					if (topOf(game.board.players.sideA.stacks[stack])?.colors.length === 0) multiplier++;
+					if (topOf(game.board.players.sideB.stacks[stack])?.colors.length === 0) multiplier++;
+				}
+				return 4 * multiplier;
+			},
+		},
+		description: '4X Attack, where X is the number of NEUTRAL cards in play.',
+		effects: {},
+	},
+	{
+		id: '66',
+		name: 'Community Hall',
+		type: 'field',
+		color: null,
+		description:
+			'At the beginning of each turn, the player with the highest HP loses 5 HP, and the player with the lowest HP gains 5 HP.',
+		effects: {
+			beforeDraw: async function* ({ game, actions, thisCard }) {
+				const playerA = game.board.players.sideA;
+				const playerB = game.board.players.sideB;
+				if (playerA.hp === playerB.hp) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				const playerWithLeastHp = playerA.hp < playerB.hp ? playerA : playerB;
+				const playerWithMostHp = playerA.hp > playerB.hp ? playerA : playerB;
+				yield* actions.damagePlayer({ side: playerWithMostHp.side, amount: 5 });
+				yield* actions.healPlayer({ side: playerWithLeastHp.side, amount: 5 });
+			},
+		},
+	},
+	{
+		id: '69',
+		name: 'Upheaval',
+		type: 'spell',
+		colors: [],
+		attack: {
+			label: '?',
+			getValue: ({ game }) => (game.board.field.length === 0 ? 25 : 0),
+		},
+		description: 'This spell has 25 attack if there are no field effects in play. Otherwise, it has zero attack.',
+		effects: {},
+	},
+	{
+		id: '70',
+		name: 'Eldritch Blast',
+		type: 'spell',
+		colors: ['blue', 'green', 'red'],
+		attack: {
+			label: '10',
+			getValue: ({ game, ownerSide }) => {
+				let atk = 0;
+				const isAgonisingBlastInPlay = topOf(game.board.players[ownerSide].stacks.red)?.id === '71';
+				if (isAgonisingBlastInPlay) atk += 10;
+				const doubleEffect = topOf(game.board.field)?.id === '74';
+				if (doubleEffect) atk *= 2;
+				return atk;
+			},
+		},
+		description: '',
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
+				const isBlessedBlastInPlay = topOf(game.board.players[ownerSide].stacks.blue)?.id === '72';
+				const doubleEffect = topOf(game.board.field)?.id === '74';
+				if (isBlessedBlastInPlay) {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.draw({ sides: [ownerSide] });
+					if (doubleEffect) yield* actions.draw({ sides: [ownerSide] });
+				}
+				const isLeechingBlastInPlay = topOf(game.board.players[ownerSide].stacks.green)?.id === '73';
+				if (isLeechingBlastInPlay) {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.healPlayer({ side: ownerSide, amount: 20 });
+					if (doubleEffect) yield* actions.healPlayer({ side: ownerSide, amount: 20 });
+				}
+			},
+		},
+	},
+	{
+		id: '71',
+		name: 'Agonising Blast',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: 'If Eldritch Blast is in play on your side of the field, add +10 Attack to Eldritch Blast',
+		effects: {},
+	},
+	{
+		id: '72',
+		name: 'Blessed Blast',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		description: 'Whenever Eldritch Blast deals damage, draw 2',
+		effects: {},
+	},
+	{
+		id: '73',
+		name: 'Leeching Blast',
+		type: 'spell',
+		colors: ['green'],
+		attack: 10,
+		description: 'Whenever Eldritch Blast deals damage, heal 20hp',
+		effects: {},
+	},
+	{
+		id: '74',
+		name: 'Blast Zone',
+		type: 'field',
+		color: 'red',
+		description: 'Trigger all “Blast” spells effects twice',
+		effects: {},
+	},
+	{
+		id: '75',
+		name: 'Inverse Field',
+		type: 'field',
+		color: 'blue',
+		description: 'Healing does damage and Damage does healing',
+		effects: {
+			beforeCombat: async function* ({ game, actions, thisCard }) {
+				yield* actions.vfx(effectVfx(thisCard));
+				for (const combat of game.turn.combatStack) {
+					switch (combat.type) {
+						case 'damage':
+						case 'heal':
+							combat.value *= -1;
+							break;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '107',
+		name: 'Hex',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description:
+			"After successfully dealing damage with this card, choose one of your opponent's stacks. Place this card on top of that stack.",
+		effects: {
+			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
+				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!thisStack) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.playerAction({
+					sides: [ownerSide],
+					onTimeout: noop,
+					timeoutMs: 10000,
+					action: {
+						type: 'select_spell_stack',
+						config: {
+							message: 'Select a stack to place Hex on',
+							from: 'opponent',
+							availableStacks: COLORS,
+							max: 1,
+							min: 1,
+						},
+						onAction: function* ({ stacks, side }) {
+							const opponentSide = side === 'sideA' ? 'sideB' : 'sideA';
+							for (const stack of stacks) {
+								yield* actions.moveTopCard(
+									game.board.players[ownerSide].stacks[thisStack],
+									game.board.players[opponentSide].stacks[stack],
+								);
+							}
+						},
+					},
+				});
+			},
+		},
+	},
 ];
 
 export const notImplementedCards: DbCard[] = [
@@ -1155,16 +1366,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If this spell is beaten, negate the effect of the card that beat it. (NOT IMPLEMENTED)',
 		effects: {},
 	},
-	{
-		id: '52',
-		name: 'Uncast',
-		type: 'spell',
-		colors: ['blue'],
-		attack: 0,
-		description:
-			'Whener this spell is revealed, remove all cards being revealed this turn from play. (NOT IMPLEMENTED)',
-		effects: {},
-	},
+
 	{
 		id: '53',
 		name: 'Fields of mana',
@@ -1190,32 +1392,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Spells have no effects',
 		effects: {},
 	},
-	{
-		id: '64',
-		name: 'Bull’s eye shot',
-		type: 'spell',
-		colors: [],
-		attack: 0,
-		description: '4X Attack, where X is the number of  NEUTRAL cards in play.',
-		effects: {},
-	},
-	{
-		id: '65',
-		name: 'Tsunami',
-		type: 'spell',
-		colors: ['blue'],
-		attack: 0,
-		description: 'X Attack, where X is the combined number of every player’s BLUE spell stacks',
-		effects: {},
-	},
-	{
-		id: '66',
-		name: 'Community Hall',
-		type: 'field',
-		color: null,
-		description: 'The player with the fewest HP draws one more card during the draw phase',
-		effects: {},
-	},
+
 	{
 		id: '67',
 		name: 'Hilltop observatory',
@@ -1232,67 +1409,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'All spells have 10 Attack',
 		effects: {},
 	},
-	{
-		id: '69',
-		name: 'Upheaval',
-		type: 'spell',
-		colors: [],
-		attack: 25,
-		description: 'If Field Spell Stack == 0 Else 0 Attack',
-		effects: {},
-	},
-	{
-		id: '70',
-		name: 'Eldritch Blast',
-		type: 'spell',
-		colors: ['blue', 'green', 'red'],
-		attack: 10,
-		description: '',
-		effects: {},
-	},
-	{
-		id: '71',
-		name: 'Agonising Blast',
-		type: 'spell',
-		colors: ['red'],
-		attack: 10,
-		description: 'If Eldritch Blast is in play on your side of the field, add +10 Attack to Eldritch Blast',
-		effects: {},
-	},
-	{
-		id: '72',
-		name: 'Blessed Blast',
-		type: 'spell',
-		colors: ['blue'],
-		attack: 10,
-		description: 'If attacking with Eldritch Blast,   Draw 2',
-		effects: {},
-	},
-	{
-		id: '73',
-		name: 'Leeching Blast',
-		type: 'spell',
-		colors: ['green'],
-		attack: 10,
-		description: 'If you successfully damaged an enemy using Eldritch Blast, heal 20hp',
-		effects: {},
-	},
-	{
-		id: '74',
-		name: 'Blast Zone',
-		type: 'field',
-		color: 'red',
-		description: 'Trigger all “Blast” spells effects twice',
-		effects: {},
-	},
-	{
-		id: '75',
-		name: 'Inverse Field',
-		type: 'field',
-		color: 'blue',
-		description: 'Healing does damage and Damage does healing',
-		effects: {},
-	},
+
 	{
 		id: '76',
 		name: 'Healing Rain',
@@ -1431,8 +1548,17 @@ export const notImplementedCards: DbCard[] = [
 		type: 'field',
 		color: 'blue',
 		description:
-			'All “Dull” spells get +5 Attack. If successfully damaged with a “Dull” spell, your opponent takes 2X damage where X is the number of “Dull” spells you control',
-		effects: {},
+			'All “Dull” spells get +5 Attack before damage. If successfully damaged with a “Dull” card, your opponent takes 2X damage where X is the number of “Dull” spells you control',
+		effects: {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.name.toLowerCase().includes('dull') && combatItem.source.type === 'spell') {
+						yield* actions.vfx(effectVfx(thisCard));
+						yield* actions.increaseCombatDamage({ combatItem, amount: 5 });
+					}
+				}
+			},
+		},
 	},
 	{
 		id: '99',
@@ -1503,16 +1629,6 @@ export const notImplementedCards: DbCard[] = [
 		color: null,
 		description:
 			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
-		effects: {},
-	},
-	{
-		id: '107',
-		name: 'Hex',
-		type: 'spell',
-		colors: [],
-		attack: 10,
-		description:
-			"After successfully dealing damage with this card, choose one of your opponent's stacks. Place this card on top of that stack.",
 		effects: {},
 	},
 ];

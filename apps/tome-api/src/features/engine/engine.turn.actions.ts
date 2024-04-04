@@ -34,6 +34,7 @@ export const playerAction = <TSide extends Side, TAction extends PlayerAction>({
 	onTimeout,
 	action,
 }: {
+	/** Represents the side of the user that **took** the action. */
 	side: TSide;
 	action: TAction;
 	timeoutMs: number;

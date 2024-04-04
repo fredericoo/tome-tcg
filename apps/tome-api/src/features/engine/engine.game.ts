@@ -1,7 +1,7 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { Board, createGameBoard } from './engine.board';
 import { useGameActions } from './engine.hook.actions';
-import { TurnHooks, effectVfx } from './engine.hooks';
+import { TurnHooks } from './engine.hooks';
 import { handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
 
@@ -103,7 +103,7 @@ interface BaseVfx {
 interface VfxHighlight extends BaseVfx {
 	type: 'highlight';
 	config: {
-		type: 'positive' | 'negative' | 'effect';
+		type: 'positive' | 'negative' | 'effect' | 'atk_up' | 'atk_down' | 'hp_up' | 'hp_down';
 		target: VfxEntity;
 	};
 }
@@ -111,7 +111,6 @@ interface VfxHighlight extends BaseVfx {
 interface VfxAttack extends BaseVfx {
 	type: 'attack';
 	config: {
-		type: 'positive' | 'negative' | 'effect';
 		source: VfxEntity;
 		target: VfxEntity;
 	};
@@ -222,7 +221,6 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'field' ? loserCard : undefined,
 				winnerSide,
-				cardEffectHighlight: effectVfx(winnerCard),
 			});
 			break;
 		}
@@ -237,7 +235,6 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'spell' ? loserCard : undefined,
 				winnerSide,
-				cardEffectHighlight: effectVfx(winnerCard),
 			});
 			break;
 		}
@@ -254,7 +251,6 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'field' ? loserCard : undefined,
 				loserSide,
-				cardEffectHighlight: effectVfx(loserCard),
 			});
 			break;
 		}
@@ -269,7 +265,6 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'spell' ? loserCard : undefined,
 				loserSide,
-				cardEffectHighlight: effectVfx(loserCard),
 			});
 			break;
 		}
