@@ -396,6 +396,7 @@ export const deck: DbCard[] = [
 				const drawingSides: Side[] = [];
 				if (game.turn.sideA.spellAttack?.slot === 'blue') drawingSides.push('sideA');
 				if (game.turn.sideB.spellAttack?.slot === 'blue') drawingSides.push('sideB');
+				if (drawingSides.length === 0) return;
 				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: drawingSides });
 			},
