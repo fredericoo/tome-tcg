@@ -1842,4 +1842,113 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If all stacks have the same number of cards, this card has 30 attack. Otherwise it has 5 attack',
 		effects: {},
 	},
+	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
+	{
+		id: '117',
+		name: '',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 1',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 1;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '118',
+		name: '',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 2',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 2;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '119',
+		name: '',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 3',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 3;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '120',
+		name: 'Lucky 7',
+		type: 'spell',
+		colors: ['blue', 'green', 'red'],
+		attack: 10,
+		description: 'Depending on the damage this spell deals, do the following: \
+		- 10 damage: Discard this card. \
+		- 9 damage: Draw 1 card. \
+		- 8 damage: Heal 2 HP. \
+		- 7 damage: Deal another 14 damage to the opponent.',
+		effects: {},
+	},
+	{
+		id: '121',
+		name: 'One one one',
+		type: 'spell',
+		colors: [],
+		attack: 13,
+		description: 'Depending on the damage this spell deals, do the following: \
+		- 13 damage: Heal the opponent for 15HP. \
+		- 12 damage: Discard this card. \
+		- 11 damage: Discard the top card of every opponent stack. \
+		- 10 damage: Your opponent draws 1 card.',
+		effects: {},
+	},
+	{
+		id: '122',
+		name: 'Three two wand: Zero',
+		type: 'spell',
+		colors: [],
+		attack: 3,
+		description: 'Depending on the damage this spell deals, do the following: \
+		- 3 damage: Heal 9 HP. \
+		- 2 damage: Deal another 18 damage to the opponent. \
+		- 1 damage: Discard this card. \
+		- 0 damage: Discard the top field then return this card to your hand.',
+		effects: {},
+	},
+	{
+		id: '123',
+		name: 'Even the Odds',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 15,
+		description: 'If this spell deals even damage, double the damage dealt. If it deals odd damage, discard this card.',
+		effects: {},
+	},
+	{
+		id: '124',
+		name: 'Odd the Evens',
+		type: 'spell',
+		colors: ['red'],
+		attack: 16,
+		description: 'If this spell deals odd damage, heal 7 HP. If it deals even damage, discard this card.',
+		effects: {},
+	},
 ];
