@@ -1721,7 +1721,7 @@ export const notImplementedCards: DbCard[] = [
 	{
 		id: '110',
 		name: 'Apothecary',
-		description: 'For every “Potion” or “Vial” card you prepare, heal 10 HP.',
+		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP.',
 		type: 'field',
 		color: 'green',
 		effects: {
@@ -1730,7 +1730,7 @@ export const notImplementedCards: DbCard[] = [
 				for (const side of SIDES) {
 					for (const stack of COLORS) {
 						const preparingPotionsCount = game.turn[side].casts[stack].filter(
-							card => card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('vial'),
+							card => card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('phial'),
 						).length;
 						hpToHeal += preparingPotionsCount * 10;
 					}
@@ -1741,7 +1741,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '111',
-		name: 'Empty Vial',
+		name: 'Empty Phial',
 		type: 'spell',
 		colors: [],
 		attack: 5,
@@ -1776,7 +1776,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '113',
-		name: 'Flammable vial',
+		name: 'Flammable phial',
 		type: 'spell',
 		description:
 			'If this spell deals damage, removes the top field if it’s green. If using this card in combat, discard it.',
