@@ -1702,4 +1702,95 @@ export const notImplementedCards: DbCard[] = [
 		},
 		effects: {},
 	},
+	{
+		id: '109',
+		name: 'Last resort',
+		description: 'This spell has its attack equal to half of how much HP you are missing.',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: 'X/2',
+			getValue: ({ game, ownerSide }) => {
+				const owner = game.board.players[ownerSide];
+				const missingHp = 100 - owner.hp;
+				return Math.floor(missingHp / 2);
+			},
+		},
+		effects: {},
+	},
+	{
+		id: '110',
+		name: 'Apothecary',
+		description: 'For every “Potion” or “Vial” card you prepare, heal 10 HP.',
+		type: 'field',
+		color: 'green',
+		effects: {
+			beforeReveal: async function* ({ game, actions }) {
+				let hpToHeal = 0;
+				for (const side of SIDES) {
+					for (const stack of COLORS) {
+						const preparingPotionsCount = game.turn[side].casts[stack].filter(
+							card => card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('vial'),
+						).length;
+						hpToHeal += preparingPotionsCount * 10;
+					}
+					yield* actions.healPlayer({ amount: hpToHeal, side });
+				}
+			},
+		},
+	},
+	{
+		id: '111',
+		name: 'Empty Vial',
+		type: 'spell',
+		colors: [],
+		attack: 5,
+		description:
+			'At the start of each turn, if the top field is BLUE, heal 10 HP. If using this card in combat, discard it.',
+		effects: {
+			beforeDraw: async function* ({ game, actions, ownerSide, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'blue') {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.healPlayer({ side: ownerSide, amount: 10 });
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '112',
+		name: 'Poison potion',
+		type: 'spell',
+		description:
+			'At the start of each turn, the opponent player takes 2 damage. If using this card in combat, discard it.',
+		colors: ['blue', 'green'],
+		attack: 6,
+		effects: {
+			beforeDraw: async function* ({ actions, ownerSide, thisCard }) {
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.damagePlayer({ side: ownerSide === 'sideA' ? 'sideB' : 'sideA', amount: 2 });
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '113',
+		name: 'Flammable vial',
+		type: 'spell',
+		description:
+			'If this spell deals damage, removes the top field if it’s green. If using this card in combat, discard it.',
+		colors: ['blue', 'red'],
+		attack: 16,
+		effects: {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'green') {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.discard({ card: topField, from: game.board.field });
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
 ];
