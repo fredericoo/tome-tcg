@@ -2174,7 +2174,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '147',
-		name: 'Familiar Field',
+		name: 'Enchanted Forest of Familiars',
 		type: 'field',
 		color: 'red',
 		description: 'When a familiar is played, the owner draws 1 card.',
