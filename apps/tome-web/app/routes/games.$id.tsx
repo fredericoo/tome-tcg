@@ -1,6 +1,5 @@
 import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
-import { IconExclamationCircle } from '@tabler/icons-react';
 import { cva } from 'cva';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
@@ -8,6 +7,7 @@ import { useRef } from 'react';
 import { Badge } from '../components/badge';
 import { getCardImageSrc, isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
+import { Chat } from '../components/game/chat';
 import { PlayerActionOverlay } from '../components/game/player-action-overlay';
 import { PlayerHand } from '../components/game/player-hand';
 import { PlayerSide } from '../components/game/player-side';
@@ -74,6 +74,7 @@ const MiddleSection = () => {
 					/>
 				</motion.div>
 			)}
+
 			<div className="flex flex-1 justify-end px-4">
 				<CardPile variant="scattered" cards={castPile ?? []} last={castPile?.length ?? 0} size="sm" />
 			</div>
@@ -94,74 +95,13 @@ const MiddleSection = () => {
 	);
 };
 
-// function usePrevious<T>(value: T) {
-// 	const ref = useRef<T>();
-// 	useEffect(() => {
-// 		ref.current = value;
-// 	}, [value]);
-// 	return ref.current;
-// }
-
-// const CombatStackAnimation = () => {
-// 	const combatStack = useCombatStackStore(s => s.combatStack);
-// 	const previous = usePrevious(combatStack);
-
-// 	useEffect(() => {
-// 		if (combatStack && combatStack.length > 0) {
-// 			if (combatStack.length === previous?.length) return;
-// 			// animate the card to the target
-// 			console.log(combatStack, previous);
-
-// 			animate(
-// 				combatStack
-// 					.flatMap(combat => {
-// 						if (!combat.sourceKey) return undefined;
-// 						const card = document.querySelector(`#stack-${combat.sourceKey}`);
-// 						const target = document.querySelector(`#${combat.target}-hp`);
-// 						if (!card || !target) return [];
-// 						const seq: AnimationSequence = [
-// 							[
-// 								card,
-// 								{
-// 									x: target.getBoundingClientRect().left - card.getBoundingClientRect().left,
-// 									y: target.getBoundingClientRect().top - card.getBoundingClientRect().top,
-// 								},
-// 							],
-// 							[
-// 								card,
-// 								{
-// 									x: 0,
-// 									y: 0,
-// 								},
-// 							],
-// 						];
-// 						return seq;
-// 					})
-// 					.filter(Boolean),
-// 			);
-// 		}
-// 	}, [combatStack, previous]);
-
-// 	return null;
-// };
-
-const GameError = () => {
-	const error = useGameStore(s => s.error);
-	if (!error) return null;
-
-	return (
-		<div className="bg-negative-9 text-lowest rounded-1 flex items-center gap-2 p-2">
-			<IconExclamationCircle /> <span>{error}</span>
-		</div>
-	);
-};
-
 const Ping = () => {
 	const sentAt = useGameStore(s => s.state?.sentAt);
 	if (!sentAt) return null;
 	const now = Date.now();
 	const ping = sentAt ? now - sentAt : undefined;
-	return <div className="label-xs text-neutral-10 px-2">{ping}ms</div>;
+	if (!ping) return null;
+	return <div className="label-xs text-neutral-10 px-2">{Math.abs(ping)}ms</div>;
 };
 
 export default function Page() {
@@ -172,12 +112,12 @@ export default function Page() {
 		<CardDataProvider value={cardData}>
 			<div ref={boardRef} className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
 				<PlayerActionOverlay />
+				<Chat sides={game} />
 
 				<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 z-50 flex items-center gap-2 bg-white p-2 ring-1">
 					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
 					<Ping />
 					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
-					<GameError />
 				</nav>
 
 				<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="opponent" />

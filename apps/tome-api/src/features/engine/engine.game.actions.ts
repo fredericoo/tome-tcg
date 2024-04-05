@@ -1,19 +1,9 @@
 import { objectEntries } from '../../lib/type-utils';
-import { delay } from '../../lib/utils';
 import { moveBottomCard, moveTopCard, removeCard, topOf } from './engine.board';
-import {
-	COLORS,
-	CombatStackItem,
-	GameAction,
-	GameCard,
-	GameIteration,
-	GameState,
-	SIDES,
-	Side,
-	VfxIteration,
-} from './engine.game';
+import { COLORS, CombatStackItem, GameAction, GameCard, GameIteration, GameState, SIDES, Side } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
+import { VfxIteration } from './engine.vfx';
 
 const findCardPile = ({ card, game }: { card: GameCard; game: GameState }) => {
 	if (topOf(game.board.field) === card) return game.board.field;
@@ -31,7 +21,6 @@ const findCardPile = ({ card, game }: { card: GameCard; game: GameState }) => {
 export const useGameActions = (game: GameState) => ({
 	vfx: async function* (vfx: VfxIteration) {
 		yield vfx;
-		await delay(500);
 	},
 	increaseCombatDamage: function* ({
 		combatItem,
@@ -39,9 +28,15 @@ export const useGameActions = (game: GameState) => ({
 	}: {
 		combatItem: CombatStackItem;
 		amount: number;
-	}): Generator<VfxIteration> {
+	}): Generator<GameIteration> {
 		const newValue = combatItem.value + amount;
 		if (newValue !== combatItem.value && combatItem.source) {
+			yield {
+				type: 'log',
+				text: `{{card}} had its damage increased from ${combatItem.value} to ${newValue}.`,
+				timestamp: Date.now(),
+				dynamic: { card: { type: 'card', card: combatItem.source } },
+			};
 			combatItem.value = newValue;
 			yield {
 				type: 'highlight',
@@ -56,9 +51,15 @@ export const useGameActions = (game: GameState) => ({
 	}: {
 		combatItem: CombatStackItem;
 		amount: number;
-	}): Generator<VfxIteration> {
+	}): Generator<GameIteration> {
 		const newValue = Math.max(0, amount - combatItem.value);
 		if (newValue !== combatItem.value && combatItem.source) {
+			yield {
+				type: 'log',
+				text: `{{card}} had its damage decreased from ${combatItem.value} to ${newValue}.`,
+				timestamp: Date.now(),
+				dynamic: { card: { type: 'card', card: combatItem.source } },
+			};
 			combatItem.value = newValue;
 			yield {
 				type: 'highlight',
@@ -67,12 +68,18 @@ export const useGameActions = (game: GameState) => ({
 			};
 		}
 	},
-	discard: function* (card: GameCard) {
+	discard: function* (card: GameCard): Generator<GameIteration> {
 		const from = findCardPile({ card, game });
 		if (from === null) {
 			console.warn('Card not found in any pile', card);
 			return;
 		}
+		yield {
+			type: 'log',
+			text: `{{card}} has been discarded.`,
+			timestamp: Date.now(),
+			dynamic: { card: { type: 'card', card } },
+		};
 		const cardToMove = removeCard(from, card);
 		if (!cardToMove) return;
 		game.board.discardPile.push(cardToMove);
@@ -87,16 +94,31 @@ export const useGameActions = (game: GameState) => ({
 		yield game;
 	},
 	healPlayer: function* ({ side, amount }: { side: Side; amount: number }): Generator<GameIteration> {
-		game.board.players[side].hp = Math.min(game.board.players[side].hp + amount, 100);
+		const newHp = Math.min(game.board.players[side].hp + amount, 100);
+		if (newHp === game.board.players[side].hp) return;
+		const healAmount = newHp - game.board.players[side].hp;
+		yield {
+			type: 'log',
+			text: `{{player}} was healed for ${healAmount} HP.`,
+			timestamp: Date.now(),
+			dynamic: { player: { type: 'player', side } },
+		};
 		yield {
 			type: 'highlight',
 			config: { type: 'hp_up', target: { type: 'player', side } },
 			durationMs: 300,
 		};
+		game.board.players[side].hp = newHp;
 		yield game;
 	},
 	damagePlayer: function* ({ side, amount }: { side: Side; amount: number }): Generator<GameIteration> {
 		game.board.players[side].hp -= amount;
+		yield {
+			type: 'log',
+			text: `{{player}} has taken ${amount} HP damage.`,
+			timestamp: Date.now(),
+			dynamic: { player: { type: 'player', side } },
+		};
 		yield {
 			type: 'highlight',
 			config: { type: 'hp_down', target: { type: 'player', side } },
@@ -104,10 +126,16 @@ export const useGameActions = (game: GameState) => ({
 		};
 		yield game;
 	},
-	draw: async function* ({ sides }: { sides: Side[] }) {
+	draw: async function* ({ sides }: { sides: Side[] }): AsyncGenerator<GameIteration> {
 		const actions = useGameActions(game);
 		const { triggerTurnHook } = useTriggerHooks(game);
 		for (const side of sides) {
+			yield {
+				type: 'log',
+				text: `{{player}} draws a card.`,
+				timestamp: Date.now(),
+				dynamic: { player: { type: 'player', side } },
+			};
 			moveTopCard(game.board.players[side].drawPile, game.board.players[side].hand);
 			yield* triggerTurnHook({ hookName: 'onDraw', context: { actions, game } });
 		}

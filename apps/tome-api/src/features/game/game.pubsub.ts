@@ -1,5 +1,4 @@
 import { Value } from '@sinclair/typebox/value';
-import chalk from 'chalk';
 import { eq } from 'drizzle-orm';
 import { Elysia, Static, t } from 'elysia';
 
@@ -22,10 +21,11 @@ import {
 	SIDES,
 	Side,
 	SpellColor,
-	VfxIteration,
 	createGameInstance,
 	getCardColors,
 } from '../engine/engine.game';
+import { SanitisedLogIteration, sanitiseLog } from '../engine/engine.log';
+import { SanitisedVfxIteration } from '../engine/engine.vfx';
 import { getGameById } from './game.api';
 
 type GameRoomState = {
@@ -68,10 +68,9 @@ export type SanitisedGameState = {
 	>;
 };
 
-type SanitisedVfx = VfxIteration;
 export type PubSubError = { type: 'error'; error: string };
 
-export type SanitisedIteration = SanitisedGameState | SanitisedVfx | PubSubError;
+export type SanitisedIteration = SanitisedGameState | SanitisedVfxIteration | SanitisedLogIteration;
 
 const createCardActions = ({ game }: { game: GameState }) => {
 	return {
@@ -186,6 +185,13 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 		case 'attack':
 		case 'highlight':
 			return originalIteration;
+		case 'error':
+		case 'log':
+			return sanitiseLog(originalIteration);
+		default: {
+			console.log('Unknown iteration type: ', originalIteration, 'Returning default log.');
+			return { type: 'log', text: 'Unknown iteration', timestamp: Date.now() };
+		}
 	}
 };
 
@@ -299,10 +305,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 				const room = runningGameRooms[channel] ?? (runningGameRooms[channel] = createGameRoom(game.id));
 				room.join(sideToJoin, ws.id, ws.send);
 				ws.subscribe(channel);
-				console.log(
-					`⚡ (${channel}) “${user.username ?? user.id}” is now`,
-					chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`),
-				);
+				console.log(`⚡ (${channel}) “${user.username ?? user.id}” is now`, pill('green', 'online'));
 				break;
 			}
 			case 'PLAYING': {
@@ -318,10 +321,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 				}
 				room.join(sideToJoin, ws.id, ws.send);
 				ws.subscribe(channel);
-				console.log(
-					`⚡ (${channel}) “${user.username ?? user.id}” is now`,
-					chalk.green(`\uE0B6${chalk.bgGreen(`online`)}\uE0B4`),
-				);
+				console.log(`⚡ (${channel}) “${user.username ?? user.id}” is now`, pill('green', 'online'));
 				break;
 			}
 			case 'FINISHED':
@@ -343,10 +343,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 		if (!game) return;
 		const left = game.leave(ws.id);
 		if (left.ok) {
-			console.log(
-				`⚡ (${channel}) “${user.username ?? user.id}” is now`,
-				chalk.red(`\uE0B6${chalk.bgRed(`offline`)}\uE0B4`),
-			);
+			console.log(`⚡ (${channel}) “${user.username ?? user.id}” is now`, pill('red', 'offline'));
 		}
 	},
 	async message(ws, message) {
@@ -390,7 +387,7 @@ export const gamePubSub = new Elysia().use(withUser).ws('/:id/pubsub', {
 				game: state,
 				logSuccess: message => console.log(`⚡ (${channel}) “${user.username ?? user.id}”`, message),
 			})) {
-				ongoingGame.state.lastState = iteration;
+				if (iteration.type === 'state') ongoingGame.state.lastState = iteration;
 				SIDES.forEach(side => ongoingGame.state.connections[side]?.send(iteration));
 				await delay(350);
 			}

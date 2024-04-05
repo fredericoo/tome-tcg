@@ -1,8 +1,9 @@
 import { and, eq, or } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { Elysia, error, t } from 'elysia';
 
 import { db } from '../../db';
-import { games } from '../../db/schema';
+import { games, users } from '../../db/schema';
 import { takeFirst, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { deck } from '../card/card.fns';
@@ -15,10 +16,19 @@ export const gameRoutes = new Elysia({ prefix: '/games' })
 		if (!user) return error('Unauthorized', 'You must be logged in to view a game.');
 		const gameIncludesUser = or(eq(games.sideA, user.id), eq(games.sideB, user.id));
 
+		const sideA = alias(users, 'sideA');
+		const sideB = alias(users, 'sideB');
 		const game = await db
-			.select()
+			.select({
+				id: games.id,
+				status: games.status,
+				sideA: sideA,
+				sideB: sideB,
+			})
 			.from(games)
 			.where(and(eq(games.id, Number(params.id)), gameIncludesUser))
+			.innerJoin(sideA, eq(games.sideA, sideA.id))
+			.innerJoin(sideB, eq(games.sideB, sideB.id))
 			.then(takeFirst);
 
 		if (!game) return error('Not Found', 'Game not found');

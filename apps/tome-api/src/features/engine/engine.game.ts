@@ -2,8 +2,10 @@ import { DistributiveOmit } from '../../lib/type-utils';
 import { Board, createGameBoard } from './engine.board';
 import { useGameActions } from './engine.game.actions';
 import { TurnHooks } from './engine.hooks';
+import { LogIteration } from './engine.log';
 import { handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
+import { VfxIteration } from './engine.vfx';
 
 export type Side = 'sideA' | 'sideB';
 export const SIDES = ['sideA', 'sideB'] as const satisfies Side[];
@@ -80,45 +82,7 @@ export type GameState = {
 	};
 };
 
-export type VfxEntity =
-	| {
-			type: 'player';
-			side: Side;
-	  }
-	| {
-			type: 'card';
-			cardKey: number;
-	  }
-	| {
-			type: 'stack';
-			stack: SpellColor;
-			side: Side;
-	  };
-
-interface BaseVfx {
-	type: string;
-	durationMs: number;
-}
-
-interface VfxHighlight extends BaseVfx {
-	type: 'highlight';
-	config: {
-		type: 'positive' | 'negative' | 'effect' | 'atk_up' | 'atk_down' | 'hp_up' | 'hp_down' | 'fire';
-		target: VfxEntity;
-	};
-}
-
-interface VfxAttack extends BaseVfx {
-	type: 'attack';
-	config: {
-		source: VfxEntity;
-		target: VfxEntity;
-	};
-}
-
-export type VfxIteration = VfxHighlight | VfxAttack;
-
-export type GameIteration = GameState | VfxIteration;
+export type GameIteration = GameState | VfxIteration | LogIteration;
 
 export type CombatStackItem =
 	| {

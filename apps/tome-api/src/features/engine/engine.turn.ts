@@ -16,6 +16,7 @@ import {
 } from './engine.game';
 import { useGameActions } from './engine.game.actions';
 import { useTriggerHooks } from './engine.hooks';
+import { log } from './engine.log';
 
 const initialiseTurnSide = (): Turn[Side] => ({
 	draws: [],
@@ -147,6 +148,11 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		for (const stack of COLORS) {
 			const castCards = game.turn[side].casts[stack];
 			for (const card of castCards) {
+				yield log({
+					type: 'log',
+					text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
+					dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
+				});
 				if (card.effects.onReveal) {
 					yield* card.effects.onReveal({
 						actions,
@@ -168,6 +174,11 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	// trigger onReveal for field cards
 	for (const side of SIDES) {
 		for (const fieldCard of game.turn[side].casts.field) {
+			yield log({
+				type: 'log',
+				text: `{{player}} reveals they’ll will try to set the field effect to {{card}}`,
+				dynamic: { player: { type: 'player', side }, card: { type: 'card', card: fieldCard } },
+			});
 			if (fieldCard.effects.onReveal) {
 				yield* fieldCard.effects.onReveal({
 					actions,
@@ -197,18 +208,31 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			const winnerCard = topField[winnerSide];
 			const loserCard = topField[loserSide];
 
-			// if (winnerCard)
-			// 	yield* actions.vfx({
-			// 		type: 'highlight',
-			// 		durationMs: settings.effectHighlightMs,
-			// 		config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
-			// 	});
-			// if (loserCard)
-			// 	yield* actions.vfx({
-			// 		type: 'highlight',
-			// 		durationMs: settings.effectHighlightMs,
-			// 		config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
-			// 	});
+			if (winnerCard)
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: settings.effectHighlightMs,
+					config: { target: { type: 'card', cardKey: winnerCard.key }, type: 'positive' },
+				});
+			if (loserCard)
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: settings.effectHighlightMs,
+					config: { target: { type: 'card', cardKey: loserCard.key }, type: 'negative' },
+				});
+
+			if (winnerCard && loserCard) {
+				yield log({
+					type: 'log',
+					text: '{{winner}}’s {{winner_card}} field wins the clash against {{loser}}’s {{loser_card}} field.',
+					dynamic: {
+						winner: { type: 'player', side: winnerSide },
+						winner_card: { type: 'card', card: winnerCard },
+						loser: { type: 'player', side: loserSide },
+						loser_card: { type: 'card', card: loserCard },
+					},
+				});
+			}
 
 			yield game;
 			delay(1000);
@@ -276,6 +300,17 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 		const winnerCard = game.turn[winnerSide].spellAttack?.card ?? null;
 		const loserCard = game.turn[loserSide].spellAttack?.card ?? null;
 
+		yield log({
+			type: 'log',
+			text: `${game.turn[winnerSide].spellAttack?.slot} beats ${
+				game.turn[loserSide].spellAttack?.slot ?? 'nothing'
+			}! {{winner}} wins the spell clash against {{loser}}.`,
+			dynamic: {
+				winner: { type: 'player', side: winnerSide },
+				loser: { type: 'player', side: loserSide },
+			},
+		});
+
 		if (winnerCard)
 			yield* actions.vfx({
 				type: 'highlight',
@@ -334,30 +369,39 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			winnerCard,
 		});
 
-		/**
-		 * DAMAGE PHASE
-		 * - resolve combat stacks
-		 * - trigger hooks for damage */
-		yield* triggerTurnHook({ hookName: 'beforeDamage', context: { actions, game } });
-		yield* setPhase('damage');
-		for (const combatItem of game.turn.combatStack) {
-			switch (combatItem.type) {
-				case 'damage':
-					yield* resolveCombatDamage(actions, combatItem, game);
-					break;
-				case 'heal':
-					yield* resolveCombatHealing(actions, combatItem, game);
-					break;
-				default:
-					exhaustive(combatItem);
-			}
-		}
-
 		yield* triggerTurnHook({ hookName: 'afterDamage', context: { actions, game } });
+	} else {
+		yield log({
+			type: 'log',
+			text: 'Draw! Both spells cancel each other out.',
+		});
+	}
+
+	/**
+	 * DAMAGE PHASE
+	 * - resolve combat stacks
+	 * - trigger hooks for damage */
+	yield* triggerTurnHook({ hookName: 'beforeDamage', context: { actions, game } });
+	yield* setPhase('damage');
+	for (const combatItem of game.turn.combatStack) {
+		switch (combatItem.type) {
+			case 'damage':
+				yield* resolveCombatDamage(actions, combatItem, game);
+				break;
+			case 'heal':
+				yield* resolveCombatHealing(actions, combatItem, game);
+				break;
+			default:
+				exhaustive(combatItem);
+		}
 	}
 
 	// end of turn
 	game.finishedTurns.push(game.turn);
+	yield log({
+		type: 'log',
+		text: `End of turn ${game.finishedTurns.length}`,
+	});
 	game.turn = initialiseTurn();
 	yield* handleTurn(params);
 }

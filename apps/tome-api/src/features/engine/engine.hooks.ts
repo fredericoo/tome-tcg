@@ -1,17 +1,8 @@
-import { exhaustive, pill } from '../../lib/utils';
+import { exhaustive } from '../../lib/utils';
 import { Board, topOf } from './engine.board';
-import {
-	COLORS,
-	FieldCard,
-	GameCard,
-	GameIteration,
-	GameState,
-	SIDES,
-	Side,
-	SpellCard,
-	VfxIteration,
-} from './engine.game';
+import { COLORS, FieldCard, GameCard, GameIteration, GameState, SIDES, Side, SpellCard } from './engine.game';
 import { HookActions } from './engine.game.actions';
+import { log } from './engine.log';
 
 /** Hooks that can be activated on demand by other cards. */
 export const ACTIVATABLE_HOOKS = [
@@ -143,14 +134,14 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 	}
 };
 
-export const effectVfx = (card: GameCard): VfxIteration => {
-	console.log(`${pill('gray', card.name)}’s effect triggered`);
-	return {
+export function* effectVfx(card: GameCard): Generator<GameIteration> {
+	yield log({ type: 'log', text: '{{card}}’s effect was activated!', dynamic: { card: { type: 'card', card } } });
+	yield {
 		type: 'highlight',
 		durationMs: 300,
 		config: { type: 'effect', target: { type: 'card', cardKey: card.key } },
 	};
-};
+}
 
 export const useTriggerHooks = (game: GameState) => {
 	async function* triggerTurnHook<THook extends keyof TurnHooks>(params: {

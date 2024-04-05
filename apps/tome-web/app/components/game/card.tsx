@@ -162,7 +162,7 @@ interface CardFrontProps extends ComponentPropsWithoutRef<'div'> {
 	card: PubSubShownCard;
 	size: NonNullable<Variants['size']>;
 }
-const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
+export const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
 	const cardData = useCardData();
 	const data = cardData[card.id];
 	invariant(data, `Card data not found for card ID ${card.id}`);

@@ -2,7 +2,7 @@ import { Application, BlurFilter, Texture } from 'pixi.js';
 import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
-import { VfxEntity, VfxIteration } from '../../../../tome-api/src/features/engine/engine.game';
+import { VfxEntity, VfxIteration } from '../../../../tome-api/src/features/engine/engine.vfx';
 import { createParticle, particleEffect } from '../../lib/vfx';
 
 type VfxStore = {
