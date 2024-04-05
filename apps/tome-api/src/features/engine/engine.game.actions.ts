@@ -1,17 +1,22 @@
 import { objectEntries } from '../../lib/type-utils';
-import { moveBottomCard, moveTopCard, removeCard, topOf } from './engine.board';
+import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
 import { COLORS, CombatStackItem, GameAction, GameCard, GameIteration, GameState, SIDES, Side } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
 import { VfxIteration } from './engine.vfx';
 
 const findCardPile = ({ card, game }: { card: GameCard; game: GameState }) => {
-	if (topOf(game.board.field) === card) return game.board.field;
+	if (card.type === 'field' && game.board.field.includes(card)) return game.board.field;
 	for (const side of SIDES) {
-		if (topOf(game.board.players[side].hand) === card) return game.board.players[side].hand;
-		if (topOf(game.board.players[side].drawPile) === card) return game.board.players[side].drawPile;
+		if (card.type === 'field' && game.board.players[side].casting.field.includes(card))
+			return game.board.players[side].casting.field;
+		if (game.board.players[side].hand.includes(card)) return game.board.players[side].hand;
+		if (game.board.players[side].drawPile.includes(card)) return game.board.players[side].drawPile;
 		for (const stack of COLORS) {
-			if (topOf(game.board.players[side].stacks[stack]) === card) return game.board.players[side].stacks[stack];
+			if (card.type === 'spell' && game.board.players[side].stacks[stack].includes(card))
+				return game.board.players[side].stacks[stack];
+			if (card.type === 'spell' && game.board.players[side].casting[stack].includes(card))
+				return game.board.players[side].casting[stack];
 		}
 	}
 	return null;
