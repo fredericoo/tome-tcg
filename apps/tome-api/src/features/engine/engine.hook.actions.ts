@@ -1,4 +1,5 @@
 import { objectEntries } from '../../lib/type-utils';
+import { delay } from '../../lib/utils';
 import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
 import { CombatStackItem, GameAction, GameCard, GameIteration, GameState, Side, VfxIteration } from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
@@ -6,8 +7,9 @@ import { PlayerAction, playerAction } from './engine.turn.actions';
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const useGameActions = (game: GameState) => ({
-	vfx: function* (vfx: VfxIteration) {
+	vfx: async function* (vfx: VfxIteration) {
 		yield vfx;
+		await delay(500);
 	},
 	increaseCombatDamage: function* ({
 		combatItem,

@@ -646,7 +646,7 @@ export const deck: DbCard[] = [
 					.filter(Boolean);
 
 				const attackSum = otherSpells.reduce(
-					(acc, spell) => acc + resolveCombatValue(spell.attack, { game, opponentSide, ownerSide, thisCard }),
+					(acc, spell) => acc + resolveCombatValue(spell.attack, { game, opponentSide, ownerSide, thisCard: spell }),
 					0,
 				);
 				return attackSum;
