@@ -1005,7 +1005,6 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-
 	{
 		id: '87',
 		name: 'Red Orb',
@@ -1013,7 +1012,19 @@ export const deck: DbCard[] = [
 		colors: ['red'],
 		attack: {
 			label: '11',
-			getValue: orbAttackValue,
+			getValue: ({ game, ownerSide, thisCard }) => {
+				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return 11;
+
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate =
+					isMarbleFieldActive || topOf(game.board.players[ownerSide].stacks[thisStack]) === thisCard;
+				if (shouldActivate) {
+					const cardUnderThis = game.board.players[ownerSide].stacks[thisStack][1];
+					if (cardUnderThis?.name.toLowerCase().includes('orb')) return 20;
+				}
+				return 11;
+			},
 		},
 		description: 'When cast on top of another Orb, +9 Attack',
 		effects: {},
@@ -1023,48 +1034,100 @@ export const deck: DbCard[] = [
 		name: 'Blue Orb',
 		type: 'spell',
 		colors: ['blue'],
-		attack: {
-			label: '11',
-			getValue: orbAttackValue,
-		},
+		attack: 11,
 		description: 'When cast on top of another Orb, Draw 2 cards',
-		effects: {},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
+				const cardUnderThis = topOf(game.board.players[ownerSide].stacks.blue);
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
+				if (!shouldActivate) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.draw({ sides: [ownerSide] });
+				yield* actions.draw({ sides: [ownerSide] });
+			},
+		},
 	},
 	{
 		id: '89',
 		name: 'Green Orb',
 		type: 'spell',
 		colors: ['green'],
-		attack: {
-			label: '11',
-			getValue: orbAttackValue,
-		},
+		attack: 1,
 		description: 'When cast on top of another orb, Heals 20 HP',
-		effects: {},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
+				const cardUnderThis = topOf(game.board.players[ownerSide].stacks.green);
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
+				if (!shouldActivate) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.healPlayer({ side: ownerSide, amount: 20 });
+			},
+		},
 	},
 	{
 		id: '90',
 		name: 'Purple Orb',
 		type: 'spell',
 		colors: ['blue', 'red'],
-		attack: {
-			label: '11',
-			getValue: orbAttackValue,
-		},
+		attack: 11,
 		description: 'When cast on top of another orb, discard the current field effect',
-		effects: {},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
+				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return;
+				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
+				if (!shouldActivate) return;
+				const fieldToDiscard = topOf(game.board.field);
+				if (!fieldToDiscard) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+			},
+		},
 	},
 	{
 		id: '91',
 		name: 'Brown Orb',
 		type: 'spell',
 		colors: ['green', 'red'],
-		attack: {
-			label: '11',
-			getValue: orbAttackValue,
-		},
+		attack: 11,
 		description: 'When cast on top of another orb, choose a stack colour, and remove the top of that opponent’s stack.',
-		effects: {},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard }) {
+				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return;
+				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
+				if (!shouldActivate) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.playerAction({
+					timeoutMs: 10000,
+					onTimeout: noop,
+					sides: [ownerSide],
+					action: {
+						type: 'select_spell_stack',
+						config: {
+							availableStacks: COLORS,
+							from: 'opponent',
+							message: 'Choose a stack to remove the top card from',
+							min: 1,
+							max: 1,
+						},
+						onAction: function* ({ stacks }) {
+							for (const stack of stacks) {
+								const cardToDiscard = topOf(game.board.players[opponentSide].stacks[stack]);
+								if (!cardToDiscard) continue;
+								yield* actions.discard({ card: cardToDiscard, from: game.board.players[opponentSide].stacks[stack] });
+							}
+						},
+					},
+				});
+			},
+		},
 	},
 	{
 		id: '92',
@@ -1076,7 +1139,18 @@ export const deck: DbCard[] = [
 			getValue: orbAttackValue,
 		},
 		description: 'When cast on top of another orb, deals 10 damage to the opponent',
-		effects: {},
+		effects: {
+			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard }) {
+				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+				if (!thisStack) return;
+				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
+				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
+				if (!shouldActivate) return;
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.damagePlayer({ amount: 10, side: opponentSide });
+			},
+		},
 	},
 	{
 		id: '93',
