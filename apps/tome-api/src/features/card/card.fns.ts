@@ -33,10 +33,7 @@ export const deck: DbCard[] = [
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
-							yield* actions.discard({
-								card: cardToDiscard,
-								from: game.board.players[ownerSide].hand,
-							});
+							yield* actions.discard(cardToDiscard);
 						},
 					},
 					timeoutMs: 1000000,
@@ -74,10 +71,7 @@ export const deck: DbCard[] = [
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
-							yield* actions.discard({
-								card: cardToDiscard,
-								from: game.board.players[ownerSide].hand,
-							});
+							yield* actions.discard(cardToDiscard);
 						},
 					},
 					timeoutMs: 1000000,
@@ -114,10 +108,7 @@ export const deck: DbCard[] = [
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
-							yield* actions.discard({
-								card: cardToDiscard,
-								from: game.board.players[ownerSide].hand,
-							});
+							yield* actions.discard(cardToDiscard);
 						},
 					},
 					timeoutMs: 1000000,
@@ -159,10 +150,7 @@ export const deck: DbCard[] = [
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.green);
 				if (!cardToDiscard) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({
-					card: cardToDiscard,
-					from: game.board.players[opponentSide].stacks.green,
-				});
+				yield* actions.discard(cardToDiscard);
 			},
 		},
 	},
@@ -178,10 +166,7 @@ export const deck: DbCard[] = [
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.red);
 				if (!cardToDiscard) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({
-					card: cardToDiscard,
-					from: game.board.players[opponentSide].stacks.red,
-				});
+				yield* actions.discard(cardToDiscard);
 			},
 		},
 	},
@@ -197,10 +182,7 @@ export const deck: DbCard[] = [
 				const cardToDiscard = topOf(game.board.players[opponentSide].stacks.blue);
 				if (!cardToDiscard) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({
-					card: cardToDiscard,
-					from: game.board.players[opponentSide].stacks.blue,
-				});
+				yield* actions.discard(cardToDiscard);
 			},
 		},
 	},
@@ -232,10 +214,7 @@ export const deck: DbCard[] = [
 								if (!stack) return;
 								const cardToDiscard = topOf(game.board.players[side].stacks[stack]);
 								if (cardToDiscard) {
-									yield* actions.discard({
-										card: cardToDiscard,
-										from: game.board.players[side].stacks[stack],
-									});
+									yield* actions.discard(cardToDiscard);
 								}
 							},
 						},
@@ -255,7 +234,7 @@ export const deck: DbCard[] = [
 					yield* actions.vfx(effectVfx(thisCard));
 					yield* opponentDiscard;
 				}
-				yield* actions.discard({ card: thisCard, from: game.board.field });
+				yield* actions.discard(thisCard);
 			},
 		},
 	},
@@ -291,10 +270,7 @@ export const deck: DbCard[] = [
 				);
 				if (!stackToDiscardFrom) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({
-					card: winnerCard,
-					from: game.board.players[opponentSide].stacks[stackToDiscardFrom],
-				});
+				yield* actions.discard(winnerCard);
 			},
 		},
 	},
@@ -341,10 +317,7 @@ export const deck: DbCard[] = [
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[opponentSide].hand.find(card => cardKeys.includes(card.key));
 							invariant(cardToDiscard, 'Card to discard not found');
-							yield* actions.discard({
-								card: cardToDiscard,
-								from: game.board.players[opponentSide].hand,
-							});
+							yield* actions.discard(cardToDiscard);
 						},
 					},
 					timeoutMs: 10000,
@@ -430,7 +403,7 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
 		effects: {
-			beforeCombat: async function* ({ game, thisCard, actions }) {
+			beforeDamage: async function* ({ game, thisCard, actions }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -477,14 +450,11 @@ export const deck: DbCard[] = [
 					const cardToDiscard = topOf(game.board.players[side].stacks.green);
 					if (cardToDiscard) {
 						yield* actions.vfx(effectVfx(thisCard));
-						yield* actions.discard({
-							card: cardToDiscard,
-							from: game.board.players[side].stacks.green,
-						});
+						yield* actions.discard(cardToDiscard);
 					}
 				}
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: thisCard, from: game.board.field });
+				yield* actions.discard(thisCard);
 			},
 		},
 	},
@@ -563,10 +533,13 @@ export const deck: DbCard[] = [
 		heal: 6,
 		description: 'When this spell is beaten, discard it.',
 		effects: {
-			onClashLose: async function* ({ actions, game, winnerCard, thisCard }) {
-				if (!winnerCard) return;
-				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: winnerCard, from: game.board.field });
+			onClashLose: async function* ({ actions, thisCard }) {
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: 1000,
+					config: { target: { type: 'card', cardKey: thisCard.key }, type: 'fire' },
+				});
+				yield* actions.discard(thisCard);
 			},
 		},
 	},
@@ -582,7 +555,7 @@ export const deck: DbCard[] = [
 				const fieldEffect = topOf(game.board.field);
 				if (!fieldEffect) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: fieldEffect, from: game.board.field });
+				yield* actions.discard(fieldEffect);
 			},
 		},
 	},
@@ -659,10 +632,7 @@ export const deck: DbCard[] = [
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({
-					card: thisCard,
-					from: game.board.players[ownerSide].stacks[thisStack],
-				});
+				yield* actions.discard(thisCard);
 			},
 		},
 	},
@@ -752,7 +722,7 @@ export const deck: DbCard[] = [
 		description:
 			'Green spells have +5 attack. If this field effect fails to be placed, also removes the field effect who overtook it.',
 		effects: {
-			beforeCombat: async function* ({ game, actions, thisCard }) {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
 					if (combat.source.type !== 'spell') continue;
@@ -763,10 +733,10 @@ export const deck: DbCard[] = [
 				}
 				yield game;
 			},
-			onClashLose: async function* ({ actions, game, winnerCard, thisCard }) {
+			onClashLose: async function* ({ actions, winnerCard, thisCard }) {
 				if (!winnerCard) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: winnerCard, from: game.board.field });
+				yield* actions.discard(winnerCard);
 			},
 		},
 	},
@@ -778,7 +748,7 @@ export const deck: DbCard[] = [
 		description:
 			'Each player’s damage is increased by 5X, where X is the number of active spells they own with the word “Fire” in their title, and this card.',
 		effects: {
-			beforeCombat: async function* ({ game, actions, thisCard }) {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
 					const activeSpells = COLORS.map(stack => game.board.players[side].stacks[stack])
 						.map(topOf)
@@ -831,11 +801,21 @@ export const deck: DbCard[] = [
 				const cardToDiscard = topOf(game.board.players[ownerSide].stacks.green);
 				if (!cardToDiscard) {
 					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
+					yield* actions.vfx({
+						type: 'highlight',
+						durationMs: 1000,
+						config: { target: { type: 'card', cardKey: thisCard.key }, type: 'fire' },
+					});
+					yield* actions.discard(thisCard);
 					return;
 				}
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: cardToDiscard, from: game.board.players[ownerSide].stacks.green });
+				yield* actions.vfx({
+					type: 'highlight',
+					durationMs: 1000,
+					config: { target: { type: 'card', cardKey: cardToDiscard.key }, type: 'fire' },
+				});
+				yield* actions.discard(cardToDiscard);
 			},
 		},
 	},
@@ -852,10 +832,7 @@ export const deck: DbCard[] = [
 				if (!currentColor) return;
 				yield* actions.vfx(effectVfx(thisCard));
 				yield* actions.draw({ sides: [ownerSide] });
-				yield* actions.discard({
-					card: thisCard,
-					from: game.board.players[ownerSide].stacks[currentColor],
-				});
+				yield* actions.discard(thisCard);
 			},
 		},
 	},
@@ -873,7 +850,7 @@ export const deck: DbCard[] = [
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'green' || fieldToDiscard?.color === null) {
 					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+					yield* actions.discard(fieldToDiscard);
 				}
 			},
 		},
@@ -892,7 +869,7 @@ export const deck: DbCard[] = [
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'red' || fieldToDiscard?.color === null) {
 					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+					yield* actions.discard(fieldToDiscard);
 				}
 			},
 		},
@@ -910,7 +887,7 @@ export const deck: DbCard[] = [
 				const fieldToDiscard = topOf(game.board.field);
 				if (fieldToDiscard?.color === 'blue' || fieldToDiscard?.color === null) {
 					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+					yield* actions.discard(fieldToDiscard);
 				}
 			},
 		},
@@ -922,7 +899,7 @@ export const deck: DbCard[] = [
 		color: 'green',
 		description: 'Spells deal +2X damage during combat, where X is the size of the field effect stack',
 		effects: {
-			beforeCombat: async function* ({ game, thisCard, actions }) {
+			beforeDamage: async function* ({ game, thisCard, actions }) {
 				const fieldEffectStack = game.board.field.length;
 				for (const combat of game.turn.combatStack) {
 					if (!combat.source) continue;
@@ -947,7 +924,7 @@ export const deck: DbCard[] = [
 				const currentColor = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!currentColor) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks[currentColor] });
+				yield* actions.discard(thisCard);
 			},
 			onClashLose: async function* ({ game, ownerSide, opponentSide, actions, thisCard }) {
 				yield* actions.vfx(effectVfx(thisCard));
@@ -974,7 +951,7 @@ export const deck: DbCard[] = [
 				if (!isUsedInCombat) return;
 				if (game.board.players[ownerSide].hand.length === 0) {
 					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
+					yield* actions.discard(thisCard);
 					return;
 				}
 				yield* actions.vfx(effectVfx(thisCard));
@@ -992,11 +969,8 @@ export const deck: DbCard[] = [
 						},
 						onAction: function* ({ cardKeys }) {
 							const cardToDiscard = game.board.players[ownerSide].hand.find(card => cardKeys.includes(card.key));
-							invariant(cardToDiscard, 'Card to discard not found');
-							yield* actions.discard({
-								card: cardToDiscard,
-								from: game.board.players[ownerSide].hand,
-							});
+							if (!cardToDiscard) return;
+							yield* actions.discard(cardToDiscard);
 						},
 					},
 					timeoutMs: 10000,
@@ -1084,7 +1058,7 @@ export const deck: DbCard[] = [
 				const fieldToDiscard = topOf(game.board.field);
 				if (!fieldToDiscard) return;
 				yield* actions.vfx(effectVfx(thisCard));
-				yield* actions.discard({ card: fieldToDiscard, from: game.board.field });
+				yield* actions.discard(fieldToDiscard);
 			},
 		},
 	},
@@ -1121,7 +1095,7 @@ export const deck: DbCard[] = [
 							for (const stack of stacks) {
 								const cardToDiscard = topOf(game.board.players[opponentSide].stacks[stack]);
 								if (!cardToDiscard) continue;
-								yield* actions.discard({ card: cardToDiscard, from: game.board.players[opponentSide].stacks[stack] });
+								yield* actions.discard(cardToDiscard);
 							}
 						},
 					},
@@ -1191,7 +1165,7 @@ export const deck: DbCard[] = [
 					for (const stack of [...COLORS, 'field' as const])
 						for (const card of game.board.players[side].casting[stack]) {
 							yield* actions.vfx(effectVfx(thisCard));
-							yield* actions.discard({ card, from: game.board.players[side].casting[stack] });
+							yield* actions.discard(card);
 						}
 				}
 			},

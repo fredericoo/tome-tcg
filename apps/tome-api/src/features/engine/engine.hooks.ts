@@ -11,7 +11,7 @@ import {
 	SpellCard,
 	VfxIteration,
 } from './engine.game';
-import { HookActions } from './engine.hook.actions';
+import { HookActions } from './engine.game.actions';
 
 /** Hooks that can be activated on demand by other cards. */
 export const ACTIVATABLE_HOOKS = [
@@ -81,35 +81,35 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 	}) => AsyncGenerator<GameIteration>;
 	beforeDraw: (params: {
 		game: GameState;
-		actions: HookActions;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCast: (params: {
 		game: GameState;
-		actions: HookActions;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeReveal: (params: {
 		game: GameState;
-		actions: HookActions;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeSpell: (params: {
 		game: GameState;
-		actions: HookActions;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCombat: (params: {
 		game: GameState;
-		actions: HookActions;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;

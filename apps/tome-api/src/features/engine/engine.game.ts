@@ -1,6 +1,6 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { Board, createGameBoard } from './engine.board';
-import { useGameActions } from './engine.hook.actions';
+import { useGameActions } from './engine.game.actions';
 import { TurnHooks } from './engine.hooks';
 import { handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
@@ -103,7 +103,7 @@ interface BaseVfx {
 interface VfxHighlight extends BaseVfx {
 	type: 'highlight';
 	config: {
-		type: 'positive' | 'negative' | 'effect' | 'atk_up' | 'atk_down' | 'hp_up' | 'hp_down';
+		type: 'positive' | 'negative' | 'effect' | 'atk_up' | 'atk_down' | 'hp_up' | 'hp_down' | 'fire';
 		target: VfxEntity;
 	};
 }

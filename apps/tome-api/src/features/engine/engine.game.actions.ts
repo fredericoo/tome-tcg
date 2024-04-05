@@ -1,9 +1,31 @@
 import { objectEntries } from '../../lib/type-utils';
 import { delay } from '../../lib/utils';
-import { moveBottomCard, moveTopCard, removeCard } from './engine.board';
-import { CombatStackItem, GameAction, GameCard, GameIteration, GameState, Side, VfxIteration } from './engine.game';
+import { moveBottomCard, moveTopCard, removeCard, topOf } from './engine.board';
+import {
+	COLORS,
+	CombatStackItem,
+	GameAction,
+	GameCard,
+	GameIteration,
+	GameState,
+	SIDES,
+	Side,
+	VfxIteration,
+} from './engine.game';
 import { useTriggerHooks } from './engine.hooks';
 import { PlayerAction, playerAction } from './engine.turn.actions';
+
+const findCardPile = ({ card, game }: { card: GameCard; game: GameState }) => {
+	if (topOf(game.board.field) === card) return game.board.field;
+	for (const side of SIDES) {
+		if (topOf(game.board.players[side].hand) === card) return game.board.players[side].hand;
+		if (topOf(game.board.players[side].drawPile) === card) return game.board.players[side].drawPile;
+		for (const stack of COLORS) {
+			if (topOf(game.board.players[side].stacks[stack]) === card) return game.board.players[side].stacks[stack];
+		}
+	}
+	return null;
+};
 
 /** Hook-specific actions, that already yield their outcomes. */
 export const useGameActions = (game: GameState) => ({
@@ -45,7 +67,12 @@ export const useGameActions = (game: GameState) => ({
 			};
 		}
 	},
-	discard: function* ({ card, from }: { card: GameCard; from: GameCard[] }) {
+	discard: function* (card: GameCard) {
+		const from = findCardPile({ card, game });
+		if (from === null) {
+			console.warn('Card not found in any pile', card);
+			return;
+		}
 		const cardToMove = removeCard(from, card);
 		if (!cardToMove) return;
 		game.board.discardPile.push(cardToMove);

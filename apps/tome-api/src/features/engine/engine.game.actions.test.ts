@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { invariant, noop } from '../../lib/utils';
 import { createGameBoard } from './engine.board';
 import { CARD_TYPES, COLORS, GameCard, initialiseGame } from './engine.game';
-import { useGameActions } from './engine.hook.actions';
+import { useGameActions } from './engine.game.actions';
 
 let cardId = 0;
 const createCard = (name?: string): GameCard => {
@@ -19,7 +19,7 @@ const createCard = (name?: string): GameCard => {
 	};
 };
 
-describe('hook actions', () => {
+describe('game actions', () => {
 	test('can discard top card from deck', () => {
 		const game = initialiseGame(createGameBoard({ decks: { sideA: [createCard()], sideB: [] } }));
 

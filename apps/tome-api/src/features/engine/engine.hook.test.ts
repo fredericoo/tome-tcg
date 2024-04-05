@@ -2,7 +2,7 @@ import { expect, mock, test } from 'bun:test';
 
 import { createGameBoard } from './engine.board';
 import { COLORS, SIDES, Side, SpellColor, initialiseGame } from './engine.game';
-import { useGameActions } from './engine.hook.actions';
+import { useGameActions } from './engine.game.actions';
 import { useTriggerHooks } from './engine.hooks';
 
 test('trigger all effects of fields and spells from both sides', async () => {
