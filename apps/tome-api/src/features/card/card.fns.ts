@@ -2075,4 +2075,20 @@ export const notImplementedCards: DbCard[] = [
 		- Green: Choose a stack and discard the top card of that stack.',
 		effects: {},
 	},
+	{
+		id: '137',
+		name: 'Major Arcana',
+		type: 'field',
+		color: null,
+		description: 'Cards without the word "of" in their names trigger their effects twice.',
+		effects: {},
+	},
+	{
+		id: '138',
+		name: 'Minor Arcana',
+		type: 'field',
+		color: null,
+		description: 'Cards with names that ends with the letter "s" have +5 attack.',
+		effects: {},
+	},
 ];
