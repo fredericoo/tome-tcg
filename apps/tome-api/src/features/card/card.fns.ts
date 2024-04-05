@@ -140,9 +140,8 @@ export const deck: DbCard[] = [
 			beforeDamage: async function* ({ game, thisCard, actions }) {
 				for (const side of SIDES) {
 					if (game.turn[side].spellAttack?.slot === 'blue') {
-						game.turn.combatStack.push({ source: thisCard, target: side, type: 'heal', value: 10 });
 						yield* actions.vfx(effectVfx(thisCard));
-						yield game;
+						yield* actions.healPlayer({ side, amount: 10 });
 					}
 				}
 			},
@@ -214,7 +213,6 @@ export const deck: DbCard[] = [
 		color: null,
 		effects: {
 			beforeCombat: async function* ({ actions, game, thisCard }) {
-				yield* actions.vfx(effectVfx(thisCard));
 				const selectStackAndDiscard = (side: Side) => {
 					const stacksWithCards = COLORS.filter(stack => game.board.players[side].stacks[stack].length > 0);
 					if (stacksWithCards.length === 0) return;
@@ -231,7 +229,7 @@ export const deck: DbCard[] = [
 							},
 							onAction: function* ({ stacks }) {
 								const stack = stacks[0];
-								invariant(stack, 'Stack not found');
+								if (!stack) return;
 								const cardToDiscard = topOf(game.board.players[side].stacks[stack]);
 								if (cardToDiscard) {
 									yield* actions.discard({
@@ -248,9 +246,15 @@ export const deck: DbCard[] = [
 					});
 				};
 				const ownerDiscard = selectStackAndDiscard('sideA');
-				if (ownerDiscard) yield* ownerDiscard;
+				if (ownerDiscard) {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* ownerDiscard;
+				}
 				const opponentDiscard = selectStackAndDiscard('sideB');
-				if (opponentDiscard) yield* opponentDiscard;
+				if (opponentDiscard) {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* opponentDiscard;
+				}
 				yield* actions.discard({ card: thisCard, from: game.board.field });
 			},
 		},
@@ -303,10 +307,9 @@ export const deck: DbCard[] = [
 		effects: {
 			beforeDamage: async function* ({ thisCard, game, actions }) {
 				if (game.turn.sideA.spellAttack?.slot === game.turn.sideB.spellAttack?.slot) {
-					game.turn.combatStack.push({ source: thisCard, target: 'sideA', type: 'damage', value: 10 });
-					game.turn.combatStack.push({ source: thisCard, target: 'sideB', type: 'damage', value: 10 });
 					yield* actions.vfx(effectVfx(thisCard));
-					yield game;
+					yield* actions.damagePlayer({ side: 'sideA', amount: 10 });
+					yield* actions.damagePlayer({ side: 'sideB', amount: 10 });
 				}
 			},
 		},
@@ -433,10 +436,9 @@ export const deck: DbCard[] = [
 					if (combat.source.type !== 'spell') continue;
 					if (combat.type !== 'damage') continue;
 					if (!combat.source.colors.includes('green')) continue;
-					combat.value += 5;
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 5 });
 				}
-				yield* actions.vfx(effectVfx(thisCard));
-				yield game;
 			},
 		},
 	},
@@ -455,7 +457,7 @@ export const deck: DbCard[] = [
 					(_, index) => game.board.players[ownerSide].stacks[stack][index + 1] === thisCard,
 				);
 				if (!cardBelow) return 5;
-				return resolveCombatValue(cardBelow.attack, params) + 5;
+				return resolveCombatValue(cardBelow.attack, { ...params, thisCard: cardBelow }) + 5;
 			},
 		},
 		description: 'Where X is the attack of the card below this.',
@@ -469,7 +471,6 @@ export const deck: DbCard[] = [
 		color: 'red',
 		description:
 			'When this card is revealed, discard 1 GREEN card from your hand (NOT IMPLEMENTED). Before the next casting phase, discard the top card from both player’s green stacks, then discard this card.',
-		// TODO: Implement discard from hand
 		effects: {
 			beforeCast: async function* ({ game, actions, thisCard }) {
 				for (const side of SIDES) {
@@ -503,6 +504,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
@@ -524,6 +526,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
@@ -545,6 +548,7 @@ export const deck: DbCard[] = [
 					if (!(hook in card.effects)) continue;
 					const effect = card.effects[hook];
 					if (!effect) continue;
+					yield* actions.vfx(effectVfx(thisCard));
 					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
 				}
 			},
@@ -678,13 +682,12 @@ export const deck: DbCard[] = [
 			beforeDamage: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
+				yield* actions.vfx(effectVfx(thisCard));
 				for (const combat of game.turn.combatStack) {
 					if (combat.type === 'damage') {
-						combat.value = 0;
+						yield* actions.decreaseCombatDamage({ combatItem: combat, amount: combat.value });
 					}
 				}
-				yield* actions.vfx(effectVfx(thisCard));
-				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
 		},
@@ -732,13 +735,12 @@ export const deck: DbCard[] = [
 			beforeCombat: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
+				yield* actions.vfx(effectVfx(thisCard));
 				for (const combat of game.turn.combatStack) {
 					if (combat.type === 'damage' && combat.target === ownerSide) {
-						combat.value = 0;
+						yield* actions.decreaseCombatDamage({ combatItem: combat, amount: combat.value });
 					}
 				}
-				yield* actions.vfx(effectVfx(thisCard));
-				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
 		},
@@ -758,9 +760,9 @@ export const deck: DbCard[] = [
 					if (combat.source.type !== 'spell') continue;
 					if (combat.type !== 'damage') continue;
 					if (!combat.source.colors.includes('green')) continue;
-					combat.value += 5;
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 5 });
 				}
-				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 			onClashLose: async function* ({ actions, game, winnerCard, thisCard }) {
@@ -785,13 +787,14 @@ export const deck: DbCard[] = [
 						.filter(Boolean);
 					const fireSpells = activeSpells.filter(spell => spell.name.toLowerCase().includes('fire'));
 					const extraDamage = 5 * (fireSpells.length + 1);
+					yield* actions.vfx(effectVfx(thisCard));
 					for (const combat of game.turn.combatStack) {
-						if (combat.target !== side) {
-							combat.value += extraDamage;
+						if (combat.target !== side && combat.type === 'damage') {
+							for (const spell of fireSpells) yield* actions.vfx(effectVfx(spell));
+							yield* actions.increaseCombatDamage({ combatItem: combat, amount: extraDamage });
 						}
 					}
 				}
-				yield* actions.vfx(effectVfx(thisCard));
 				yield game;
 			},
 		},
@@ -927,10 +930,9 @@ export const deck: DbCard[] = [
 					if (!combat.source) continue;
 					if (combat.type !== 'damage') continue;
 					if (combat.source.type !== 'spell') continue;
-					combat.value += 2 * fieldEffectStack;
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 2 * fieldEffectStack });
 				}
-				yield* actions.vfx(effectVfx(thisCard));
-				yield game;
 			},
 		},
 	},
@@ -956,6 +958,7 @@ export const deck: DbCard[] = [
 					if (combat.target !== ownerSide) continue;
 					combat.target = opponentSide;
 				}
+				yield game;
 			},
 		},
 	},
