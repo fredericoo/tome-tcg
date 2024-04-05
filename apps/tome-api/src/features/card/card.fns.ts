@@ -1808,7 +1808,7 @@ export const notImplementedCards: DbCard[] = [
 				return 2 * cardsInHand;
 			}
 		},
-		description: 'On reveal, return the top card of the stack this card will be placed. This card\'s attack is equal to the number of cards in your hand X 2',
+		description: 'On reveal, return the top card of the stack this card will be placed. This card’s attack is equal to the number of cards in your hand X 2',
 		effects: {},
 	},
 	{
@@ -1819,7 +1819,7 @@ export const notImplementedCards: DbCard[] = [
 		attack: {
 			label: '5X',
 		},
-		description: 'On reveal, discard cards from your hand. This card\'s attack is equal to the number of cards discarded X 5',
+		description: 'On reveal, discard cards from your hand. This card’s attack is equal to the number of cards discarded X 5',
 		effects: {},
 	},
 	{
@@ -1954,7 +1954,7 @@ export const notImplementedCards: DbCard[] = [
 	// Archetype based on revealing a card from the opponent's hand and if it's a type or color something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
 	{
 		id: '125',
-		name: 'Seer\'s Tent',
+		name: 'Seer’s Tent',
 		type: 'field',
 		color: 'blue',
 		description: 'At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the color of the card, do the following: \
@@ -1991,7 +1991,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 8,
-		description: 'Discard one card from your opponent\'s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
+		description: 'Discard one card from your opponent’s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
 		effects: {},
 	},
 	{
@@ -2031,7 +2031,7 @@ export const notImplementedCards: DbCard[] = [
 		colors: ['red', 'green', 'blue'],
 		attack: 10,
 		description: 'Draw 3 cards, then discard 3 cards. Depending on the colour of the cards discarded, do the following: \
-		- Blue: Discard 1 card from the opponent\'s hand. \
+		- Blue: Discard 1 card from the opponent’s hand. \
 		- Red: You may (NOT IMPLEMENTED) discard a field card. \
 		- Green: Choose a stack and discard the top card of that stack.',
 		effects: {},
@@ -2069,9 +2069,9 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red'],
 		attack: 10,
-		description: 'When this card is revealed, discard a card from the oppenent\'s hand. Depending on the colour of the card, do the following: \
+		description: 'When this card is revealed, discard a card from the oppenent’s hand. Depending on the colour of the card, do the following: \
 		- Blue: Heal 10 HP. \
-		- Red: Deal Discard another card from the opponent\'s hand. \
+		- Red: Deal Discard another card from the opponent’s hand. \
 		- Green: Choose a stack and discard the top card of that stack.',
 		effects: {},
 	},
