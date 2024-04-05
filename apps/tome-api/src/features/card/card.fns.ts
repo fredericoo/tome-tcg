@@ -1970,7 +1970,10 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
 		attack: 0,
-		description: '',
+		description: 'Draw 1 card and reveal it. Depending on the color of the card, do the following: \
+		- Blue: Deal 17 damage to the opponent. Then discard this card. \
+		- Red: Discard 1 card from your hand and deal 13 damage to the opponent. \
+		- Green: Deal 9 damage to the opponent and heal 9 HP.',
 		effects: {},
 	},
 	{
@@ -1978,8 +1981,8 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Scrying Orb',
 		type: 'spell',
 		colors: ['blue'],
-		attack: 0,
-		description: '',
+		attack: 5,
+		description: 'Draw 2 cards and discard 1 card from your hand.',
 		effects: {},
 	},
 	{
