@@ -1951,4 +1951,125 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If this spell deals odd damage, heal 7 HP. If it deals even damage, discard this card.',
 		effects: {},
 	},
+	// Archetype based on revealing a card from the opponent's hand and if it's a type or color something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
+	{
+		id: '125',
+		name: 'Seer\'s Tent',
+		type: 'field',
+		color: 'blue',
+		description: 'At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the color of the card, do the following: \
+		- Blue: Draw 1 card. \
+		- Red: Deal 5 damage to the opponent. \
+		- Green: Heal 5 HP. \
+		- Colourless: Take 10 damage.',
+		effects: {},
+	},
+	{
+		id: '126',
+		name: 'Crystal Ball',
+		type: 'spell',
+		colors: ['red', 'green', 'blue'],
+		attack: 0,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '127',
+		name: 'Scrying Orb',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 0,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '128',
+		name: 'Tarot Reading: The Fool',
+		type: 'spell',
+		colors: ['green'],
+		attack: 8,
+		description: 'Discard one card from your opponent\'s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
+		effects: {},
+	},
+	{
+		id: '129',
+		name: 'Tarot Reading: The Magician',
+		type: 'spell',
+		colors: ['red', 'blue'],
+		attack: 1,
+		description: 'This card has an effect depending on the number of cards in this stack. \
+		- 2 card: This cards attack is 10. \
+		- 5 cards: This cards attack is 20. \
+		- 8 cards: This cards attack is 30.',
+		effects: {},
+	},
+	{
+		id: '130',
+		name: 'Tarot Reading: The Star',
+		type: 'spell',
+		colors: ['red', 'green'],
+		attack: 5,
+		description: 'If you win combat with this card, draw 3 cards then discard this card. If you lose combat with this card, draw 1 card then discard this card.',
+		effects: {},
+	},
+	{
+		id: '131',
+		name: 'Tarot Reading: The Moon',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 8,
+		description: 'When you lose combat with this card, deal 5 damage to the oppenent.',
+		effects: {},
+	},
+	{
+		id: '132',
+		name: 'Tarot Reading: The Sun',
+		type: 'spell',
+		colors: ['red', 'green', 'blue'],
+		attack: 10,
+		description: 'Draw 3 cards, then discard 3 cards. Depending on the colour of the cards discarded, do the following: \
+		- Blue: Discard 1 card from the opponent\'s hand. \
+		- Red: You may (NOT IMPLEMENTED) discard a field card. \
+		- Green: Choose a stack and discard the top card of that stack.',
+		effects: {},
+	},
+	{
+		id: '133',
+		name: 'Tarot Reading: The Page of Cups',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		description: 'If this card is revealed, draw 1 card then select one card from your hand and place it at the bottom of your deck.',
+		effects: {},
+	},
+	{
+		id: '134',
+		name: 'Tarot Reading: The Knight of Pentacles',
+		type: 'spell',
+		colors: ['green'],
+		attack: 15,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '135',
+		name: 'Tarot Reading: The Queen of Swords',
+		type: 'spell',
+		colors: [],
+		attack: 5,
+		description: 'All "Tarot Reading" cards in play have +5 attack for each "Tarot Reading" card in play.',
+		effects: {},
+	},
+	{
+		id: '136',
+		name: 'Tarot Reading: The King of Wands',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: 'When this card is revealed, discard a card from the oppenent\'s hand. Depending on the colour of the card, do the following: \
+		- Blue: Heal 10 HP. \
+		- Red: Deal Discard another card from the opponent\'s hand. \
+		- Green: Choose a stack and discard the top card of that stack.',
+		effects: {},
+	},
 ];
