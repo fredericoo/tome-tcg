@@ -2060,7 +2060,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 5,
-		description: 'All "Tarot Reading" cards in play have +5 attack for each "Tarot Reading" card in play.',
+		description: 'All "Tarot Reading" cards in play deal an extra +5 damage for each "Tarot Reading" card in play.',
 		effects: {},
 	},
 	{
