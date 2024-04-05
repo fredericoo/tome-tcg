@@ -2,7 +2,7 @@ import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
 import { CARD_TYPES, COLORS, DbCard, SIDES, Side } from '../engine/engine.game';
 import { ACTIVATABLE_HOOKS, effectVfx } from '../engine/engine.hooks';
-import { orbAttackValue, removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
+import { removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
 
 export const deck: DbCard[] = [
 	{
@@ -1134,10 +1134,7 @@ export const deck: DbCard[] = [
 		name: 'Yellow Orb',
 		type: 'spell',
 		colors: ['blue', 'green'],
-		attack: {
-			label: '11',
-			getValue: orbAttackValue,
-		},
+		attack: 11,
 		description: 'When cast on top of another orb, deals 10 damage to the opponent',
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard }) {

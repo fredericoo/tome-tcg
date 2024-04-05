@@ -1,5 +1,4 @@
-import { topOf } from '../engine/engine.board';
-import { COLORS, CombatValue, DynamicCombatValue, SpellCard } from '../engine/engine.game';
+import { COLORS, CombatValue, DynamicCombatValue } from '../engine/engine.game';
 import { TurnHooks, effectVfx } from '../engine/engine.hooks';
 
 export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async function* removeIfUsedInCombat({
@@ -21,17 +20,3 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async functi
 
 export const resolveCombatValue = (combatValue: CombatValue, params: Parameters<DynamicCombatValue['getValue']>[0]) =>
 	typeof combatValue === 'object' ? combatValue.getValue(params) : combatValue;
-
-/** Orb attack value calculation that takes into consideration "Marble Field" */
-export const orbAttackValue: Extract<SpellCard['attack'], object>['getValue'] = ({ game, ownerSide, thisCard }) => {
-	const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
-	if (!thisStack) return 11;
-
-	const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
-	const shouldActivate = isMarbleFieldActive || topOf(game.board.players[ownerSide].stacks[thisStack]) === thisCard;
-	if (shouldActivate) {
-		const cardUnderThis = game.board.players[ownerSide].stacks[thisStack][1];
-		if (cardUnderThis?.name.toLowerCase().includes('orb')) return 20;
-	}
-	return 11;
-};
