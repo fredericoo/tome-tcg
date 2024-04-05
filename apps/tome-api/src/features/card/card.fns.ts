@@ -2182,7 +2182,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '148',
-		name: 'Together Strong',
+		name: 'Moonlit Forest of Familiars',
 		type: 'field',
 		color: null,
 		description: 'If there are 3 or more familiars in play, all familiars have +15 attack.',
