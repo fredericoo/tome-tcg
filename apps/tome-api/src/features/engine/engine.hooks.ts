@@ -143,11 +143,14 @@ const isOnTheBoard = ({ board, card }: { board: Board; card: GameCard }) => {
 	}
 };
 
-export const effectVfx = (card: GameCard): VfxIteration => ({
-	type: 'highlight',
-	durationMs: 300,
-	config: { type: 'effect', target: { type: 'card', cardKey: card.key } },
-});
+export const effectVfx = (card: GameCard): VfxIteration => {
+	console.log(`${pill('gray', card.name)}’s effect triggered`);
+	return {
+		type: 'highlight',
+		durationMs: 300,
+		config: { type: 'effect', target: { type: 'card', cardKey: card.key } },
+	};
+};
 
 export const useTriggerHooks = (game: GameState) => {
 	async function* triggerTurnHook<THook extends keyof TurnHooks>(params: {
@@ -195,7 +198,6 @@ export const useTriggerHooks = (game: GameState) => {
 						opponentSide: ownerSide === 'sideA' ? 'sideB' : 'sideA',
 						thisCard: spell,
 					} as any);
-					console.log(pill('gray', spell.name), '’s effect triggered by', pill('yellow', params.hookName), 'hook.');
 				} catch (e) {
 					console.error(`Error in ${spell.name}’s ${params.hookName} effect:`, e);
 				}
