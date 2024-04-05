@@ -1900,11 +1900,11 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue', 'green', 'red'],
 		attack: 10,
-		description: 'Depending on the damage this spell deals, do the following: \
-		- 10 damage: Discard this card. \
-		- 9 damage: Draw 1 card. \
-		- 8 damage: Heal 2 HP. \
-		- 7 damage: Deal another 14 damage to the opponent.',
+		description: `Depending on the damage this spell deals, do the following: 
+		- 10 damage: Discard this card. 
+		- 9 damage: Draw 1 card. 
+		- 8 damage: Heal 2 HP. 
+		- 7 damage: Deal another 14 damage to the opponent.`,
 		effects: {},
 	},
 	{
@@ -1913,11 +1913,11 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 13,
-		description: 'Depending on the damage this spell deals, do the following: \
-		- 13 damage: Heal the opponent for 15HP. \
-		- 12 damage: Discard this card. \
-		- 11 damage: Discard the top card of every opponent stack. \
-		- 10 damage: Your opponent draws 1 card.',
+		description: `Depending on the damage this spell deals, do the following:
+		- 13 damage: Heal the opponent for 15HP.
+		- 12 damage: Discard this card.
+		- 11 damage: Discard the top card of every opponent stack.
+		- 10 damage: Your opponent draws 1 card.`,
 		effects: {},
 	},
 	{
@@ -1926,11 +1926,11 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 3,
-		description: 'Depending on the damage this spell deals, do the following: \
-		- 3 damage: Heal 9 HP. \
-		- 2 damage: Deal another 18 damage to the opponent. \
-		- 1 damage: Discard this card. \
-		- 0 damage: Discard the top field then return this card to your hand.',
+		description: `Depending on the damage this spell deals, do the following:
+		- 3 damage: Heal 9 HP.
+		- 2 damage: Deal another 18 damage to the opponent.
+		- 1 damage: Discard this card.
+		- 0 damage: Discard the top field then return this card to your hand.`,
 		effects: {},
 	},
 	{
@@ -1957,11 +1957,11 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Seer’s Tent',
 		type: 'field',
 		color: 'blue',
-		description: 'At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the color of the card, do the following: \
-		- Blue: Draw 1 card. \
-		- Red: Deal 5 damage to the opponent. \
-		- Green: Heal 5 HP. \
-		- Colourless: Take 10 damage.',
+		description: `At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the color of the card, do the following:
+		- Blue: Draw 1 card.
+		- Red: Deal 5 damage to the opponent.
+		- Green: Heal 5 HP.
+		- Colourless: Take 10 damage.`,
 		effects: {},
 	},
 	{
@@ -1970,10 +1970,10 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
 		attack: 0,
-		description: 'Draw 1 card and reveal it. Depending on the color of the card, do the following: \
-		- Blue: Deal 17 damage to the opponent. Then discard this card. \
-		- Red: Discard 1 card from your hand and deal 13 damage to the opponent. \
-		- Green: Deal 9 damage to the opponent and heal 9 HP.',
+		description: `Draw 1 card and reveal it. Depending on the color of the card, do the following:
+		- Blue: Deal 17 damage to the opponent. Then discard this card.
+		- Red: Discard 1 card from your hand and deal 13 damage to the opponent.
+		- Green: Deal 9 damage to the opponent and heal 9 HP.`,
 		effects: {},
 	},
 	{
@@ -2000,10 +2000,10 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'blue'],
 		attack: 1,
-		description: 'This card has an effect depending on the number of cards in this stack. \
-		- 2 card: This cards attack is 10. \
-		- 5 cards: This cards attack is 20. \
-		- 8 cards: This cards attack is 30.',
+		description: `This card has an effect depending on the number of cards in this stack.
+		- 2 card: This cards attack is 10.
+		- 5 cards: This cards attack is 20.
+		- 8 cards: This cards attack is 30.`,
 		effects: {},
 	},
 	{
@@ -2030,10 +2030,10 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
 		attack: 10,
-		description: 'Draw 3 cards, then discard 3 cards. Depending on the colour of the cards discarded, do the following: \
-		- Blue: Discard 1 card from the opponent’s hand. \
-		- Red: You may (NOT IMPLEMENTED) discard a field card. \
-		- Green: Choose a stack and discard the top card of that stack.',
+		description: `Draw 3 cards, then discard 3 cards. Depending on the colour of the cards discarded, do the following:
+		- Blue: Discard 1 card from the opponent’s hand.
+		- Red: You may (NOT IMPLEMENTED) discard a field card.
+		- Green: Choose a stack and discard the top card of that stack.`,
 		effects: {},
 	},
 	{
@@ -2069,10 +2069,10 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red'],
 		attack: 10,
-		description: 'When this card is revealed, discard a card from the oppenent’s hand. Depending on the colour of the card, do the following: \
-		- Blue: Heal 10 HP. \
-		- Red: Deal Discard another card from the opponent’s hand. \
-		- Green: Choose a stack and discard the top card of that stack.',
+		description: `When this card is revealed, discard a card from the oppenent’s hand. Depending on the colour of the card, do the following:
+				- Blue: Heal 10 HP.
+				- Red: Deal Discard another card from the opponent’s hand.
+				- Green: Choose a stack and discard the top card of that stack.`,
 		effects: {},
 	},
 	{
