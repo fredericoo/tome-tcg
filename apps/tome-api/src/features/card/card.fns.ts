@@ -597,15 +597,13 @@ export const deck: DbCard[] = [
 		attack: {
 			label: '8',
 			getValue({ game, ownerSide, thisCard }) {
-				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) {
-					return 13;
-				}
+				if (topOf(game.board.players[ownerSide].stacks.green) === thisCard) return 13;
 				return 8;
 			},
 		},
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
-				if (topOf(game.board.players[ownerSide].stacks.blue) === thisCard) {
+				if (game.board.players[ownerSide].casting.blue.includes(thisCard)) {
 					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.draw({ sides: [ownerSide] });
 				}
@@ -972,6 +970,8 @@ export const deck: DbCard[] = [
 			'When this spell is used in combat, select a card from your hand and discard it. If you don’t have cards to discard, discard Cannon Fire instead.',
 		effects: {
 			beforeCombat: async function* ({ game, actions, ownerSide, thisCard }) {
+				const isUsedInCombat = game.turn[ownerSide].spellAttack?.card === thisCard;
+				if (!isUsedInCombat) return;
 				if (game.board.players[ownerSide].hand.length === 0) {
 					yield* actions.vfx(effectVfx(thisCard));
 					yield* actions.discard({ card: thisCard, from: game.board.players[ownerSide].stacks.red });
@@ -1190,11 +1190,13 @@ export const deck: DbCard[] = [
 		description: 'Whenever this spell is revealed, remove all cards being revealed this turn from play.',
 		effects: {
 			onReveal: async function* ({ game, actions, thisCard }) {
-				for (const stack of [...COLORS, 'field' as const])
-					for (const card of game.board.players.sideA.casting[stack]) {
-						yield* actions.vfx(effectVfx(thisCard));
-						yield* actions.discard({ card, from: game.board.players.sideA.casting[stack] });
-					}
+				for (const side of SIDES) {
+					for (const stack of [...COLORS, 'field' as const])
+						for (const card of game.board.players[side].casting[stack]) {
+							yield* actions.vfx(effectVfx(thisCard));
+							yield* actions.discard({ card, from: game.board.players[side].casting[stack] });
+						}
+				}
 			},
 		},
 	},

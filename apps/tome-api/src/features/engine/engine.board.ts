@@ -1,3 +1,4 @@
+import { invariant } from '../../lib/utils';
 import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
@@ -42,14 +43,21 @@ export const moveBottomCard = (from: GameCard[], to: GameCard[]) => {
 export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
 
 export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: DbCard[] } }): Board => {
-	let cardIndex = 0;
+	const cardKeys = Array.from({ length: decks.sideA.length + decks.sideB.length }, (_, i) => i + 1).sort(
+		() => Math.random() - 0.5,
+	);
+
 	const initialiseBoardSide = (deck: DbCard[], side: Side): Board['players'][Side] => {
 		const boardSide: Board['players'][Side] = {
 			side,
 			hp: 100,
 			hand: [],
 			casting: { blue: [], field: [], green: [], red: [] },
-			drawPile: deck.map(card => ({ ...card, key: cardIndex++ })),
+			drawPile: deck.map(card => {
+				const key = cardKeys.pop();
+				invariant(key, 'Ran out of card keys');
+				return { ...card, key };
+			}),
 			stacks: {
 				blue: [],
 				green: [],
