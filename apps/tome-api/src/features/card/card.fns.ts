@@ -1723,7 +1723,7 @@ export const notImplementedCards: DbCard[] = [
 	{
 		id: '110',
 		name: 'Apothecary',
-		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not dis',
+		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
 		type: 'field',
 		color: 'green',
 		effects: {
