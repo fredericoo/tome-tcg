@@ -1951,13 +1951,13 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If this spell deals odd damage, heal 7 HP. If it deals even damage, discard this card.',
 		effects: {},
 	},
-	// Archetype based on revealing a card from the opponent's hand and if it's a type or color something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
+	// Archetype based on revealing a card from the opponent's hand and if it's a type or colour something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
 	{
 		id: '125',
 		name: 'Seer’s Tent',
 		type: 'field',
 		color: 'blue',
-		description: `At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the color of the card, do the following:
+		description: `At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the colour of the card, do the following:
 		- Blue: Draw 1 card.
 		- Red: Deal 5 damage to the opponent.
 		- Green: Heal 5 HP.
@@ -1970,7 +1970,7 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
 		attack: 0,
-		description: `Draw 1 card and reveal it. Depending on the color of the card, do the following:
+		description: `Draw 1 card and reveal it. Depending on the colour of the card, do the following:
 		- Blue: Deal 17 damage to the opponent. Then discard this card.
 		- Red: Discard 1 card from your hand and deal 13 damage to the opponent.
 		- Green: Deal 9 damage to the opponent and heal 9 HP.`,
