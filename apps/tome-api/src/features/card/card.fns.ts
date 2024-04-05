@@ -422,15 +422,14 @@ export const deck: DbCard[] = [
 		colors: [],
 		attack: {
 			label: '5+X',
-			getValue(params) {
-				const { game, ownerSide, thisCard } = params;
+			getValue({ game, ownerSide, thisCard, opponentSide }) {
 				const stack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 				if (!stack) return 5;
 				const cardBelow = game.board.players[ownerSide].stacks[stack].find(
 					(_, index) => game.board.players[ownerSide].stacks[stack][index + 1] === thisCard,
 				);
 				if (!cardBelow) return 5;
-				return resolveCombatValue(cardBelow.attack, { ...params, thisCard: cardBelow }) + 5;
+				return resolveCombatValue(cardBelow.attack, { game, opponentSide, ownerSide, thisCard: cardBelow }) + 5;
 			},
 		},
 		description: 'Where X is the attack of the card below this.',
@@ -1678,6 +1677,515 @@ export const notImplementedCards: DbCard[] = [
 		color: null,
 		description:
 			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
+		effects: {},
+	},
+	{
+		id: '108',
+		name: 'Lucky Clover Wand',
+		type: 'spell',
+		colors: ['green', 'blue'],
+		description: 'if the sum of the attack of your other stacks is divisible by 7, this card has +28 attack',
+		attack: {
+			label: '7',
+			getValue: ({ game, ownerSide, thisCard, opponentSide }) => {
+				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!thisStack) return 7;
+				const otherStackCards = COLORS.filter(stack => stack !== thisStack)
+					.map(stack => game.board.players[ownerSide].stacks[stack])
+					.map(topOf)
+					.filter(Boolean);
+				const sum = otherStackCards.reduce(
+					(acc, card) => acc + resolveCombatValue(card.attack, { game, opponentSide, ownerSide, thisCard: card }),
+					0,
+				);
+				return sum % 7 === 0 ? 35 : 7;
+			},
+		},
+		effects: {},
+	},
+	{
+		id: '109',
+		name: 'Last resort',
+		description: 'This spell has its attack equal to half of how much HP you are missing.',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: 'X/2',
+			getValue: ({ game, ownerSide }) => {
+				const owner = game.board.players[ownerSide];
+				const missingHp = 100 - owner.hp;
+				return Math.floor(missingHp / 2);
+			},
+		},
+		effects: {},
+	},
+	// Potion and Phial archetype
+	{
+		id: '110',
+		name: 'Apothecary',
+		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
+		type: 'field',
+		color: 'green',
+		effects: {
+			beforeReveal: async function* ({ game, actions }) {
+				let hpToHeal = 0;
+				for (const side of SIDES) {
+					for (const stack of COLORS) {
+						const preparingPotionsCount = game.turn[side].casts[stack].filter(
+							card => card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('phial'),
+						).length;
+						hpToHeal += preparingPotionsCount * 10;
+					}
+					yield* actions.healPlayer({ amount: hpToHeal, side });
+				}
+			},
+		},
+	},
+	{
+		id: '111',
+		name: 'Empty Phial',
+		type: 'spell',
+		colors: [],
+		attack: 5,
+		description:
+			'At the start of each turn, if the top field is BLUE, heal 10 HP. If using this card in combat, discard it.',
+		effects: {
+			beforeDraw: async function* ({ game, actions, ownerSide, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'blue') {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.healPlayer({ side: ownerSide, amount: 10 });
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '112',
+		name: 'Poison potion',
+		type: 'spell',
+		description:
+			'At the start of each turn, the opponent player takes 2 damage. If using this card in combat, discard it.',
+		colors: ['blue', 'green'],
+		attack: 6,
+		effects: {
+			beforeDraw: async function* ({ actions, ownerSide, thisCard }) {
+				yield* actions.vfx(effectVfx(thisCard));
+				yield* actions.damagePlayer({ side: ownerSide === 'sideA' ? 'sideB' : 'sideA', amount: 2 });
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '113',
+		name: 'Flammable phial',
+		type: 'spell',
+		description:
+			'If this spell deals damage, removes the top field if it’s green. If using this card in combat, discard it.',
+		colors: ['blue', 'red'],
+		attack: 16,
+		effects: {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'green') {
+					yield* actions.vfx(effectVfx(thisCard));
+					yield* actions.discard({ card: topField, from: game.board.field });
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	{
+		id: '114',
+		name: 'Greedy Fire',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: '2X',
+			getValue: ({ game, ownerSide }) => {
+				const owner = game.board.players[ownerSide];
+				const cardsInHand = owner.hand.length;
+				return 2 * cardsInHand;
+			}
+		},
+		description: 'On reveal, return the top card of the stack this card will be placed. This card’s attack is equal to the number of cards in your hand X 2',
+		effects: {},
+	},
+	{
+		id: '115',
+		name: 'Quenching Water',
+		type: 'spell',
+		colors: ['blue'],
+		attack: {
+			label: '5X',
+		},
+		description: 'On reveal, discard cards from your hand. This card’s attack is equal to the number of cards discarded X 5',
+		effects: {},
+	},
+	{
+		id: '116',
+		name: 'Stable Earth',
+		type: 'spell',
+		colors: ['green'],
+		attack: {
+			label: 'X',
+			getValue: ({ game, ownerSide }) => {
+				const blueStackCount = game.board.players[ownerSide].stacks.blue.length;
+				const redStackCount = game.board.players[ownerSide].stacks.red.length;
+				const greenStackCount = game.board.players[ownerSide].stacks.green.length;
+				if (blueStackCount === redStackCount && redStackCount === greenStackCount) {
+					return 30;
+				}
+				return 5;
+			},
+		},
+		description: 'If all stacks have the same number of cards, this card has 30 attack. Otherwise it has 5 attack',
+		effects: {},
+	},
+	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
+	{
+		id: '117',
+		name: 'Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 1',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 1;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '118',
+		name: 'Double Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 2',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 2;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '119',
+		name: 'Triple Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 3',
+		effects: {
+			beforeDamage: async function* ({ game }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						combatItem.value -= 3;
+					}
+				}
+				yield game;
+			},
+		},
+	},
+	{
+		id: '120',
+		name: 'Lucky 7',
+		type: 'spell',
+		colors: ['blue', 'green', 'red'],
+		attack: 10,
+		description: `Depending on the damage this spell deals, do the following: 
+		- 10 damage: Discard this card. 
+		- 9 damage: Draw 1 card. 
+		- 8 damage: Heal 2 HP. 
+		- 7 damage: Deal another 14 damage to the opponent.`,
+		effects: {},
+	},
+	{
+		id: '121',
+		name: 'One one one',
+		type: 'spell',
+		colors: [],
+		attack: 13,
+		description: `Depending on the damage this spell deals, do the following:
+		- 13 damage: Heal the opponent for 15HP.
+		- 12 damage: Discard this card.
+		- 11 damage: Discard the top card of every opponent stack.
+		- 10 damage: Your opponent draws 1 card.`,
+		effects: {},
+	},
+	{
+		id: '122',
+		name: 'Three two wand: Zero',
+		type: 'spell',
+		colors: [],
+		attack: 3,
+		description: `Depending on the damage this spell deals, do the following:
+		- 3 damage: Heal 9 HP.
+		- 2 damage: Deal another 18 damage to the opponent.
+		- 1 damage: Discard this card.
+		- 0 damage: Discard the top field then return this card to your hand.`,
+		effects: {},
+	},
+	{
+		id: '123',
+		name: 'Even the Odds',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 15,
+		description: 'If this spell deals even damage, double the damage dealt. If it deals odd damage, discard this card.',
+		effects: {},
+	},
+	{
+		id: '124',
+		name: 'Odd the Evens',
+		type: 'spell',
+		colors: ['red'],
+		attack: 16,
+		description: 'If this spell deals odd damage, heal 7 HP. If it deals even damage, discard this card.',
+		effects: {},
+	},
+	// Archetype based on revealing a card from the opponent's hand and if it's a type or colour something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
+	{
+		id: '125',
+		name: 'Seer’s Tent',
+		type: 'field',
+		color: 'blue',
+		description: `At the start of each turn, each player reveals the top card of their deck then discard it. Depending on the colour of the card, do the following:
+		- Blue: Draw 1 card.
+		- Red: Deal 5 damage to the opponent.
+		- Green: Heal 5 HP.
+		- Colourless: Take 10 damage.`,
+		effects: {},
+	},
+	{
+		id: '126',
+		name: 'Crystal Ball',
+		type: 'spell',
+		colors: ['red', 'green', 'blue'],
+		attack: 0,
+		description: `Draw 1 card and reveal it. Depending on the colour of the card, do the following:
+		- Blue: Deal 17 damage to the opponent. Then discard this card.
+		- Red: Discard 1 card from your hand and deal 13 damage to the opponent.
+		- Green: Deal 9 damage to the opponent and heal 9 HP.`,
+		effects: {},
+	},
+	{
+		id: '127',
+		name: 'Scrying Orb',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 5,
+		description: 'Draw 2 cards and discard 1 card from your hand.',
+		effects: {},
+	},
+	{
+		id: '128',
+		name: 'Tarot Reading: The Fool',
+		type: 'spell',
+		colors: ['green'],
+		attack: 8,
+		description: 'Discard one card from your opponent’s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
+		effects: {},
+	},
+	{
+		id: '129',
+		name: 'Tarot Reading: The Magician',
+		type: 'spell',
+		colors: ['red', 'blue'],
+		attack: 1,
+		description: `This card has an effect depending on the number of cards in this stack.
+		- >= 2 cards: This cards attack is 10.
+		- >= 5 cards: This cards attack is 20.
+		- >= 8 cards: This cards attack is 30.`,
+		effects: {},
+	},
+	{
+		id: '130',
+		name: 'Tarot Reading: The Star',
+		type: 'spell',
+		colors: ['red', 'green'],
+		attack: 5,
+		description: 'If you win combat with this card, draw 3 cards then discard this card. If you lose combat with this card, draw 1 card then discard this card.',
+		effects: {},
+	},
+	{
+		id: '131',
+		name: 'Tarot Reading: The Moon',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 8,
+		description: 'When you lose combat with this card, deal 5 damage to the oppenent.',
+		effects: {},
+	},
+	{
+		id: '132',
+		name: 'Tarot Reading: The Sun',
+		type: 'spell',
+		colors: ['red', 'green', 'blue'],
+		attack: 10,
+		description: `Draw 3 cards, then discard 3 cards. Depending on the colour of the cards discarded, do the following:
+		- Blue: Discard 1 card from the opponent’s hand.
+		- Red: You may (NOT IMPLEMENTED) discard a field card.
+		- Green: Choose a stack and discard the top card of that stack.`,
+		effects: {},
+	},
+	{
+		id: '133',
+		name: 'Tarot Reading: The Page of Cups',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		description: 'If this card is revealed, draw 1 card then select one card from your hand and place it at the bottom of your deck.',
+		effects: {},
+	},
+	{
+		id: '134',
+		name: 'Tarot Reading: The Knight of Pentacles',
+		type: 'spell',
+		colors: ['green'],
+		attack: 15,
+		description: '',
+		effects: {},
+	},
+	{
+		id: '135',
+		name: 'Tarot Reading: The Queen of Swords',
+		type: 'spell',
+		colors: [],
+		attack: 5,
+		description: 'All "Tarot Reading" cards in play deal an extra +5 damage for each "Tarot Reading" card in play.',
+		effects: {},
+	},
+	{
+		id: '136',
+		name: 'Tarot Reading: The King of Wands',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: `When this card is revealed, discard a card from the oppenent’s hand. Depending on the colour of the card, do the following:
+				- Blue: Heal 10 HP.
+				- Red: Deal Discard another card from the opponent’s hand.
+				- Green: Choose a stack and discard the top card of that stack.`,
+		effects: {},
+	},
+	{
+		id: '137',
+		name: 'Major Arcana',
+		type: 'field',
+		color: null,
+		description: 'Cards without the word "of" in their names trigger their effects twice.',
+		effects: {},
+	},
+	{
+		id: '138',
+		name: 'Minor Arcana',
+		type: 'field',
+		color: null,
+		description: 'Cards with names that ends with the letter "s" have +15 attack.',
+		effects: {},
+	},
+	// An archetype based on conjuring familiars in the shape of cute animals
+	{
+		id: '139',
+		name: 'Familiar: Cat',
+		type: 'spell',
+		colors: ['blue'],
+		attack: {
+			label: '10',
+			getValue: ({ game, ownerSide }) => {
+				const hasFamiliarInGreen = game.board.players[ownerSide].stacks.green.some(
+					card => card.name.toLowerCase().includes('familiar'),
+				);
+				return hasFamiliarInGreen ? 15 : 10;
+			},
+		},
+		description: 'If you have a "Familiar" card in the GREEN stack, this card has +5 attack.',
+		effects: {},
+	},
+	{
+		id: '140',
+		name: 'Familiar: Owl',
+		type: 'spell',
+		colors: ['green'],
+		attack: 10,
+		description: 'If you have a "Familiar" card in the RED stack, this card has +5 healing. When this card is revealed, if you have a "Familiar" card in the BLUE stack, draw 1 card.',
+		effects: {},
+	},
+	{
+		id: '141',
+		name: 'Familiar: Fox',
+		type: 'spell',
+		colors: ['red'],
+		attack: 10,
+		description: 'When this card is revealed, if you have a "Familiar" card in the BLUE stack, choose a stack and discard the top card of that stack. If you have a "Familiar" card in the BLUE stack, this card has +3 attack.',
+		effects: {},
+	},
+	{
+		id: '142',
+		name: 'Familiar: Rabbit',
+		type: 'spell',
+		colors: ['blue', 'red'],
+		attack: 10,
+		description: 'If you have a "Familiar" card in the GREEN stack this card has +5 healing.',
+		effects: {},
+	},
+	{
+		id: '143',
+		name: 'Familiar: Toad',
+		type: 'spell',
+		colors: ['blue', 'green'],
+		attack: 10,
+		description: 'When this card is revealed, if you have a "Familiar" card in the RED stack, deal 10 damage to the opponent.',
+		effects: {},
+	},
+	{
+		id: '144',
+		name: 'Familiar: Bear',
+		type: 'spell',
+		colors: ['green', 'red'],
+		attack: 10,
+		description: 'If you have a "Familiar" card in the BLUE stack this card has +5 attack.',
+		effects: {},
+	},
+	{
+		id: '145',
+		name: 'Familiar: Wolf',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: 'If you have another "Familiar" card in play, this card has +5 attack.',
+		effects: {},
+	},
+	{
+		id: '146',
+		name: 'Familiar: Bat',
+		type: 'spell',
+		colors: [],
+		attack: 10,
+		description: 'When this card is revealed, if you have another "Familiar" card in play, draw 2 cards and discard 1 card from your hand.',
+		effects: {},
+	},
+	{
+		id: '147',
+		name: 'Enchanted Forest of Familiars',
+		type: 'field',
+		color: 'red',
+		description: 'When a familiar is played, the owner draws 1 card.',
+		effects: {},
+	},
+	{
+		id: '148',
+		name: 'Moonlit Forest of Familiars',
+		type: 'field',
+		color: null,
+		description: 'If there are 3 or more familiars in play, all familiars have +15 attack.',
 		effects: {},
 	},
 ];
