@@ -1845,7 +1845,7 @@ export const notImplementedCards: DbCard[] = [
 	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
 	{
 		id: '117',
-		name: '',
+		name: 'Down Field',
 		type: 'field',
 		color: null,
 		description: 'Spells have their attack reduced by 1',
@@ -1862,7 +1862,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '118',
-		name: '',
+		name: 'Double Down Field',
 		type: 'field',
 		color: null,
 		description: 'Spells have their attack reduced by 2',
@@ -1879,7 +1879,7 @@ export const notImplementedCards: DbCard[] = [
 	},
 	{
 		id: '119',
-		name: '',
+		name: 'Triple Down Field',
 		type: 'field',
 		color: null,
 		description: 'Spells have their attack reduced by 3',
