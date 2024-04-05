@@ -2088,7 +2088,7 @@ export const notImplementedCards: DbCard[] = [
 		name: 'Minor Arcana',
 		type: 'field',
 		color: null,
-		description: 'Cards with names that ends with the letter "s" have +5 attack.',
+		description: 'Cards with names that ends with the letter "s" have +15 attack.',
 		effects: {},
 	},
 	// An archetype based on conjuring familiars in the shape of cute animals
