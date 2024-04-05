@@ -1723,7 +1723,8 @@ export const notImplementedCards: DbCard[] = [
 	{
 		id: '110',
 		name: 'Apothecary',
-		description: 'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
+		description:
+			'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
 		type: 'field',
 		color: 'green',
 		effects: {
@@ -1753,7 +1754,7 @@ export const notImplementedCards: DbCard[] = [
 			beforeDraw: async function* ({ game, actions, ownerSide, thisCard }) {
 				const topField = topOf(game.board.field);
 				if (topField?.color === 'blue') {
-					yield* actions.vfx(effectVfx(thisCard));
+					yield* effectVfx(thisCard);
 					yield* actions.healPlayer({ side: ownerSide, amount: 10 });
 				}
 			},
@@ -1770,7 +1771,7 @@ export const notImplementedCards: DbCard[] = [
 		attack: 6,
 		effects: {
 			beforeDraw: async function* ({ actions, ownerSide, thisCard }) {
-				yield* actions.vfx(effectVfx(thisCard));
+				yield* effectVfx(thisCard);
 				yield* actions.damagePlayer({ side: ownerSide === 'sideA' ? 'sideB' : 'sideA', amount: 2 });
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -1788,8 +1789,8 @@ export const notImplementedCards: DbCard[] = [
 			onDealDamage: async function* ({ actions, game, thisCard }) {
 				const topField = topOf(game.board.field);
 				if (topField?.color === 'green') {
-					yield* actions.vfx(effectVfx(thisCard));
-					yield* actions.discard({ card: topField, from: game.board.field });
+					yield* effectVfx(thisCard);
+					yield* actions.discard(topField);
 				}
 			},
 			afterDamage: removeIfUsedInCombat,
@@ -1806,9 +1807,10 @@ export const notImplementedCards: DbCard[] = [
 				const owner = game.board.players[ownerSide];
 				const cardsInHand = owner.hand.length;
 				return 2 * cardsInHand;
-			}
+			},
 		},
-		description: 'On reveal, return the top card of the stack this card will be placed. This card’s attack is equal to the number of cards in your hand X 2',
+		description:
+			'On reveal, return the top card of the stack this card will be placed. This card’s attack is equal to the number of cards in your hand X 2',
 		effects: {},
 	},
 	{
@@ -1818,8 +1820,10 @@ export const notImplementedCards: DbCard[] = [
 		colors: ['blue'],
 		attack: {
 			label: '5X',
+			getValue: () => 0,
 		},
-		description: 'On reveal, discard cards from your hand. This card’s attack is equal to the number of cards discarded X 5',
+		description:
+			'On reveal, discard cards from your hand. This card’s attack is equal to the number of cards discarded X 5',
 		effects: {},
 	},
 	{
@@ -1991,7 +1995,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 8,
-		description: 'Discard one card from your opponent’s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
+		description:
+			'Discard one card from your opponent’s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
 		effects: {},
 	},
 	{
@@ -2012,7 +2017,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red', 'green'],
 		attack: 5,
-		description: 'If you win combat with this card, draw 3 cards then discard this card. If you lose combat with this card, draw 1 card then discard this card.',
+		description:
+			'If you win combat with this card, draw 3 cards then discard this card. If you lose combat with this card, draw 1 card then discard this card.',
 		effects: {},
 	},
 	{
@@ -2042,7 +2048,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue'],
 		attack: 10,
-		description: 'If this card is revealed, draw 1 card then select one card from your hand and place it at the bottom of your deck.',
+		description:
+			'If this card is revealed, draw 1 card then select one card from your hand and place it at the bottom of your deck.',
 		effects: {},
 	},
 	{
@@ -2100,8 +2107,8 @@ export const notImplementedCards: DbCard[] = [
 		attack: {
 			label: '10',
 			getValue: ({ game, ownerSide }) => {
-				const hasFamiliarInGreen = game.board.players[ownerSide].stacks.green.some(
-					card => card.name.toLowerCase().includes('familiar'),
+				const hasFamiliarInGreen = game.board.players[ownerSide].stacks.green.some(card =>
+					card.name.toLowerCase().includes('familiar'),
 				);
 				return hasFamiliarInGreen ? 15 : 10;
 			},
@@ -2115,7 +2122,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['green'],
 		attack: 10,
-		description: 'If you have a "Familiar" card in the RED stack, this card has +5 healing. When this card is revealed, if you have a "Familiar" card in the BLUE stack, draw 1 card.',
+		description:
+			'If you have a "Familiar" card in the RED stack, this card has +5 healing. When this card is revealed, if you have a "Familiar" card in the BLUE stack, draw 1 card.',
 		effects: {},
 	},
 	{
@@ -2124,7 +2132,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['red'],
 		attack: 10,
-		description: 'When this card is revealed, if you have a "Familiar" card in the BLUE stack, choose a stack and discard the top card of that stack. If you have a "Familiar" card in the BLUE stack, this card has +3 attack.',
+		description:
+			'When this card is revealed, if you have a "Familiar" card in the BLUE stack, choose a stack and discard the top card of that stack. If you have a "Familiar" card in the BLUE stack, this card has +3 attack.',
 		effects: {},
 	},
 	{
@@ -2142,7 +2151,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: ['blue', 'green'],
 		attack: 10,
-		description: 'When this card is revealed, if you have a "Familiar" card in the RED stack, deal 10 damage to the opponent.',
+		description:
+			'When this card is revealed, if you have a "Familiar" card in the RED stack, deal 10 damage to the opponent.',
 		effects: {},
 	},
 	{
@@ -2169,7 +2179,8 @@ export const notImplementedCards: DbCard[] = [
 		type: 'spell',
 		colors: [],
 		attack: 10,
-		description: 'When this card is revealed, if you have another "Familiar" card in play, draw 2 cards and discard 1 card from your hand.',
+		description:
+			'When this card is revealed, if you have another "Familiar" card in play, draw 2 cards and discard 1 card from your hand.',
 		effects: {},
 	},
 	{
