@@ -2001,9 +2001,9 @@ export const notImplementedCards: DbCard[] = [
 		colors: ['red', 'blue'],
 		attack: 1,
 		description: `This card has an effect depending on the number of cards in this stack.
-		- 2 card: This cards attack is 10.
-		- 5 cards: This cards attack is 20.
-		- 8 cards: This cards attack is 30.`,
+		- >= 2 cards: This cards attack is 10.
+		- >= 5 cards: This cards attack is 20.
+		- >= 8 cards: This cards attack is 30.`,
 		effects: {},
 	},
 	{
