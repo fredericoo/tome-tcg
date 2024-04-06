@@ -4,11 +4,11 @@ import { Elysia, Static, t } from 'elysia';
 
 import { db } from '../../db';
 import { games } from '../../db/schema';
-import { DistributiveOmit } from '../../lib/type-utils';
+import { DistributiveOmit, objectKeys } from '../../lib/type-utils';
 import { delay, exhaustive, invariant, pill, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
-import { deck } from '../card/card.fns';
-import { resolveCombatValue } from '../card/card.fns.utils';
+import { cardDb } from '../card/card.db';
+import { resolveCombatValue } from '../card/card.utils';
 import { Board } from '../engine/engine.board';
 import {
 	COLORS,
@@ -211,7 +211,7 @@ const createGameRoom = (gameId: number) => {
 			.then(takeFirstOrThrow);
 		const gameInstance = createGameInstance({
 			// Mock decks for testing
-			decks: { sideA: deck, sideB: deck },
+			decks: { sideA: objectKeys(cardDb), sideB: objectKeys(cardDb) },
 			settings: {
 				castTimeoutMs: game.castTimeoutMs,
 				spellTimeoutMs: game.spellTimeoutMs,

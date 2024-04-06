@@ -19,6 +19,8 @@ export function isKeyInObj<O extends Record<string, unknown>>(key: PropertyKey, 
 export const objectEntries = <TObj extends object>(obj: TObj) =>
 	Object.entries(obj) as Array<[keyof TObj, TObj[keyof TObj]]>;
 
+export const objectKeys = <TObj extends object>(obj: TObj) => Object.keys(obj) as Array<keyof TObj>;
+
 export type NonEmptyString<T extends string> = T extends '' ? never : T;
 
 export type NonEmptyArray<T> = [T, ...T[]];

@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { Board } from '../../../../tome-api/src/features/engine/engine.board';
+import type { Board } from '../../../../tome-api/src/features/engine/engine.board';
 import { useGameStore } from '../../lib/game.utils';
 
 const PHASES: Array<Board['phase']> = [

@@ -1,4 +1,4 @@
-import { DistributiveOmit } from '../../lib/type-utils';
+import { CardSlug } from '../card/card.db';
 import { Board, createGameBoard } from './engine.board';
 import { useGameActions } from './engine.game.actions';
 import { TurnHooks } from './engine.hooks';
@@ -17,7 +17,6 @@ type BaseCard = {
 	id: string;
 	name: string;
 	description: string;
-	image?: string;
 };
 
 export type DynamicCombatValue = {
@@ -49,16 +48,12 @@ export interface FieldCard extends BaseCard {
 	type: 'field';
 	name: string;
 	color: SpellColor | null;
-
 	effects: Partial<TurnHooks>;
 }
 
 export type GameCard = SpellCard | FieldCard;
 
 export const CARD_TYPES = ['field', 'spell'] as const satisfies Array<GameCard['type']>;
-
-// TODO: reference this from the drizzle model
-export type DbCard = DistributiveOmit<GameCard, 'key'>;
 
 export const COLORS = ['red', 'green', 'blue'] as const satisfies SpellColor[];
 
@@ -262,7 +257,13 @@ export type GameSettings = {
 	effectHighlightMs: number;
 };
 
-export const createGameInstance = ({ decks, settings }: { decks: Record<Side, DbCard[]>; settings: GameSettings }) => {
+export const createGameInstance = ({
+	decks,
+	settings,
+}: {
+	decks: Record<Side, CardSlug[]>;
+	settings: GameSettings;
+}) => {
 	const game = initialiseGame(createGameBoard({ decks }));
 	return handleTurn({ game, settings });
 };

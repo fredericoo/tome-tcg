@@ -1,5 +1,6 @@
 import { invariant } from '../../lib/utils';
-import { DbCard, FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
+import { CardSlug, cardDb } from '../card/card.db';
+import { FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
 	phase: 'draw' | 'prepare' | 'reveal' | 'field-clash' | 'cast-spell' | 'spell-clash' | 'damage';
@@ -42,21 +43,21 @@ export const moveBottomCard = (from: GameCard[], to: GameCard[]) => {
 
 export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
 
-export const createGameBoard = ({ decks }: { decks: { sideA: DbCard[]; sideB: DbCard[] } }): Board => {
+export const createGameBoard = ({ decks }: { decks: Record<Side, CardSlug[]> }): Board => {
 	const cardKeys = Array.from({ length: decks.sideA.length + decks.sideB.length }, (_, i) => i + 1).sort(
 		() => Math.random() - 0.5,
 	);
 
-	const initialiseBoardSide = (deck: DbCard[], side: Side): Board['players'][Side] => {
+	const initialiseBoardSide = (deck: CardSlug[], side: Side): Board['players'][Side] => {
 		const boardSide: Board['players'][Side] = {
 			side,
 			hp: 100,
 			hand: [],
 			casting: { blue: [], field: [], green: [], red: [] },
-			drawPile: deck.map(card => {
+			drawPile: deck.map(slug => {
 				const key = cardKeys.pop();
 				invariant(key, 'Ran out of card keys');
-				return { ...card, key };
+				return { ...cardDb[slug], id: slug, key };
 			}),
 			stacks: {
 				blue: [],

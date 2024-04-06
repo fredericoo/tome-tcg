@@ -6,7 +6,7 @@ import { db } from '../../db';
 import { games, users } from '../../db/schema';
 import { takeFirst, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
-import { deck } from '../card/card.fns';
+import { cardDb } from '../card/card.db';
 import { gamePubSub } from './game.pubsub';
 
 export const gameRoutes = new Elysia({ prefix: '/games' })
@@ -33,8 +33,7 @@ export const gameRoutes = new Elysia({ prefix: '/games' })
 
 		if (!game) return error('Not Found', 'Game not found');
 
-		const cards = Object.fromEntries(deck.map(({ effects: _, ...card }) => [card.id, card]));
-		return { game, cards };
+		return { game, cards: cardDb };
 	})
 	.post(
 		'/',

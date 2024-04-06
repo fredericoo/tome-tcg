@@ -4,7 +4,7 @@ import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 import { create } from 'zustand';
 
-import { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
+import type { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
 import type {
 	PubSubCard,
 	PubSubShownCard,
@@ -175,7 +175,7 @@ export const CardFront = ({ card, size, className, ...props }: CardFrontProps) =
 					<CardColor key={color} color={color} />
 				))}
 			</div>
-			<CardImage data={data} size={size} />
+			<CardImage slug={card.id} size={size} />
 			<CardBody data={data} size={size} />
 			{card.type === 'spell' && <CardFooter card={card} />}
 		</div>
@@ -184,33 +184,29 @@ export const CardFront = ({ card, size, className, ...props }: CardFrontProps) =
 
 export const getCardImageSrc = (image: string) => `/cards/${image}.png`;
 
-const CardImage = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
+const CardImage = ({ size, slug }: { slug: string; size: NonNullable<Variants['size']> }) => {
 	switch (size) {
 		case 'lg':
 		case 'md':
 			return (
 				<div className="aspect-[696/644] w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
-					{data.image && (
-						<Image
-							srcWidth={sizeToRenderedWidth[size]}
-							src={getCardImageSrc(data.image)}
-							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
-						/>
-					)}
+					<Image
+						srcWidth={sizeToRenderedWidth[size]}
+						src={getCardImageSrc(slug)}
+						alt=""
+						className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+					/>
 				</div>
 			);
 		case 'sm':
 			return (
 				<div className="h-full w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
-					{data.image && (
-						<Image
-							srcWidth={sizeToRenderedWidth[size]}
-							src={`/cards/${data.image}.png`}
-							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
-						/>
-					)}
+					<Image
+						srcWidth={sizeToRenderedWidth[size]}
+						src={`/cards/${slug}.png`}
+						alt=""
+						className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+					/>
 				</div>
 			);
 		default:

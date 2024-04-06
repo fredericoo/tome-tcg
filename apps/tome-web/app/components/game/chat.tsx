@@ -1,7 +1,7 @@
 import reactStringReplace from 'react-string-replace';
 
-import { Side } from '../../../../tome-api/src/features/engine/engine.game';
-import { SanitisedLogIteration } from '../../../../tome-api/src/features/engine/engine.log';
+import type { Side } from '../../../../tome-api/src/features/engine/engine.game';
+import type { SanitisedLogIteration } from '../../../../tome-api/src/features/engine/engine.log';
 import { useCardData } from '../../lib/card-data';
 import { useGameStore } from '../../lib/game.utils';
 

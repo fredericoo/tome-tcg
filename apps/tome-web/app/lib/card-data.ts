@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import { DbCard } from '../../../tome-api/src/features/engine/engine.game';
+import { DbCard } from '../../../tome-api/src/features/card/card.db';
 import { DistributiveOmit } from '../../../tome-api/src/lib/type-utils';
 
 export type CardData = Record<string, DistributiveOmit<DbCard, 'effects'>>;

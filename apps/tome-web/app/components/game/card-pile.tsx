@@ -2,7 +2,7 @@ import { IconCards } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { CSSProperties, ComponentPropsWithoutRef } from 'react';
 
-import { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
+import type { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { Badge } from '../badge';
 import { Card, CardProps, cardSizeToClass } from './card';
 

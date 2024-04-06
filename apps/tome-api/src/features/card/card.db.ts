@@ -1,12 +1,16 @@
+import { DistributiveOmit } from '../../lib/type-utils';
 import { invariant, noop } from '../../lib/utils';
 import { topOf } from '../engine/engine.board';
-import { CARD_TYPES, COLORS, DbCard, SIDES, Side } from '../engine/engine.game';
+import { CARD_TYPES, COLORS, GameCard, SIDES, Side } from '../engine/engine.game';
 import { ACTIVATABLE_HOOKS, effectVfx } from '../engine/engine.hooks';
-import { removeIfUsedInCombat, resolveCombatValue } from './card.fns.utils';
+import { removeIfUsedInCombat, resolveCombatValue } from './card.utils';
 
-export const deck: DbCard[] = [
-	{
-		id: '1',
+export type DbCard = DistributiveOmit<GameCard, 'key' | 'id'>;
+const createCardDb = <const TCardKeys extends string>(cards: Record<TCardKeys, DbCard>) => cards;
+
+export type CardSlug = keyof typeof cardDb;
+export const cardDb = createCardDb({
+	'frostfire-bolt': {
 		name: 'Frostfire Bolt',
 		type: 'spell',
 		attack: 20,
@@ -42,10 +46,8 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '2',
+	'burning-branch': {
 		name: 'Burning Branch',
-		image: 'burning-branch',
 		type: 'spell',
 		attack: 20,
 		colors: ['red', 'green'],
@@ -80,8 +82,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '3',
+	'solar-beam': {
 		name: 'Solar Beam',
 		type: 'spell',
 		attack: 20,
@@ -117,13 +118,19 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{ id: '4', name: 'Great Sword', type: 'spell', colors: [], attack: 12, description: '', effects: {} },
-	{ id: '5', name: 'Sacred Water', type: 'spell', colors: ['blue'], attack: 10, heal: 5, description: '', effects: {} },
-	{
-		id: '7',
+	'great-sword': { name: 'Great Sword', type: 'spell', colors: [], attack: 12, description: '', effects: {} },
+	'sacred-water': {
+		name: 'Sacred Water',
+		type: 'spell',
+		colors: ['blue'],
+		attack: 10,
+		heal: 5,
+		description: '',
+		effects: {},
+	},
+	'sacred-pool': {
 		type: 'field',
 		name: 'Sacred Pool',
-		image: 'sacred-pool',
 		description: 'Whenever you attack with a spell from the blue stack, you heal 10HP.',
 		color: 'blue',
 		effects: {
@@ -137,8 +144,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '8',
+	'frost-burn': {
 		type: 'spell',
 		name: 'Frost Burn',
 		description: 'Whenever this spell deals damage, discard the top card from your opponents green stack.',
@@ -153,8 +159,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '9',
+	'natures-wrath': {
 		type: 'spell',
 		name: 'Nature’s Wrath',
 		description: 'Whenever this spell deals damage, discard the top card from your opponents red stack.',
@@ -169,8 +174,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '10',
+	'boiling-temperature': {
 		type: 'spell',
 		name: 'Boiling Temperature',
 		description: 'Whenever this spell deals damage, discard the top card from your opponents blue stack.',
@@ -185,8 +189,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '11',
+	'void-space': {
 		type: 'field',
 		name: 'Void Space',
 		description:
@@ -237,11 +240,9 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '12',
+	'overgrown-root': {
 		type: 'spell',
 		name: 'Overgrown root',
-		image: 'overgrown-root',
 		description: '6X attack, where X is the number of cards in this stack.',
 		attack: {
 			label: '6X',
@@ -254,8 +255,7 @@ export const deck: DbCard[] = [
 		colors: ['green'],
 		effects: {},
 	},
-	{
-		id: '15',
+	'sword-breaker': {
 		type: 'spell',
 		name: 'Sword-breaker',
 		colors: ['red'],
@@ -273,8 +273,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '13',
+	'unstable-ground': {
 		type: 'field',
 		name: 'Unstable Ground',
 		description: 'If both players attack with the same spell colour, both take 10 damage.',
@@ -289,8 +288,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '14',
+	'giant-leech': {
 		type: 'spell',
 		name: 'Giant Leech',
 		description: 'When this spell deals damage, you may choose a card from your opponent’s hand and discard it.',
@@ -325,8 +323,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '16',
+	'industrial-scale': {
 		type: 'field',
 		name: 'Industrial scale',
 		color: 'red',
@@ -342,10 +339,8 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '17',
+	'spreading-fire': {
 		type: 'field',
-		image: 'spreading-fire',
 		name: 'Spreading Fire',
 		description: 'Whenever you attack with a red spell, draw 1 card',
 		color: 'red',
@@ -360,11 +355,9 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '18',
+	hailstorm: {
 		type: 'field',
 		name: 'Hailstorm',
-		image: 'hailstorm',
 		description: 'Whenever you attack with a blue spell, draw 1 card',
 		color: 'blue',
 		effects: {
@@ -378,8 +371,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '19',
+	'spike-riddled-rhizome': {
 		type: 'field',
 		name: 'Spike-riddled Rhizome',
 		description: 'Whenever you attack with a green spell, draw 1 card',
@@ -395,10 +387,8 @@ export const deck: DbCard[] = [
 		},
 	},
 
-	{
-		id: '23',
+	'tall-grass': {
 		name: 'Tall grass',
-		image: 'tall-grass',
 		type: 'field',
 		color: 'green',
 		description: 'Green spells deal 5 extra damage',
@@ -415,8 +405,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '24',
+	'augmentation-device': {
 		name: 'Augmentation Device',
 		type: 'spell',
 		colors: [],
@@ -435,10 +424,8 @@ export const deck: DbCard[] = [
 		description: 'Where X is the attack of the card below this.',
 		effects: {},
 	},
-	{
-		id: '25',
+	'meteor-shower': {
 		name: 'Meteor shower',
-		image: 'meteor-storm',
 		type: 'field',
 		color: 'red',
 		description:
@@ -457,8 +444,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '26',
+	'syphon-earth': {
 		name: 'Syphon Earth',
 		type: 'spell',
 		colors: ['red'],
@@ -479,8 +465,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '27',
+	'syphon-water': {
 		name: 'Syphon Water',
 		type: 'spell',
 		colors: ['green'],
@@ -501,8 +486,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '28',
+	'syphon-fire': {
 		name: 'Syphon Fire',
 		type: 'spell',
 		colors: ['blue'],
@@ -523,8 +507,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '29',
+	'wooden-staff-of-healing': {
 		name: 'Wooden staff of healing',
 		type: 'spell',
 		colors: ['green'],
@@ -542,8 +525,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '30',
+	stomp: {
 		name: 'Stomp',
 		type: 'spell',
 		attack: 11,
@@ -559,8 +541,7 @@ export const deck: DbCard[] = [
 		},
 	},
 
-	{
-		id: '34',
+	'ice-tendrill': {
 		name: 'Ice Tendrill',
 		type: 'spell',
 		colors: ['green', 'blue'],
@@ -582,8 +563,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '35',
+	'solo-burning': {
 		name: 'Solo Burning',
 		type: 'spell',
 		colors: ['red'],
@@ -600,8 +580,7 @@ export const deck: DbCard[] = [
 		description: 'If this is the only card in your RED slot, this card has +5 attack',
 		effects: {},
 	},
-	{
-		id: '36',
+	'magnetic-force': {
 		name: 'Magnetic force',
 		type: 'spell',
 		colors: ['red', 'blue'],
@@ -635,10 +614,8 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '37',
+	'prevent-harm': {
 		name: 'Prevent harm',
-		image: 'prevent-harm',
 		type: 'spell',
 		attack: 0,
 		heal: 10,
@@ -659,8 +636,7 @@ export const deck: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{
-		id: '38',
+	'violent-instinct': {
 		name: 'Violent Instinct',
 		type: 'spell',
 		attack: 15,
@@ -681,17 +657,16 @@ export const deck: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{ id: '39', name: 'Fireball', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
-	{ id: '40', name: 'Flaming Sword', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
-	{ id: '41', name: 'Flaming Bow', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
-	{ id: '42', name: 'Ice Shard', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
-	{ id: '42', name: 'Frost Bow', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
-	{ id: '43', name: 'Frozen Sword', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
-	{ id: '44', name: 'Earth Spike', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
-	{ id: '45', name: 'Metal Bullet', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
-	{ id: '46', name: 'Steel Sword', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
-	{
-		id: '47',
+	fireball: { name: 'Fireball', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	'flaming-sword': { name: 'Flaming Sword', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	'flaming-bow': { name: 'Flaming Bow', type: 'spell', attack: 11, colors: ['red'], description: '', effects: {} },
+	'ice-shard': { name: 'Ice Shard', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	'frost-bow': { name: 'Frost Bow', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	'frozen-sword': { name: 'Frozen Sword', type: 'spell', attack: 11, colors: ['blue'], description: '', effects: {} },
+	'earth-spike': { name: 'Earth Spike', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
+	'metal-bullet': { name: 'Metal Bullet', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
+	'steel-sword': { name: 'Steel Sword', type: 'spell', attack: 11, colors: ['green'], description: '', effects: {} },
+	necromancy: {
 		name: 'Necromancy',
 		type: 'spell',
 		attack: 5,
@@ -712,10 +687,8 @@ export const deck: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{
-		id: '48',
+	'windy-valley': {
 		name: 'Windy valley',
-		image: 'windy-valley',
 		type: 'field',
 		color: 'green',
 		description:
@@ -739,8 +712,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '49',
+	'fired-up': {
 		name: 'Fired Up',
 		type: 'field',
 		color: 'red',
@@ -766,8 +738,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '50',
+	'nature-s-bounty': {
 		name: 'Nature’s Bounty',
 		type: 'field',
 		color: 'green',
@@ -787,8 +758,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '55',
+	'burning-flame': {
 		name: 'Burning flame',
 		type: 'spell',
 		colors: ['red'],
@@ -818,8 +788,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '57',
+	'wind-sceptre': {
 		name: 'Wind Sceptre',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -833,8 +802,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '58',
+	'fire-starter': {
 		name: 'Fire Starter',
 		type: 'spell',
 		colors: ['red'],
@@ -852,8 +820,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '59',
+	'extinguishing-spray': {
 		name: 'Extinguishing Spray',
 		type: 'spell',
 		colors: ['blue'],
@@ -871,8 +838,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '60',
+	'parched-earth': {
 		name: 'Parched Earth',
 		type: 'spell',
 		colors: ['green'],
@@ -889,8 +855,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '61',
+	'wobbly-bridge': {
 		name: 'Wobbly bridge',
 		type: 'field',
 		color: 'green',
@@ -908,8 +873,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '62',
+	'mirror-shield': {
 		name: 'Mirror shield',
 		type: 'spell',
 		colors: [],
@@ -934,8 +898,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '63',
+	'cannon-fire': {
 		name: 'Cannon Fire',
 		type: 'spell',
 		colors: ['red'],
@@ -976,8 +939,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '87',
+	'red-orb': {
 		name: 'Red Orb',
 		type: 'spell',
 		colors: ['red'],
@@ -987,7 +949,7 @@ export const deck: DbCard[] = [
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return 11;
 
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate =
 					isMarbleFieldActive || topOf(game.board.players[ownerSide].stacks[thisStack]) === thisCard;
 				if (shouldActivate) {
@@ -1000,8 +962,7 @@ export const deck: DbCard[] = [
 		description: 'When cast on top of another Orb, +9 Attack',
 		effects: {},
 	},
-	{
-		id: '88',
+	'blue-orb': {
 		name: 'Blue Orb',
 		type: 'spell',
 		colors: ['blue'],
@@ -1010,7 +971,7 @@ export const deck: DbCard[] = [
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks.blue);
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
 				if (!shouldActivate) return;
 				yield* effectVfx(thisCard);
@@ -1019,8 +980,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '89',
+	'green-orb': {
 		name: 'Green Orb',
 		type: 'spell',
 		colors: ['green'],
@@ -1029,7 +989,7 @@ export const deck: DbCard[] = [
 		effects: {
 			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks.green);
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
 				if (!shouldActivate) return;
 				yield* effectVfx(thisCard);
@@ -1037,8 +997,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '90',
+	'purple-orb': {
 		name: 'Purple Orb',
 		type: 'spell',
 		colors: ['blue', 'red'],
@@ -1049,7 +1008,7 @@ export const deck: DbCard[] = [
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
 				if (!shouldActivate) return;
 				const fieldToDiscard = topOf(game.board.field);
@@ -1059,8 +1018,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '91',
+	'brown-orb': {
 		name: 'Brown Orb',
 		type: 'spell',
 		colors: ['green', 'red'],
@@ -1071,7 +1029,7 @@ export const deck: DbCard[] = [
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
 				if (!shouldActivate) return;
 				yield* effectVfx(thisCard);
@@ -1100,8 +1058,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '92',
+	'yellow-orb': {
 		name: 'Yellow Orb',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -1112,7 +1069,7 @@ export const deck: DbCard[] = [
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
-				const isMarbleFieldActive = topOf(game.board.field)?.id === '94';
+				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
 				const shouldActivate = isMarbleFieldActive || cardUnderThis?.name.toLowerCase().includes('orb');
 				if (!shouldActivate) return;
 				yield* effectVfx(thisCard);
@@ -1120,8 +1077,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '93',
+	'dull-orb': {
 		name: 'Dull Orb',
 		type: 'spell',
 		colors: [],
@@ -1129,16 +1085,14 @@ export const deck: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '94',
+	'marble-field': {
 		name: 'Marble field',
 		type: 'field',
 		color: null,
 		description: 'All “Orb” cards effect activate without needing an “Orb” card below them',
 		effects: {},
 	},
-	{
-		id: '65',
+	tsunami: {
 		name: 'Tsunami',
 		type: 'spell',
 		colors: ['blue'],
@@ -1149,8 +1103,7 @@ export const deck: DbCard[] = [
 		description: 'X Attack, where X is the combined number of cards in both player’s BLUE spell stacks',
 		effects: {},
 	},
-	{
-		id: '52',
+	uncast: {
 		name: 'Uncast',
 		type: 'spell',
 		colors: ['blue'],
@@ -1168,8 +1121,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '64',
+	'bull-s-eye-shot': {
 		name: 'Bull’s eye shot',
 		type: 'spell',
 		colors: [],
@@ -1188,8 +1140,7 @@ export const deck: DbCard[] = [
 		description: '4X Attack, where X is the number of NEUTRAL cards in play.',
 		effects: {},
 	},
-	{
-		id: '66',
+	'community-hall': {
 		name: 'Community Hall',
 		type: 'field',
 		color: null,
@@ -1208,8 +1159,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '69',
+	upheaval: {
 		name: 'Upheaval',
 		type: 'spell',
 		colors: [],
@@ -1220,8 +1170,7 @@ export const deck: DbCard[] = [
 		description: 'This spell has 25 attack if there are no field effects in play. Otherwise, it has zero attack.',
 		effects: {},
 	},
-	{
-		id: '70',
+	'eldritch-blast': {
 		name: 'Eldritch Blast',
 		type: 'spell',
 		colors: ['blue', 'green', 'red'],
@@ -1229,9 +1178,9 @@ export const deck: DbCard[] = [
 			label: '10',
 			getValue: ({ game, ownerSide }) => {
 				let atk = 0;
-				const isAgonisingBlastInPlay = topOf(game.board.players[ownerSide].stacks.red)?.id === '71';
+				const isAgonisingBlastInPlay = topOf(game.board.players[ownerSide].stacks.red)?.id === 'agonising-blast';
 				if (isAgonisingBlastInPlay) atk += 10;
-				const doubleEffect = topOf(game.board.field)?.id === '74';
+				const doubleEffect = topOf(game.board.field)?.id === 'blast-zone';
 				if (doubleEffect) atk *= 2;
 				return atk;
 			},
@@ -1239,14 +1188,14 @@ export const deck: DbCard[] = [
 		description: '',
 		effects: {
 			onDealDamage: async function* ({ actions, game, ownerSide, thisCard }) {
-				const isBlessedBlastInPlay = topOf(game.board.players[ownerSide].stacks.blue)?.id === '72';
-				const doubleEffect = topOf(game.board.field)?.id === '74';
+				const isBlessedBlastInPlay = topOf(game.board.players[ownerSide].stacks.blue)?.id === 'blessed-blast';
+				const doubleEffect = topOf(game.board.field)?.id === 'blast-zone';
 				if (isBlessedBlastInPlay) {
 					yield* effectVfx(thisCard);
 					yield* actions.draw({ sides: [ownerSide] });
 					if (doubleEffect) yield* actions.draw({ sides: [ownerSide] });
 				}
-				const isLeechingBlastInPlay = topOf(game.board.players[ownerSide].stacks.green)?.id === '73';
+				const isLeechingBlastInPlay = topOf(game.board.players[ownerSide].stacks.green)?.id === 'leeching-blast';
 				if (isLeechingBlastInPlay) {
 					yield* effectVfx(thisCard);
 					yield* actions.healPlayer({ side: ownerSide, amount: 20 });
@@ -1255,8 +1204,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '71',
+	'agonising-blast': {
 		name: 'Agonising Blast',
 		type: 'spell',
 		colors: ['red'],
@@ -1264,8 +1212,7 @@ export const deck: DbCard[] = [
 		description: 'If Eldritch Blast is in play on your side of the field, add +10 Attack to Eldritch Blast',
 		effects: {},
 	},
-	{
-		id: '72',
+	'blessed-blast': {
 		name: 'Blessed Blast',
 		type: 'spell',
 		colors: ['blue'],
@@ -1273,8 +1220,7 @@ export const deck: DbCard[] = [
 		description: 'Whenever Eldritch Blast deals damage, draw 2',
 		effects: {},
 	},
-	{
-		id: '73',
+	'leeching-blast': {
 		name: 'Leeching Blast',
 		type: 'spell',
 		colors: ['green'],
@@ -1282,16 +1228,14 @@ export const deck: DbCard[] = [
 		description: 'Whenever Eldritch Blast deals damage, heal 20hp',
 		effects: {},
 	},
-	{
-		id: '74',
+	'blast-zone': {
 		name: 'Blast Zone',
 		type: 'field',
 		color: 'red',
 		description: 'Trigger all “Blast” spells effects twice',
 		effects: {},
 	},
-	{
-		id: '75',
+	'inverse-field': {
 		name: 'Inverse Field',
 		type: 'field',
 		color: 'blue',
@@ -1311,8 +1255,7 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '107',
+	hex: {
 		name: 'Hex',
 		type: 'spell',
 		colors: [],
@@ -1351,35 +1294,31 @@ export const deck: DbCard[] = [
 			},
 		},
 	},
-];
+});
 
-export const notImplementedCards: DbCard[] = [
-	{
-		id: '31',
+export const notImplementedCards: Record<string | number, DbCard> = {
+	'arid-desert': {
 		name: 'Arid desert',
 		type: 'field',
 		color: 'red',
 		description: 'BLUE cards cannot trigger effects. (NOT IMPLEMENTED)',
 		effects: {},
 	},
-	{
-		id: '32',
+	'flooded-valley': {
 		name: 'Flooded Valley',
 		type: 'field',
 		color: 'blue',
 		description: 'GREEN cards cannot trigger effects. (NOT IMPLEMENTED)',
 		effects: {},
 	},
-	{
-		id: '33',
+	'wet-woodlands': {
 		name: 'Wet Woodlands',
 		type: 'field',
 		color: 'green',
 		description: 'RED cards cannot trigger effects. (NOT IMPLEMENTED)',
 		effects: {},
 	},
-	{
-		id: '20',
+	'tome-of-fire': {
 		type: 'spell',
 		colors: ['red'],
 		name: 'Tome of fire',
@@ -1387,8 +1326,7 @@ export const notImplementedCards: DbCard[] = [
 		attack: 12,
 		effects: {},
 	},
-	{
-		id: '21',
+	'tome-of-ice': {
 		type: 'spell',
 		colors: ['blue'],
 		name: 'Tome of ice',
@@ -1396,8 +1334,7 @@ export const notImplementedCards: DbCard[] = [
 		attack: 12,
 		effects: {},
 	},
-	{
-		id: '22',
+	'tome-of-nature': {
 		type: 'spell',
 		colors: ['green'],
 		name: 'Tome of nature',
@@ -1405,8 +1342,7 @@ export const notImplementedCards: DbCard[] = [
 		attack: 12,
 		effects: {},
 	},
-	{
-		id: '51',
+	'magic-shield-of-flame': {
 		name: 'Magic Shield of Flame',
 		type: 'spell',
 		colors: ['red'],
@@ -1415,16 +1351,14 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 
-	{
-		id: '53',
+	'fields-of-mana': {
 		name: 'Fields of mana',
 		type: 'field',
 		color: 'blue',
 		description: 'During cast phase, players can cast one more card. Players cannot cast two cards for the same slot.',
 		effects: {},
 	},
-	{
-		id: '54',
+	'blue-wand': {
 		name: 'Blue wand',
 		type: 'spell',
 		colors: ['blue'],
@@ -1432,8 +1366,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'BLUE field effects trigger twice',
 		effects: {},
 	},
-	{
-		id: '56',
+	'barren-land': {
 		name: 'Barren Land',
 		type: 'field',
 		color: null,
@@ -1441,16 +1374,14 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 
-	{
-		id: '67',
+	'hilltop-observatory': {
 		name: 'Hilltop observatory',
 		type: 'field',
 		color: null,
 		description: 'The player with the lowest combined stack of spells keeps their hand revealed',
 		effects: {},
 	},
-	{
-		id: '68',
+	'back-to-square-one': {
 		name: 'Back to Square One',
 		type: 'field',
 		color: null,
@@ -1458,8 +1389,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 
-	{
-		id: '76',
+	'healing-rain': {
 		name: 'Healing Rain',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -1467,8 +1397,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Heal all wizards by 15 HP',
 		effects: {},
 	},
-	{
-		id: '77',
+	'heal-through-pain': {
 		name: 'Heal through pain',
 		type: 'spell',
 		colors: ['green', 'red'],
@@ -1477,8 +1406,7 @@ export const notImplementedCards: DbCard[] = [
 			'Can only be played if the Field stack is ≥ 3 and the current top Field is BLUE. If the opponent wizard is healed by one of your cards, deal 25 damage to the opposing wizard.',
 		effects: {},
 	},
-	{
-		id: '78',
+	'heated-shuffle': {
 		name: 'Heated Shuffle',
 		type: 'spell',
 		colors: ['red'],
@@ -1486,8 +1414,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If it’s possible, move the top card from your BLUE/GREEN stack to your GREEN/BLUE stack.',
 		effects: {},
 	},
-	{
-		id: '79',
+	'flooded-shuffle': {
 		name: 'Flooded Shuffle',
 		type: 'spell',
 		colors: ['blue'],
@@ -1495,8 +1422,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If it’s possible, move the top card from your RED/GREEN stack to your GREEN/RED stack.',
 		effects: {},
 	},
-	{
-		id: '80',
+	'sharp-shuffle': {
 		name: 'Sharp Shuffle',
 		type: 'spell',
 		colors: ['green'],
@@ -1504,8 +1430,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If it’s possible, move the top card from your BLUE/RED stack to your RED/BLUE stack.',
 		effects: {},
 	},
-	{
-		id: '81',
+	'tactical-flamevine': {
 		name: 'Tactical Flamevine',
 		type: 'spell',
 		colors: ['green', 'red'],
@@ -1514,8 +1439,7 @@ export const notImplementedCards: DbCard[] = [
 			'If attacked with this spell and lost combat with a RED/GREEN attack, you may move this spell to the top of the GREEN/RED slot',
 		effects: {},
 	},
-	{
-		id: '82',
+	'tactical-chillflare': {
 		name: 'Tactical Chillflare',
 		type: 'spell',
 		colors: ['blue', 'red'],
@@ -1524,8 +1448,7 @@ export const notImplementedCards: DbCard[] = [
 			'If attacked with this spell and lost combat with a RED/BLUE attack, you may move this spell to the top of the BLUE/RED slot',
 		effects: {},
 	},
-	{
-		id: '83',
+	'tactical-frostleaf': {
 		name: 'Tactical Frostleaf',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -1534,8 +1457,7 @@ export const notImplementedCards: DbCard[] = [
 			'If attacked with this spell and lost combat with a BLUE/GREEN attack, you may move this spell to the top of the GREEN/BLUE slot',
 		effects: {},
 	},
-	{
-		id: '84',
+	bokutou: {
 		name: 'Bokutou',
 		type: 'spell',
 		colors: [],
@@ -1543,8 +1465,7 @@ export const notImplementedCards: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '85',
+	'long-form': {
 		name: 'Long Form',
 		type: 'spell',
 		colors: ['blue', 'red'],
@@ -1553,8 +1474,7 @@ export const notImplementedCards: DbCard[] = [
 			'If attacking with “Bokutou”, add 7X to the attack where X is the number of “Form” cards you have active.',
 		effects: {},
 	},
-	{
-		id: '86',
+	'short-form': {
 		name: 'Short Form',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -1563,8 +1483,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 
-	{
-		id: '95',
+	'dull-blade': {
 		name: 'Dull Blade',
 		type: 'spell',
 		colors: [],
@@ -1572,8 +1491,7 @@ export const notImplementedCards: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '96',
+	'dull-sword': {
 		name: 'Dull Sword',
 		type: 'spell',
 		colors: [],
@@ -1581,8 +1499,7 @@ export const notImplementedCards: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '97',
+	'dull-spear': {
 		name: 'Dull Spear',
 		type: 'spell',
 		colors: [],
@@ -1590,8 +1507,7 @@ export const notImplementedCards: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '98',
+	whetstone: {
 		name: 'Whetstone',
 		type: 'field',
 		color: 'blue',
@@ -1608,8 +1524,7 @@ export const notImplementedCards: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '99',
+	'melting-forge': {
 		name: 'Melting Forge',
 		type: 'field',
 		color: 'red',
@@ -1617,24 +1532,21 @@ export const notImplementedCards: DbCard[] = [
 			'During the Draw Phase, you may discard up to 3 active “Dull” cards you control, and draw as many cards in addition to your normal draw',
 		effects: {},
 	},
-	{
-		id: '100',
+	'repurposing-field': {
 		name: 'Repurposing Field',
 		type: 'field',
 		color: 'green',
 		description: 'If Attacking with a “Dull” card, choose one spell on the field and add it back to its owner’s hand',
 		effects: {},
 	},
-	{
-		id: '101',
+	'balanced-grounds': {
 		name: 'Balanced Grounds',
 		type: 'field',
 		color: null,
 		description: '“Dull” Spells gain +10 Attack. If successfully damaged with a “Dull” spell, heal 10HP',
 		effects: {},
 	},
-	{
-		id: '102',
+	'healing-staff': {
 		name: 'Healing Staff',
 		type: 'spell',
 		colors: ['green'],
@@ -1642,8 +1554,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Every time a player draws a card, you gain 2 HP',
 		effects: {},
 	},
-	{
-		id: '103',
+	'greater-sword': {
 		name: 'Greater Sword',
 		type: 'spell',
 		colors: [],
@@ -1652,8 +1563,7 @@ export const notImplementedCards: DbCard[] = [
 			'You must have at least 3 cards in your hand to play this card. When this card is revealed, discard 2 cards from your hand.',
 		effects: {},
 	},
-	{
-		id: '104',
+	'chain-lightning': {
 		name: 'Chain Lightning',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -1661,8 +1571,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Deal 20 damage to your own wizard.',
 		effects: {},
 	},
-	{
-		id: '105',
+	earthquake: {
 		name: 'Earthquake',
 		type: 'spell',
 		colors: ['green', 'red'],
@@ -1670,8 +1579,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Deal 30 damage to your own wizard.',
 		effects: {},
 	},
-	{
-		id: '106',
+	'raise-the-stakes': {
 		name: 'Raise the Stakes',
 		type: 'field',
 		color: null,
@@ -1679,8 +1587,7 @@ export const notImplementedCards: DbCard[] = [
 			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
 		effects: {},
 	},
-	{
-		id: '108',
+	'lucky-clover-wand': {
 		name: 'Lucky Clover Wand',
 		type: 'spell',
 		colors: ['green', 'blue'],
@@ -1703,8 +1610,7 @@ export const notImplementedCards: DbCard[] = [
 		},
 		effects: {},
 	},
-	{
-		id: '109',
+	'last-resort': {
 		name: 'Last resort',
 		description: 'This spell has its attack equal to half of how much HP you are missing.',
 		type: 'spell',
@@ -1720,8 +1626,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 	// Potion and Phial archetype
-	{
-		id: '110',
+	apothecary: {
 		name: 'Apothecary',
 		description:
 			'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
@@ -1742,8 +1647,7 @@ export const notImplementedCards: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '111',
+	'empty-phial': {
 		name: 'Empty Phial',
 		type: 'spell',
 		colors: [],
@@ -1761,8 +1665,7 @@ export const notImplementedCards: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{
-		id: '112',
+	'poison-potion': {
 		name: 'Poison potion',
 		type: 'spell',
 		description:
@@ -1777,8 +1680,7 @@ export const notImplementedCards: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{
-		id: '113',
+	'flammable-phial': {
 		name: 'Flammable phial',
 		type: 'spell',
 		description:
@@ -1796,8 +1698,7 @@ export const notImplementedCards: DbCard[] = [
 			afterDamage: removeIfUsedInCombat,
 		},
 	},
-	{
-		id: '114',
+	'greedy-fire': {
 		name: 'Greedy Fire',
 		type: 'spell',
 		colors: ['red'],
@@ -1813,8 +1714,7 @@ export const notImplementedCards: DbCard[] = [
 			'On reveal, return the top card of the stack this card will be placed. This card’s attack is equal to the number of cards in your hand X 2',
 		effects: {},
 	},
-	{
-		id: '115',
+	'quenching-water': {
 		name: 'Quenching Water',
 		type: 'spell',
 		colors: ['blue'],
@@ -1826,8 +1726,7 @@ export const notImplementedCards: DbCard[] = [
 			'On reveal, discard cards from your hand. This card’s attack is equal to the number of cards discarded X 5',
 		effects: {},
 	},
-	{
-		id: '116',
+	'stable-earth': {
 		name: 'Stable Earth',
 		type: 'spell',
 		colors: ['green'],
@@ -1847,8 +1746,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
-	{
-		id: '117',
+	'down-field': {
 		name: 'Down Field',
 		type: 'field',
 		color: null,
@@ -1864,8 +1762,7 @@ export const notImplementedCards: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '118',
+	'double-down-field': {
 		name: 'Double Down Field',
 		type: 'field',
 		color: null,
@@ -1881,8 +1778,7 @@ export const notImplementedCards: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '119',
+	'triple-down-field': {
 		name: 'Triple Down Field',
 		type: 'field',
 		color: null,
@@ -1898,8 +1794,7 @@ export const notImplementedCards: DbCard[] = [
 			},
 		},
 	},
-	{
-		id: '120',
+	'lucky-7': {
 		name: 'Lucky 7',
 		type: 'spell',
 		colors: ['blue', 'green', 'red'],
@@ -1911,8 +1806,7 @@ export const notImplementedCards: DbCard[] = [
 		- 7 damage: Deal another 14 damage to the opponent.`,
 		effects: {},
 	},
-	{
-		id: '121',
+	'one-one-one': {
 		name: 'One one one',
 		type: 'spell',
 		colors: [],
@@ -1924,8 +1818,7 @@ export const notImplementedCards: DbCard[] = [
 		- 10 damage: Your opponent draws 1 card.`,
 		effects: {},
 	},
-	{
-		id: '122',
+	'three-two-wand-zero': {
 		name: 'Three two wand: Zero',
 		type: 'spell',
 		colors: [],
@@ -1937,8 +1830,7 @@ export const notImplementedCards: DbCard[] = [
 		- 0 damage: Discard the top field then return this card to your hand.`,
 		effects: {},
 	},
-	{
-		id: '123',
+	'even-the-odds': {
 		name: 'Even the Odds',
 		type: 'spell',
 		colors: ['blue'],
@@ -1946,8 +1838,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If this spell deals even damage, double the damage dealt. If it deals odd damage, discard this card.',
 		effects: {},
 	},
-	{
-		id: '124',
+	'odd-the-evens': {
 		name: 'Odd the Evens',
 		type: 'spell',
 		colors: ['red'],
@@ -1956,8 +1847,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 	// Archetype based on revealing a card from the opponent's hand and if it's a type or colour something happens. I want the theme to be about scrying or looking into the future or looking into a crystal ball
-	{
-		id: '125',
+	'seers-tent': {
 		name: 'Seer’s Tent',
 		type: 'field',
 		color: 'blue',
@@ -1968,8 +1858,7 @@ export const notImplementedCards: DbCard[] = [
 		- Colourless: Take 10 damage.`,
 		effects: {},
 	},
-	{
-		id: '126',
+	'crystal-ball': {
 		name: 'Crystal Ball',
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
@@ -1980,8 +1869,7 @@ export const notImplementedCards: DbCard[] = [
 		- Green: Deal 9 damage to the opponent and heal 9 HP.`,
 		effects: {},
 	},
-	{
-		id: '127',
+	'scrying-orb': {
 		name: 'Scrying Orb',
 		type: 'spell',
 		colors: ['blue'],
@@ -1989,8 +1877,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'Draw 2 cards and discard 1 card from your hand.',
 		effects: {},
 	},
-	{
-		id: '128',
+	'tarot-reading-the-fool': {
 		name: 'Tarot Reading: The Fool',
 		type: 'spell',
 		colors: ['green'],
@@ -1999,8 +1886,7 @@ export const notImplementedCards: DbCard[] = [
 			'Discard one card from your opponent’s hand. If the card is a BLUE card deal 12 damage to the opponent. If it is a GREEN card, return this card to your hand.',
 		effects: {},
 	},
-	{
-		id: '129',
+	'tarot-reading-the-magician': {
 		name: 'Tarot Reading: The Magician',
 		type: 'spell',
 		colors: ['red', 'blue'],
@@ -2011,8 +1897,7 @@ export const notImplementedCards: DbCard[] = [
 		- >= 8 cards: This cards attack is 30.`,
 		effects: {},
 	},
-	{
-		id: '130',
+	'tarot-reading-the-star': {
 		name: 'Tarot Reading: The Star',
 		type: 'spell',
 		colors: ['red', 'green'],
@@ -2021,8 +1906,7 @@ export const notImplementedCards: DbCard[] = [
 			'If you win combat with this card, draw 3 cards then discard this card. If you lose combat with this card, draw 1 card then discard this card.',
 		effects: {},
 	},
-	{
-		id: '131',
+	'tarot-reading-the-moon': {
 		name: 'Tarot Reading: The Moon',
 		type: 'spell',
 		colors: ['blue'],
@@ -2030,8 +1914,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'When you lose combat with this card, deal 5 damage to the oppenent.',
 		effects: {},
 	},
-	{
-		id: '132',
+	'tarot-reading-the-sun': {
 		name: 'Tarot Reading: The Sun',
 		type: 'spell',
 		colors: ['red', 'green', 'blue'],
@@ -2042,8 +1925,7 @@ export const notImplementedCards: DbCard[] = [
 		- Green: Choose a stack and discard the top card of that stack.`,
 		effects: {},
 	},
-	{
-		id: '133',
+	'tarot-reading-the-page-of-cups': {
 		name: 'Tarot Reading: The Page of Cups',
 		type: 'spell',
 		colors: ['blue'],
@@ -2052,8 +1934,7 @@ export const notImplementedCards: DbCard[] = [
 			'If this card is revealed, draw 1 card then select one card from your hand and place it at the bottom of your deck.',
 		effects: {},
 	},
-	{
-		id: '134',
+	'tarot-reading-the-knight-of-pentacles': {
 		name: 'Tarot Reading: The Knight of Pentacles',
 		type: 'spell',
 		colors: ['green'],
@@ -2061,8 +1942,7 @@ export const notImplementedCards: DbCard[] = [
 		description: '',
 		effects: {},
 	},
-	{
-		id: '135',
+	'tarot-reading-the-queen-of-swords': {
 		name: 'Tarot Reading: The Queen of Swords',
 		type: 'spell',
 		colors: [],
@@ -2070,8 +1950,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'All "Tarot Reading" cards in play deal an extra +5 damage for each "Tarot Reading" card in play.',
 		effects: {},
 	},
-	{
-		id: '136',
+	'tarot-reading-the-king-of-wands': {
 		name: 'Tarot Reading: The King of Wands',
 		type: 'spell',
 		colors: ['red'],
@@ -2082,16 +1961,14 @@ export const notImplementedCards: DbCard[] = [
 				- Green: Choose a stack and discard the top card of that stack.`,
 		effects: {},
 	},
-	{
-		id: '137',
+	'major-arcana': {
 		name: 'Major Arcana',
 		type: 'field',
 		color: null,
 		description: 'Cards without the word "of" in their names trigger their effects twice.',
 		effects: {},
 	},
-	{
-		id: '138',
+	'minor-arcana': {
 		name: 'Minor Arcana',
 		type: 'field',
 		color: null,
@@ -2099,8 +1976,7 @@ export const notImplementedCards: DbCard[] = [
 		effects: {},
 	},
 	// An archetype based on conjuring familiars in the shape of cute animals
-	{
-		id: '139',
+	'familiar-cat': {
 		name: 'Familiar: Cat',
 		type: 'spell',
 		colors: ['blue'],
@@ -2116,8 +1992,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If you have a "Familiar" card in the GREEN stack, this card has +5 attack.',
 		effects: {},
 	},
-	{
-		id: '140',
+	'familiar-owl': {
 		name: 'Familiar: Owl',
 		type: 'spell',
 		colors: ['green'],
@@ -2126,8 +2001,7 @@ export const notImplementedCards: DbCard[] = [
 			'If you have a "Familiar" card in the RED stack, this card has +5 healing. When this card is revealed, if you have a "Familiar" card in the BLUE stack, draw 1 card.',
 		effects: {},
 	},
-	{
-		id: '141',
+	'familiar-fox': {
 		name: 'Familiar: Fox',
 		type: 'spell',
 		colors: ['red'],
@@ -2136,8 +2010,7 @@ export const notImplementedCards: DbCard[] = [
 			'When this card is revealed, if you have a "Familiar" card in the BLUE stack, choose a stack and discard the top card of that stack. If you have a "Familiar" card in the BLUE stack, this card has +3 attack.',
 		effects: {},
 	},
-	{
-		id: '142',
+	'familiar-rabbit': {
 		name: 'Familiar: Rabbit',
 		type: 'spell',
 		colors: ['blue', 'red'],
@@ -2145,8 +2018,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If you have a "Familiar" card in the GREEN stack this card has +5 healing.',
 		effects: {},
 	},
-	{
-		id: '143',
+	'familiar-toad': {
 		name: 'Familiar: Toad',
 		type: 'spell',
 		colors: ['blue', 'green'],
@@ -2155,8 +2027,7 @@ export const notImplementedCards: DbCard[] = [
 			'When this card is revealed, if you have a "Familiar" card in the RED stack, deal 10 damage to the opponent.',
 		effects: {},
 	},
-	{
-		id: '144',
+	'familiar-bear': {
 		name: 'Familiar: Bear',
 		type: 'spell',
 		colors: ['green', 'red'],
@@ -2164,8 +2035,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If you have a "Familiar" card in the BLUE stack this card has +5 attack.',
 		effects: {},
 	},
-	{
-		id: '145',
+	'familiar-wolf': {
 		name: 'Familiar: Wolf',
 		type: 'spell',
 		colors: [],
@@ -2173,8 +2043,7 @@ export const notImplementedCards: DbCard[] = [
 		description: 'If you have another "Familiar" card in play, this card has +5 attack.',
 		effects: {},
 	},
-	{
-		id: '146',
+	'familiar-bat': {
 		name: 'Familiar: Bat',
 		type: 'spell',
 		colors: [],
@@ -2183,20 +2052,18 @@ export const notImplementedCards: DbCard[] = [
 			'When this card is revealed, if you have another "Familiar" card in play, draw 2 cards and discard 1 card from your hand.',
 		effects: {},
 	},
-	{
-		id: '147',
+	'enchanted-forest-of-familiars': {
 		name: 'Enchanted Forest of Familiars',
 		type: 'field',
 		color: 'red',
 		description: 'When a familiar is played, the owner draws 1 card.',
 		effects: {},
 	},
-	{
-		id: '148',
+	'moonlit-forest-of-familiars': {
 		name: 'Moonlit Forest of Familiars',
 		type: 'field',
 		color: null,
 		description: 'If there are 3 or more familiars in play, all familiars have +15 attack.',
 		effects: {},
 	},
-];
+};

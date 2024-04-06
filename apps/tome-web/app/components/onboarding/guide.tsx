@@ -2,8 +2,8 @@ import { IconBook } from '@tabler/icons-react';
 import { MotionValue, motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 
-import { DbCard } from '../../../../tome-api/src/features/engine/engine.game';
-import { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
+import type { GameCard } from '../../../../tome-api/src/features/engine/engine.game';
+import type { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { CardDataProvider } from '../../lib/card-data';
 import { Card } from '../game/card';
 
@@ -42,12 +42,40 @@ const steps = makeGuideSteps([
 	{ id: 'effects', heading: 'Abuse card effects', description: 'Card effects may turn the game around — have fun!' },
 ]);
 
-const cardData: Record<number, DbCard> = {
-	0: { id: '', colors: ['red'], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
-	1: { id: '', colors: ['green'], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
-	2: { id: '', colors: ['blue'], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
-	3: {
-		id: '',
+const cardData: Record<string, GameCard> = {
+	'0': {
+		id: '0',
+		key: 0,
+		colors: ['red'],
+		name: 'Test card',
+		attack: 10,
+		type: 'spell',
+		effects: {},
+		description: 'Test',
+	},
+	'1': {
+		id: '1',
+		key: 0,
+		colors: ['green'],
+		name: 'Test card',
+		attack: 10,
+		type: 'spell',
+		effects: {},
+		description: 'Test',
+	},
+	'2': {
+		id: '2',
+		key: 0,
+		colors: ['blue'],
+		name: 'Test card',
+		attack: 10,
+		type: 'spell',
+		effects: {},
+		description: 'Test',
+	},
+	'3': {
+		id: '3',
+		key: 0,
 		colors: ['red', 'green'],
 		name: 'Test card',
 		attack: 10,
@@ -55,7 +83,7 @@ const cardData: Record<number, DbCard> = {
 		effects: {},
 		description: 'Test',
 	},
-	4: { id: '', colors: [], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
+	'4': { id: '4', key: 0, colors: [], name: 'Test card', attack: 10, type: 'spell', effects: {}, description: 'Test' },
 };
 
 const progressRange = steps.map((_, i) => i / (steps.length - 1));

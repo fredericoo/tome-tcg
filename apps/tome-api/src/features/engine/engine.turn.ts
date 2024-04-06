@@ -1,5 +1,5 @@
 import { delay, exhaustive, invariant, noop } from '../../lib/utils';
-import { resolveCombatValue } from '../card/card.fns.utils';
+import { resolveCombatValue } from '../card/card.utils';
 import { Board, topOf } from './engine.board';
 import {
 	COLORS,

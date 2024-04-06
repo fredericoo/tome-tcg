@@ -60,15 +60,15 @@ const MiddleSection = () => {
 
 	return (
 		<section className={middleSectionClass({ active: activeColor })}>
-			{activeFieldCardData?.image && (
+			{activeFieldCard && isShownCard(activeFieldCard) && (
 				<motion.div
-					key={activeFieldCardData.image}
+					key={activeFieldCard.id}
 					initial={{ opacity: 0, scale: 0 }}
 					animate={{ opacity: 0.3, scale: 1 }}
 					className="pointer-events-none absolute inset-0 z-0"
 				>
 					<Image
-						src={getCardImageSrc(activeFieldCardData.image)}
+						src={getCardImageSrc(activeFieldCard.id)}
 						className=" h-full w-full scale-125 object-cover blur-xl"
 						srcWidth="100vw"
 					/>

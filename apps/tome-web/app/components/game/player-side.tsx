@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { COLORS, GameAction, Side, SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
-import { SelectStackMessageSchema } from '../../../../tome-api/src/features/game/game.pubsub';
+import type { SelectStackMessageSchema } from '../../../../tome-api/src/features/game/game.pubsub';
 import { invariant } from '../../../../tome-api/src/lib/utils';
 import { useGameStore } from '../../lib/game.utils';
 import { Badge } from '../badge';
