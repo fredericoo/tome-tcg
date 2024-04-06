@@ -72,35 +72,35 @@ export type TurnHooks<THasOwner extends boolean = false> = {
 	}) => AsyncGenerator<GameIteration>;
 	beforeDraw: (params: {
 		game: GameState;
-		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decreaseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCast: (params: {
 		game: GameState;
-		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decreaseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeReveal: (params: {
 		game: GameState;
-		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decreaseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeSpell: (params: {
 		game: GameState;
-		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decreaseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;
 	}) => AsyncGenerator<GameIteration>;
 	beforeCombat: (params: {
 		game: GameState;
-		actions: Omit<HookActions, 'increaseCombatDamage' | 'decraeseCombatDamage'>;
+		actions: Omit<HookActions, 'increaseCombatDamage' | 'decreaseCombatDamage'>;
 		ownerSide: THasOwner extends true ? Side : undefined;
 		opponentSide: THasOwner extends true ? Side : undefined;
 		thisCard: THasOwner extends true ? SpellCard : FieldCard;

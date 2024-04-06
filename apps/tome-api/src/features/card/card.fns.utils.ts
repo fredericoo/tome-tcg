@@ -11,11 +11,8 @@ export const removeIfUsedInCombat: TurnHooks<true>['afterDamage'] = async functi
 	if (!isUsedInCombat) return;
 	const thisCardStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
 	if (!thisCardStack) return;
-	yield* actions.vfx(effectVfx(thisCard));
-	yield* actions.discard({
-		card: thisCard,
-		from: game.board.players[ownerSide].stacks[thisCardStack],
-	});
+	yield* effectVfx(thisCard);
+	yield* actions.discard(thisCard);
 };
 
 export const resolveCombatValue = (combatValue: CombatValue, params: Parameters<DynamicCombatValue['getValue']>[0]) =>

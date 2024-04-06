@@ -699,7 +699,7 @@ export const deck: DbCard[] = [
 		description:
 			'If this spell is used in combat, prevents any damage from being caused to you this turn, then discard it.',
 		effects: {
-			beforeCombat: async function* ({ game, ownerSide, thisCard, actions }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				yield* effectVfx(thisCard);
