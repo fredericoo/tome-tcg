@@ -27,7 +27,7 @@ export const useGameActions = (game: GameState) => ({
 	vfx: async function* (vfx: VfxIteration) {
 		yield vfx;
 	},
-	increaseCombatDamage: function* ({
+	increaseCombatValue: function* ({
 		combatItem,
 		amount,
 	}: {
@@ -38,7 +38,7 @@ export const useGameActions = (game: GameState) => ({
 		if (newValue !== combatItem.value && combatItem.source) {
 			yield {
 				type: 'log',
-				text: `{{card}} had its damage increased from ${combatItem.value} to ${newValue}.`,
+				text: `{{card}} had its ${combatItem.type} increased from ${combatItem.value} to ${newValue}.`,
 				timestamp: Date.now(),
 				dynamic: { card: { type: 'card', card: combatItem.source } },
 			};

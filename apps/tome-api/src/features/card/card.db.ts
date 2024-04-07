@@ -400,7 +400,7 @@ export const cardDb = createCardDb({
 					if (combat.type !== 'damage') continue;
 					if (!combat.source.colors.includes('green')) continue;
 					yield* effectVfx(thisCard);
-					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 5 });
+					yield* actions.increaseCombatValue({ combatItem: combat, amount: 5 });
 				}
 			},
 		},
@@ -665,15 +665,14 @@ export const cardDb = createCardDb({
 		description:
 			'If this spell is chosen as an attack, any damage caused during combat is doubled. Remove this card from play after used in combat.',
 		effects: {
-			beforeDamage: async function* ({ game, ownerSide, thisCard }) {
+			beforeDamage: async function* ({ game, ownerSide, thisCard, actions }) {
 				const ownerSpell = game.turn[ownerSide].spellAttack;
 				if (ownerSpell?.card !== thisCard) return;
 				for (const combat of game.turn.combatStack) {
 					if (combat.type !== 'damage') continue;
-					combat.value *= 2;
+					yield* effectVfx(thisCard);
+					yield* actions.increaseCombatValue({ combatItem: combat, amount: combat.value });
 				}
-				yield* effectVfx(thisCard);
-				yield game;
 			},
 			afterDamage: removeIfUsedInCombat,
 		},
@@ -722,7 +721,7 @@ export const cardDb = createCardDb({
 					if (combat.type !== 'damage') continue;
 					if (!combat.source.colors.includes('green')) continue;
 					yield* effectVfx(thisCard);
-					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 5 });
+					yield* actions.increaseCombatValue({ combatItem: combat, amount: 5 });
 				}
 				yield game;
 			},
@@ -751,7 +750,7 @@ export const cardDb = createCardDb({
 					for (const combat of game.turn.combatStack) {
 						if (combat.target !== side && combat.type === 'damage') {
 							for (const spell of fireSpells) yield* effectVfx(spell);
-							yield* actions.increaseCombatDamage({ combatItem: combat, amount: extraDamage });
+							yield* actions.increaseCombatValue({ combatItem: combat, amount: extraDamage });
 						}
 					}
 				}
@@ -889,7 +888,7 @@ export const cardDb = createCardDb({
 					if (combat.type !== 'damage') continue;
 					if (combat.source.type !== 'spell') continue;
 					yield* effectVfx(thisCard);
-					yield* actions.increaseCombatDamage({ combatItem: combat, amount: 2 * fieldEffectStack });
+					yield* actions.increaseCombatValue({ combatItem: combat, amount: 2 * fieldEffectStack });
 				}
 			},
 		},
@@ -1537,7 +1536,7 @@ export const notImplementedCards: Record<string | number, DbCard> = {
 				for (const combatItem of game.turn.combatStack) {
 					if (combatItem.source?.name.toLowerCase().includes('dull') && combatItem.source.type === 'spell') {
 						yield* effectVfx(thisCard);
-						yield* actions.increaseCombatDamage({ combatItem, amount: 5 });
+						yield* actions.increaseCombatValue({ combatItem, amount: 5 });
 					}
 				}
 			},
