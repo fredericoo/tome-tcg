@@ -154,12 +154,14 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
 				});
 				if (card.effects.onReveal) {
+					console.log(card.name, 'HAS ONREVEAL');
 					yield* card.effects.onReveal({
 						actions,
 						game,
 						opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
 						ownerSide: side,
 						thisCard: card,
+						thisStack: stack,
 					});
 				}
 			}
@@ -186,6 +188,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 					opponentSide: undefined,
 					ownerSide: undefined,
 					thisCard: fieldCard,
+					thisStack: 'field',
 				});
 			}
 		}
@@ -422,11 +425,13 @@ async function* resolveCombatDamage(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
+				thisStack: 'field',
 			});
 			break;
 		}
 		case 'spell':
 			{
+				const card = combatItem.source;
 				const onDamage = combatItem.source.effects.onDealDamage;
 				if (!onDamage) break;
 				yield* onDamage({
@@ -434,7 +439,8 @@ async function* resolveCombatDamage(
 					game,
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
-					thisCard: combatItem.source,
+					thisCard: card,
+					thisStack: COLORS.find(stack => game.board.players[combatItem.target].stacks[stack].includes(card)),
 				});
 			}
 			break;
@@ -458,19 +464,22 @@ async function* resolveCombatHealing(
 				ownerSide: undefined,
 				opponentSide: undefined,
 				thisCard: combatItem.source,
+				thisStack: 'field',
 			});
 			break;
 		}
 		case 'spell':
 			{
-				const onHeal = combatItem.source.effects.onHeal;
+				const card = combatItem.source;
+				const onHeal = card.effects.onHeal;
 				if (!onHeal) break;
 				yield* onHeal({
 					actions,
 					game,
 					ownerSide: combatItem.target === 'sideA' ? 'sideB' : 'sideA',
 					opponentSide: combatItem.target,
-					thisCard: combatItem.source,
+					thisCard: card,
+					thisStack: COLORS.find(stack => game.board.players[combatItem.target].stacks[stack].includes(card)),
 				});
 			}
 			break;

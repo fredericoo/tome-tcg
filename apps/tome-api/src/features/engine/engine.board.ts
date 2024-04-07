@@ -1,6 +1,6 @@
 import { invariant } from '../../lib/utils';
 import { CardSlug, cardDb } from '../card/card.db';
-import { FieldCard, GameCard, Side, SpellCard, SpellColor } from './engine.game';
+import { COLORS, FieldCard, GameCard, GameState, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
 	phase: 'draw' | 'prepare' | 'reveal' | 'field-clash' | 'cast-spell' | 'spell-clash' | 'damage';
@@ -42,6 +42,13 @@ export const moveBottomCard = (from: GameCard[], to: GameCard[]) => {
 };
 
 export const topOf = <T>(arr: T[]) => arr[arr.length - 1];
+
+export function getCardStack(params: { card: SpellCard; game: GameState; side: Side }): SpellColor | undefined;
+export function getCardStack(params: { card: FieldCard; game: GameState; side: Side }): 'field';
+export function getCardStack({ card, game, side }: { card: FieldCard | SpellCard; game: GameState; side: Side }) {
+	if (card.type === 'field') return 'field';
+	return COLORS.find(stack => game.board.players[side].stacks[stack].includes(card));
+}
 
 export const createGameBoard = ({ decks }: { decks: Record<Side, CardSlug[]> }): Board => {
 	const cardKeys = Array.from({ length: decks.sideA.length + decks.sideB.length }, (_, i) => i + 1).sort(

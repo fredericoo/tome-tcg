@@ -235,7 +235,7 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 								<span className="text-[1vh] font-bold tracking-widest">EFFECT</span>
 								<div className="h-px flex-1 bg-current" />
 							</div>
-							<p className="overflow-hidden px-1 text-left text-sm leading-tight opacity-80">{data.description}</p>
+							<p className="overflow-hidden px-1 text-left text-xs leading-tight opacity-80">{data.description}</p>
 						</>
 					)}
 				</div>

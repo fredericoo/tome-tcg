@@ -1,6 +1,6 @@
 import { DistributiveOmit } from '../../lib/type-utils';
 import { invariant, noop } from '../../lib/utils';
-import { topOf } from '../engine/engine.board';
+import { getCardStack, topOf } from '../engine/engine.board';
 import { CARD_TYPES, COLORS, GameCard, SIDES, Side } from '../engine/engine.game';
 import { ACTIVATABLE_HOOKS, effectVfx } from '../engine/engine.hooks';
 import { removeIfUsedInCombat, resolveCombatValue } from './card.utils';
@@ -460,7 +460,14 @@ export const cardDb = createCardDb({
 					const effect = card.effects[hook];
 					if (!effect) continue;
 					yield* effectVfx(thisCard);
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({
+						game,
+						actions,
+						ownerSide,
+						opponentSide,
+						thisCard,
+						thisStack: getCardStack({ game, side: ownerSide, card }),
+					});
 				}
 			},
 		},
@@ -481,7 +488,14 @@ export const cardDb = createCardDb({
 					const effect = card.effects[hook];
 					if (!effect) continue;
 					yield* effectVfx(thisCard);
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({
+						game,
+						actions,
+						ownerSide,
+						opponentSide,
+						thisCard,
+						thisStack: getCardStack({ card, game, side: ownerSide }),
+					});
 				}
 			},
 		},
@@ -502,7 +516,14 @@ export const cardDb = createCardDb({
 					const effect = card.effects[hook];
 					if (!effect) continue;
 					yield* effectVfx(thisCard);
-					yield* effect({ game, actions, ownerSide, opponentSide, thisCard });
+					yield* effect({
+						game,
+						actions,
+						ownerSide,
+						opponentSide,
+						thisCard,
+						thisStack: getCardStack({ card, game, side: ownerSide }),
+					});
 				}
 			},
 		},
@@ -738,7 +759,7 @@ export const cardDb = createCardDb({
 			},
 		},
 	},
-	'nature-s-bounty': {
+	'natures-bounty': {
 		name: 'Nature’s Bounty',
 		type: 'field',
 		color: 'green',
@@ -953,7 +974,8 @@ export const cardDb = createCardDb({
 				const shouldActivate =
 					isMarbleFieldActive || topOf(game.board.players[ownerSide].stacks[thisStack]) === thisCard;
 				if (shouldActivate) {
-					const cardUnderThis = game.board.players[ownerSide].stacks[thisStack][1];
+					const thisIndex = game.board.players[ownerSide].stacks[thisStack].indexOf(thisCard);
+					const cardUnderThis = game.board.players[ownerSide].stacks[thisStack][thisIndex - 1];
 					if (cardUnderThis?.name.toLowerCase().includes('orb')) return 20;
 				}
 				return 11;
@@ -1004,8 +1026,7 @@ export const cardDb = createCardDb({
 		attack: 11,
 		description: 'When cast on top of another orb, discard the current field effect',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, thisCard }) {
-				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+			onReveal: async function* ({ game, actions, ownerSide, thisCard, thisStack }) {
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
 				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
@@ -1018,15 +1039,14 @@ export const cardDb = createCardDb({
 			},
 		},
 	},
-	'brown-orb': {
-		name: 'Brown Orb',
+	'terracotta-orb': {
+		name: 'Terracotta Orb',
 		type: 'spell',
 		colors: ['green', 'red'],
 		attack: 11,
 		description: 'When cast on top of another orb, choose a stack colour, and remove the top of that opponent’s stack.',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard }) {
-				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard, thisStack }) {
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
 				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';
@@ -1065,8 +1085,7 @@ export const cardDb = createCardDb({
 		attack: 11,
 		description: 'When cast on top of another orb, deals 10 damage to the opponent',
 		effects: {
-			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard }) {
-				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
+			onReveal: async function* ({ game, actions, ownerSide, opponentSide, thisCard, thisStack }) {
 				if (!thisStack) return;
 				const cardUnderThis = topOf(game.board.players[ownerSide].stacks[thisStack]);
 				const isMarbleFieldActive = topOf(game.board.field)?.id === 'marble-field';

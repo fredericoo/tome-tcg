@@ -1,5 +1,5 @@
 import { CardSlug } from '../card/card.db';
-import { Board, createGameBoard } from './engine.board';
+import { Board, createGameBoard, getCardStack } from './engine.board';
 import { useGameActions } from './engine.game.actions';
 import { TurnHooks } from './engine.hooks';
 import { LogIteration } from './engine.log';
@@ -180,6 +180,7 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'field' ? loserCard : undefined,
 				winnerSide,
+				thisStack: 'field',
 			});
 			break;
 		}
@@ -194,6 +195,7 @@ export async function* runClashEffects({
 				thisCard: winnerCard,
 				loserCard: loserCard?.type === 'spell' ? loserCard : undefined,
 				winnerSide,
+				thisStack: getCardStack({ game, card: winnerCard, side: winnerSide }),
 			});
 			break;
 		}
@@ -210,6 +212,7 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'field' ? loserCard : undefined,
 				loserSide,
+				thisStack: 'field',
 			});
 			break;
 		}
@@ -224,6 +227,7 @@ export async function* runClashEffects({
 				thisCard: loserCard,
 				winnerCard: winnerCard?.type === 'spell' ? loserCard : undefined,
 				loserSide,
+				thisStack: getCardStack({ game, card: loserCard, side: loserSide }),
 			});
 			break;
 		}
