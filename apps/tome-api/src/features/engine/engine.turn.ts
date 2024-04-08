@@ -204,17 +204,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				thisStack: stack,
 			});
 		}
-		const cardToMove = removeCard(game.board.players[side].casting[stack], card);
-		if (!cardToMove || cardToMove.type !== 'spell') {
-			yield log({
-				type: 'error',
-				text: `Card “${card.name}” not found in {{player}}’s casting ${stack} stack.`,
-				dynamic: { player: { type: 'player', side } },
-			});
-			continue;
-		}
-		game.board.players[side].stacks[stack].push(cardToMove);
-		yield game;
 	}
 
 	for (const { card, side, stack } of preparedFieldCards) {
@@ -297,6 +286,20 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			if (topField.sideA) yield* actions.discard(topField.sideA);
 			if (topField.sideB) yield* actions.discard(topField.sideB);
 		}
+	}
+
+	for (const { card, side, stack } of preparedSpellCards) {
+		const cardToMove = removeCard(game.board.players[side].casting[stack], card);
+		if (!cardToMove || cardToMove.type !== 'spell') {
+			yield log({
+				type: 'error',
+				text: `Card “${card.name}” not found in {{player}}’s casting ${stack} stack.`,
+				dynamic: { player: { type: 'player', side } },
+			});
+			continue;
+		}
+		game.board.players[side].stacks[stack].push(cardToMove);
+		yield game;
 	}
 
 	yield* triggerTurnHook({ hookName: 'beforeSpell', context: { actions, game } });
@@ -412,8 +415,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 			loserCard,
 			winnerCard,
 		});
-
-		yield* triggerTurnHook({ hookName: 'afterDamage', context: { actions, game } });
 	} else {
 		yield log({
 			type: 'log',
@@ -439,6 +440,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				exhaustive(combatItem);
 		}
 	}
+	yield* triggerTurnHook({ hookName: 'afterDamage', context: { actions, game } });
 
 	// end of turn
 	game.finishedTurns.push(game.turn);
