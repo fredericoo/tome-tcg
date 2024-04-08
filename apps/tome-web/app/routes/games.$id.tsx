@@ -50,7 +50,6 @@ const middleSectionClass = cva({
 const MiddleSection = () => {
 	const cardData = useCardData();
 	const field = useGameStore(s => s.state?.board.field);
-	const castPile = useGameStore(s => s.state?.board.castPile);
 	const sideACastingField = useGameStore(s => s.state?.board.sideA.casting.field);
 	const sideBCastingField = useGameStore(s => s.state?.board.sideB.casting.field);
 	const activeFieldCard = field?.at(-1);
@@ -75,9 +74,7 @@ const MiddleSection = () => {
 				</motion.div>
 			)}
 
-			<div className="flex flex-1 justify-end px-4">
-				<CardPile variant="scattered" cards={castPile ?? []} last={castPile?.length ?? 0} size="sm" />
-			</div>
+			<div className="flex flex-1"></div>
 
 			<CardPile cards={field ?? []} last={2} size="sm" />
 			{sideACastingField && (

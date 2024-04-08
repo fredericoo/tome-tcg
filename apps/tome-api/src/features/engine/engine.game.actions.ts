@@ -90,6 +90,17 @@ export const useGameActions = (game: GameState) => ({
 		game.board.discardPile.push(cardToMove);
 		yield game;
 	},
+	moveCard: function* (card: GameCard, to: GameCard[]): Generator<GameIteration> {
+		const from = findCardPile({ card, game });
+		if (from === null) {
+			console.warn('Card not found in any pile', card);
+			return;
+		}
+		const cardToMove = removeCard(from, card);
+		if (!cardToMove) return;
+		to.push(cardToMove);
+		yield game;
+	},
 	moveTopCard: function* (from: GameCard[], to: GameCard[]) {
 		moveTopCard(from, to);
 		yield game;

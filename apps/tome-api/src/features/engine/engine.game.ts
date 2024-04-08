@@ -3,7 +3,7 @@ import { Board, createGameBoard, getCardStack } from './engine.board';
 import { useGameActions } from './engine.game.actions';
 import { TurnHooks } from './engine.hooks';
 import { LogIteration } from './engine.log';
-import { handleTurn, initialiseTurn } from './engine.turn';
+import { Turn, handleTurn, initialiseTurn } from './engine.turn';
 import { PlayerActionMap } from './engine.turn.actions';
 import { VfxIteration } from './engine.vfx';
 
@@ -93,16 +93,6 @@ export type CombatStackItem =
 			target: Side;
 	  };
 
-type SpellAttack = { slot: SpellColor; card: SpellCard | null };
-export type Turn = { combatStack: CombatStackItem[] } & Record<
-	Side,
-	{
-		draws: GameCard[];
-		casts: Record<SpellColor, SpellCard[]> & { field: FieldCard[] };
-		spellAttack: SpellAttack | undefined;
-	}
->;
-
 const winnerColorMap: Record<SpellColor, SpellColor> = {
 	blue: 'red',
 	green: 'blue',
@@ -130,6 +120,7 @@ export const resolveFieldClash = ({
 	return { won: null };
 };
 
+export type SpellAttack = { slot: SpellColor; card: SpellCard | null };
 export const resolveSpellClash = ({
 	spellA,
 	spellB,

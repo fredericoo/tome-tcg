@@ -1,15 +1,18 @@
 import { delay, exhaustive, invariant, noop } from '../../lib/utils';
 import { resolveCombatValue } from '../card/card.utils';
-import { Board, topOf } from './engine.board';
+import { removeCard, topOf } from './engine.board';
 import {
 	COLORS,
 	CombatStackItem,
+	FieldCard,
+	GameCard,
 	GameIteration,
 	GameSettings,
 	GameState,
-	SIDES,
 	Side,
-	Turn,
+	SpellAttack,
+	SpellCard,
+	SpellColor,
 	resolveFieldClash,
 	resolveSpellClash,
 	runClashEffects,
@@ -20,13 +23,28 @@ import { log } from './engine.log';
 
 const initialiseTurnSide = (): Turn[Side] => ({
 	draws: [],
-	casts: { blue: [], green: [], red: [], field: [] },
 	spellAttack: undefined,
 });
 
+export type Turn = {
+	phase: 'draw' | 'prepare' | 'reveal' | 'field-clash' | 'cast-spell' | 'spell-clash' | 'damage';
+	combatStack: CombatStackItem[];
+	prepared: Array<
+		{ card: SpellCard; stack?: SpellColor; side: Side } | { card: FieldCard; stack?: 'field'; side: Side }
+	>;
+} & Record<
+	Side,
+	{
+		draws: GameCard[];
+		spellAttack: SpellAttack | undefined;
+	}
+>;
+
 export const initialiseTurn = () => {
 	const turn: Turn = {
+		phase: 'draw',
 		combatStack: [],
+		prepared: [],
 		sideA: initialiseTurnSide(),
 		sideB: initialiseTurnSide(),
 	};
@@ -43,8 +61,8 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	const { triggerTurnHook } = useTriggerHooks(game);
 	const actions = useGameActions(game);
 
-	async function* setPhase(phase: Board['phase']) {
-		game.board.phase = phase;
+	async function* setPhase(phase: GameState['turn']['phase']) {
+		game.turn.phase = phase;
 		yield game;
 		await delay(settings.phaseDelayMs);
 	}
@@ -64,7 +82,8 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 
 	yield* triggerTurnHook({ hookName: 'beforeCast', context: { actions, game } });
 	yield* setPhase('prepare');
-	// Spooky cast from hand action with multi-threading state LOL
+
+	// Allows user to select from their hand to prepare
 	yield* actions.playerAction({
 		sides: ['sideA', 'sideB'],
 		timeoutMs: settings.castTimeoutMs,
@@ -80,117 +99,139 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 				availableTypes: ['field', 'spell'],
 			},
 			onAction: async function* ({ side, cardKeys }) {
-				const cardKey = cardKeys[0];
-				if (!cardKey) return;
-
-				const hand = game.board.players[side].hand;
-				const index = hand.findIndex(handCard => handCard.key === cardKey);
-				const card = hand[index];
-				invariant(index !== -1 && card, `Card key “${cardKey}” not found in ${side}’s hand`);
-
-				if (card.type === 'field') {
-					hand.splice(index, 1);
-					game.board.players[side].casting.field.push(card);
-					game.turn[side].casts.field.push(card);
-					return;
+				for (const cardKey of cardKeys) {
+					const card = game.board.players[side].hand.find(handCard => handCard.key === cardKey);
+					if (!card) continue;
+					switch (card.type) {
+						case 'field':
+							game.turn.prepared.push({ card, side });
+							break;
+						case 'spell':
+							game.turn.prepared.push({ card, side });
+					}
 				}
-
-				if (card.colors.length === 1) {
-					// cast to the card’s colour
-					const stack = card.colors[0];
-					invariant(stack, `Card “${card.name}” has undefined color`);
-					hand.splice(index, 1);
-					game.board.players[side].casting[stack].push(card);
-					game.turn[side].casts[stack].push(card);
-					yield game;
-					return;
-				}
-				if (card.colors.length !== 1) {
-					// if no color, cast to any stack
-					const stacks = card.colors.length > 0 ? card.colors : COLORS;
-
-					yield* actions.playerAction({
-						sides: [side],
-						onTimeout: noop,
-						timeoutMs: 100000,
-						action: {
-							type: 'select_spell_stack',
-							config: {
-								skippable: false,
-								availableStacks: stacks,
-								min: 1,
-								max: 1,
-								from: 'self',
-								message: `Select a stack to cast “${card.name}” to.`,
-							},
-							onAction: function* ({ stacks, side }) {
-								const stack = stacks[0];
-								invariant(stack, 'Expected exactly one stack');
-								hand.splice(index, 1);
-								game.board.players[side].casting[stack].push(card);
-								game.turn[side].casts[stack].push(card);
-								yield game;
-							},
-						},
-					});
-					return;
-				}
-				throw new Error(`Invalid cast ${card.name}`);
+				yield game;
 			},
 		},
 	});
 
+	// check each card being prepared and place them on the casting slots
+	for (const preparing of game.turn.prepared) {
+		const { card, side } = preparing;
+		const indexInHand = game.board.players[side].hand.findIndex(handCard => handCard.key === card.key);
+		if (indexInHand === -1) {
+			game.turn.prepared.slice(game.turn.prepared.indexOf(preparing), 1);
+			yield log({
+				type: 'error',
+				text: `“${card.name}” not found in {{player}}’s hand`,
+				dynamic: { player: { type: 'player', side } },
+			});
+			continue;
+		}
+
+		if (card.type === 'field') {
+			game.board.players[side].hand.splice(indexInHand, 1);
+			game.board.players[side].casting.field.push(card);
+			preparing.stack = 'field';
+			yield game;
+			continue;
+		}
+
+		if (card.colors.length === 1) {
+			// cast to the card’s first and only colour
+			const stack = card.colors[0];
+			invariant(stack, `Card “${card.name}” has invalid color`);
+			game.board.players[side].hand.splice(indexInHand, 1);
+
+			game.board.players[side].casting[stack].push(card);
+			preparing.stack = stack;
+			yield game;
+			continue;
+		}
+
+		if (card.colors.length !== 1) {
+			// if no color, cast to any stack
+			const stacks = card.colors.length > 0 ? card.colors : COLORS;
+
+			yield* actions.playerAction({
+				sides: [side],
+				onTimeout: noop,
+				timeoutMs: settings.castTimeoutMs,
+				action: {
+					type: 'select_spell_stack',
+					config: {
+						skippable: false,
+						availableStacks: stacks,
+						min: 1,
+						max: 1,
+						from: 'self',
+						message: `Select a stack to cast “${card.name}” to.`,
+					},
+					onAction: function* ({ stacks, side }) {
+						const stack = stacks[0];
+						invariant(stack, 'Expected exactly one stack');
+						game.board.players[side].hand.splice(indexInHand, 1);
+						game.board.players[side].casting[stack].push(card);
+						preparing.stack = stack;
+						yield game;
+					},
+				},
+			});
+		}
+	}
+
 	yield* triggerTurnHook({ hookName: 'beforeReveal', context: { actions, game } });
 	yield* setPhase('reveal');
 
+	const preparedFieldCards = game.turn.prepared.filter((p): p is typeof p & { stack: 'field' } => p.stack === 'field');
+	const preparedSpellCards = game.turn.prepared.filter(
+		(p): p is typeof p & { stack: SpellColor } => p.stack !== undefined && COLORS.includes(p.stack),
+	);
 	// Reveals spells cast and moves them into the slots
-	for (const side of SIDES) {
-		for (const stack of COLORS) {
-			const castCards = game.turn[side].casts[stack];
-			for (const card of castCards) {
-				yield log({
-					type: 'log',
-					text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
-					dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
-				});
-				if (card.effects.onReveal) {
-					console.log(card.name, 'HAS ONREVEAL');
-					yield* card.effects.onReveal({
-						actions,
-						game,
-						opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
-						ownerSide: side,
-						thisCard: card,
-						thisStack: stack,
-					});
-				}
-			}
-			while (game.board.players[side].casting[stack].length > 0) {
-				yield* actions.moveTopCard(game.board.players[side].casting[stack], game.board.players[side].stacks[stack]);
-				await delay(250);
-			}
-		}
-	}
-	yield game;
-
-	// trigger onReveal for field cards
-	for (const side of SIDES) {
-		for (const fieldCard of game.turn[side].casts.field) {
-			yield log({
-				type: 'log',
-				text: `{{player}} reveals they’ll will try to set the field effect to {{card}}`,
-				dynamic: { player: { type: 'player', side }, card: { type: 'card', card: fieldCard } },
+	for (const { card, side, stack } of preparedSpellCards) {
+		yield log({
+			type: 'log',
+			text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
+			dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
+		});
+		if (card.effects.onReveal) {
+			yield* card.effects.onReveal({
+				actions,
+				game,
+				opponentSide: side === 'sideA' ? 'sideB' : 'sideA',
+				ownerSide: side,
+				thisCard: card,
+				thisStack: stack,
 			});
-			if (fieldCard.effects.onReveal) {
-				yield* fieldCard.effects.onReveal({
-					actions,
-					game,
-					opponentSide: undefined,
-					ownerSide: undefined,
-					thisCard: fieldCard,
-					thisStack: 'field',
-				});
-			}
+		}
+		const cardToMove = removeCard(game.board.players[side].casting[stack], card);
+		if (!cardToMove || cardToMove.type !== 'spell') {
+			yield log({
+				type: 'error',
+				text: `Card “${card.name}” not found in {{player}}’s casting ${stack} stack.`,
+				dynamic: { player: { type: 'player', side } },
+			});
+			continue;
+		}
+		game.board.players[side].stacks[stack].push(cardToMove);
+		yield game;
+	}
+
+	for (const { card, side, stack } of preparedFieldCards) {
+		yield log({
+			type: 'log',
+			text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
+			dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
+		});
+		if (card.effects.onReveal) {
+			yield* card.effects.onReveal({
+				actions,
+				game,
+				opponentSide: undefined,
+				ownerSide: undefined,
+				thisCard: card,
+				thisStack: 'field',
+			});
 		}
 	}
 

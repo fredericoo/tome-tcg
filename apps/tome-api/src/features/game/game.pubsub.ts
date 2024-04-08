@@ -9,7 +9,6 @@ import { delay, exhaustive, invariant, pill, takeFirstOrThrow } from '../../lib/
 import { withUser } from '../auth/auth.plugin';
 import { cardDb } from '../card/card.db';
 import { resolveCombatValue } from '../card/card.utils';
-import { Board } from '../engine/engine.board';
 import {
 	COLORS,
 	CombatStackItem,
@@ -25,6 +24,7 @@ import {
 	getCardColors,
 } from '../engine/engine.game';
 import { SanitisedLogIteration, sanitiseLog } from '../engine/engine.log';
+import { Turn } from '../engine/engine.turn';
 import { SanitisedVfxIteration } from '../engine/engine.vfx';
 import { getGameById } from './game.api';
 
@@ -51,8 +51,7 @@ export type SanitisedGameState = {
 	type: 'state';
 	side: Side;
 	board: {
-		castPile: PubSubHiddenCard[];
-		phase: Board['phase'];
+		phase: Turn['phase'];
 		field: PubSubCard[];
 		discardPile: PubSubCard[];
 	} & Record<
@@ -125,10 +124,9 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 				type: 'state',
 				side: playerSide,
 				board: {
-					castPile: [],
 					discardPile: [],
 					field: originalIteration.board.field.map(showFieldCard),
-					phase: originalIteration.board.phase,
+					phase: originalIteration.turn.phase,
 					sideA: {
 						hp: originalIteration.board.players.sideA.hp,
 						casting: { blue: [], field: [], green: [], red: [] },
@@ -163,9 +161,9 @@ const sanitiseIteration = (playerSide: Side, originalIteration: GameIteration): 
 
 				for (const stack of STACKS_AND_FIELD) {
 					const casting = originalIteration.board.players[side].casting[stack];
-					switch (originalIteration.board.phase) {
+					switch (originalIteration.turn.phase) {
 						case 'prepare':
-							iteration.board.castPile.push(...casting.map(hideCard));
+							iteration.board[side].casting[stack].push(...casting.map(hideCard));
 							break;
 						case 'reveal':
 						case 'field-clash':

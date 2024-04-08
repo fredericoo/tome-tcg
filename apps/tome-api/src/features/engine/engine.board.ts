@@ -3,7 +3,6 @@ import { CardSlug, cardDb } from '../card/card.db';
 import { COLORS, FieldCard, GameCard, GameState, Side, SpellCard, SpellColor } from './engine.game';
 
 export type Board = {
-	phase: 'draw' | 'prepare' | 'reveal' | 'field-clash' | 'cast-spell' | 'spell-clash' | 'damage';
 	players: Record<
 		Side,
 		{
@@ -77,7 +76,6 @@ export const createGameBoard = ({ decks }: { decks: Record<Side, CardSlug[]> }):
 	};
 
 	return {
-		phase: 'draw',
 		field: [],
 		discardPile: [],
 		players: {

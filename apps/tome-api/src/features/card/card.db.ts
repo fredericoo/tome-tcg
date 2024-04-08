@@ -1312,6 +1312,162 @@ export const cardDb = createCardDb({
 			},
 		},
 	},
+	// Potion and Phial archetype
+	apothecary: {
+		name: 'Apothecary',
+		description:
+			'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
+		type: 'field',
+		color: 'green',
+		effects: {
+			beforeReveal: async function* ({ game, actions }) {
+				for (const { card, side } of game.turn.prepared) {
+					if (card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('phial')) {
+						yield* effectVfx(card);
+						yield* actions.healPlayer({ amount: 10, side });
+					}
+				}
+			},
+		},
+	},
+	'empty-phial': {
+		name: 'Empty Phial',
+		type: 'spell',
+		colors: [],
+		attack: 5,
+		description:
+			'At the start of each turn, if the top field is BLUE, heal 10 HP. If using this card in combat, discard it.',
+		effects: {
+			beforeDraw: async function* ({ game, actions, ownerSide, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'blue') {
+					yield* effectVfx(thisCard);
+					yield* actions.healPlayer({ side: ownerSide, amount: 10 });
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	'poison-potion': {
+		name: 'Poison potion',
+		type: 'spell',
+		description:
+			'At the start of each turn, the opponent player takes 2 damage. If using this card in combat, discard it.',
+		colors: ['blue', 'green'],
+		attack: 6,
+		effects: {
+			beforeDraw: async function* ({ actions, ownerSide, thisCard }) {
+				yield* effectVfx(thisCard);
+				yield* actions.damagePlayer({ side: ownerSide === 'sideA' ? 'sideB' : 'sideA', amount: 2 });
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	'flammable-phial': {
+		name: 'Flammable phial',
+		type: 'spell',
+		description:
+			'If this spell deals damage, removes the top field if it’s green. If using this card in combat, discard it.',
+		colors: ['blue', 'red'],
+		attack: 16,
+		effects: {
+			onDealDamage: async function* ({ actions, game, thisCard }) {
+				const topField = topOf(game.board.field);
+				if (topField?.color === 'green') {
+					yield* effectVfx(thisCard);
+					yield* actions.discard(topField);
+				}
+			},
+			afterDamage: removeIfUsedInCombat,
+		},
+	},
+	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
+	'down-field': {
+		name: 'Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 1',
+		effects: {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						yield* effectVfx(thisCard);
+						yield* actions.decreaseCombatDamage({ combatItem, amount: 1 });
+					}
+				}
+			},
+		},
+	},
+	'double-down-field': {
+		name: 'Double Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 2',
+		effects: {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						yield* effectVfx(thisCard);
+						yield* actions.decreaseCombatDamage({ combatItem, amount: 2 });
+					}
+				}
+			},
+		},
+	},
+	'triple-down-field': {
+		name: 'Triple Down Field',
+		type: 'field',
+		color: null,
+		description: 'Spells have their attack reduced by 3',
+		effects: {
+			beforeDamage: async function* ({ game, actions, thisCard }) {
+				for (const combatItem of game.turn.combatStack) {
+					if (combatItem.source?.type === 'spell') {
+						yield* effectVfx(thisCard);
+						yield* actions.decreaseCombatDamage({ combatItem, amount: 3 });
+					}
+				}
+			},
+		},
+	},
+	'lucky-clover-wand': {
+		name: 'Lucky Clover Wand',
+		type: 'spell',
+		colors: ['green', 'blue'],
+		description: 'if the sum of the attack of your other stacks is divisible by 7, this card has +28 attack',
+		attack: {
+			label: '7',
+			getValue: ({ game, ownerSide, thisCard, opponentSide }) => {
+				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
+				if (!thisStack) return 7;
+				const otherStackCards = COLORS.filter(stack => stack !== thisStack)
+					.map(stack => game.board.players[ownerSide].stacks[stack])
+					.map(topOf)
+					.filter(Boolean);
+				const sum = otherStackCards.reduce(
+					(acc, card) => acc + resolveCombatValue(card.attack, { game, opponentSide, ownerSide, thisCard: card }),
+					0,
+				);
+				return sum % 7 === 0 ? 35 : 7;
+			},
+		},
+		effects: {},
+	},
+	'last-resort': {
+		name: 'Last resort',
+		description: 'This spell has its attack equal to half of how much HP you are missing.',
+		type: 'spell',
+		colors: ['red'],
+		attack: {
+			label: 'X/2',
+			getValue: ({ game, ownerSide }) => {
+				const owner = game.board.players[ownerSide];
+				const missingHp = 100 - owner.hp;
+				return Math.floor(missingHp / 2);
+			},
+		},
+		effects: {},
+	},
 });
 
 export const notImplementedCards: Record<string | number, DbCard> = {
@@ -1391,7 +1547,6 @@ export const notImplementedCards: Record<string | number, DbCard> = {
 		description: 'Spells have no effects',
 		effects: {},
 	},
-
 	'hilltop-observatory': {
 		name: 'Hilltop observatory',
 		type: 'field',
@@ -1605,117 +1760,7 @@ export const notImplementedCards: Record<string | number, DbCard> = {
 			'All spells have 2x attack. After each combat, each player chooses a stack and removes that spell from play. If no spells are removed from play this way, discard Raise the Stakes.',
 		effects: {},
 	},
-	'lucky-clover-wand': {
-		name: 'Lucky Clover Wand',
-		type: 'spell',
-		colors: ['green', 'blue'],
-		description: 'if the sum of the attack of your other stacks is divisible by 7, this card has +28 attack',
-		attack: {
-			label: '7',
-			getValue: ({ game, ownerSide, thisCard, opponentSide }) => {
-				const thisStack = COLORS.find(stack => game.board.players[ownerSide].stacks[stack].includes(thisCard));
-				if (!thisStack) return 7;
-				const otherStackCards = COLORS.filter(stack => stack !== thisStack)
-					.map(stack => game.board.players[ownerSide].stacks[stack])
-					.map(topOf)
-					.filter(Boolean);
-				const sum = otherStackCards.reduce(
-					(acc, card) => acc + resolveCombatValue(card.attack, { game, opponentSide, ownerSide, thisCard: card }),
-					0,
-				);
-				return sum % 7 === 0 ? 35 : 7;
-			},
-		},
-		effects: {},
-	},
-	'last-resort': {
-		name: 'Last resort',
-		description: 'This spell has its attack equal to half of how much HP you are missing.',
-		type: 'spell',
-		colors: ['red'],
-		attack: {
-			label: 'X/2',
-			getValue: ({ game, ownerSide }) => {
-				const owner = game.board.players[ownerSide];
-				const missingHp = 100 - owner.hp;
-				return Math.floor(missingHp / 2);
-			},
-		},
-		effects: {},
-	},
-	// Potion and Phial archetype
-	apothecary: {
-		name: 'Apothecary',
-		description:
-			'For every “Potion” or “Phial” card you prepare, heal 10 HP. "Potion" and "Phial" cards are not discarded after use.',
-		type: 'field',
-		color: 'green',
-		effects: {
-			beforeReveal: async function* ({ game, actions }) {
-				let hpToHeal = 0;
-				for (const side of SIDES) {
-					for (const stack of COLORS) {
-						const preparingPotionsCount = game.turn[side].casts[stack].filter(
-							card => card.name.toLowerCase().includes('potion') || card.name.toLowerCase().includes('phial'),
-						).length;
-						hpToHeal += preparingPotionsCount * 10;
-					}
-					yield* actions.healPlayer({ amount: hpToHeal, side });
-				}
-			},
-		},
-	},
-	'empty-phial': {
-		name: 'Empty Phial',
-		type: 'spell',
-		colors: [],
-		attack: 5,
-		description:
-			'At the start of each turn, if the top field is BLUE, heal 10 HP. If using this card in combat, discard it.',
-		effects: {
-			beforeDraw: async function* ({ game, actions, ownerSide, thisCard }) {
-				const topField = topOf(game.board.field);
-				if (topField?.color === 'blue') {
-					yield* effectVfx(thisCard);
-					yield* actions.healPlayer({ side: ownerSide, amount: 10 });
-				}
-			},
-			afterDamage: removeIfUsedInCombat,
-		},
-	},
-	'poison-potion': {
-		name: 'Poison potion',
-		type: 'spell',
-		description:
-			'At the start of each turn, the opponent player takes 2 damage. If using this card in combat, discard it.',
-		colors: ['blue', 'green'],
-		attack: 6,
-		effects: {
-			beforeDraw: async function* ({ actions, ownerSide, thisCard }) {
-				yield* effectVfx(thisCard);
-				yield* actions.damagePlayer({ side: ownerSide === 'sideA' ? 'sideB' : 'sideA', amount: 2 });
-			},
-			afterDamage: removeIfUsedInCombat,
-		},
-	},
-	'flammable-phial': {
-		name: 'Flammable phial',
-		type: 'spell',
-		description:
-			'If this spell deals damage, removes the top field if it’s green. If using this card in combat, discard it.',
-		colors: ['blue', 'red'],
-		attack: 16,
-		effects: {
-			onDealDamage: async function* ({ actions, game, thisCard }) {
-				const topField = topOf(game.board.field);
-				if (topField?.color === 'green') {
-					yield* effectVfx(thisCard);
-					yield* actions.discard(topField);
-				}
-			},
-			afterDamage: removeIfUsedInCombat,
-		},
-	},
+
 	'greedy-fire': {
 		name: 'Greedy Fire',
 		type: 'spell',
@@ -1763,55 +1808,7 @@ export const notImplementedCards: Record<string | number, DbCard> = {
 		description: 'If all stacks have the same number of cards, this card has 30 attack. Otherwise it has 5 attack',
 		effects: {},
 	},
-	// Archetype based on reducing the attack of your cards and if you do damage with particular numbers something happens
-	'down-field': {
-		name: 'Down Field',
-		type: 'field',
-		color: null,
-		description: 'Spells have their attack reduced by 1',
-		effects: {
-			beforeDamage: async function* ({ game }) {
-				for (const combatItem of game.turn.combatStack) {
-					if (combatItem.source?.type === 'spell') {
-						combatItem.value -= 1;
-					}
-				}
-				yield game;
-			},
-		},
-	},
-	'double-down-field': {
-		name: 'Double Down Field',
-		type: 'field',
-		color: null,
-		description: 'Spells have their attack reduced by 2',
-		effects: {
-			beforeDamage: async function* ({ game }) {
-				for (const combatItem of game.turn.combatStack) {
-					if (combatItem.source?.type === 'spell') {
-						combatItem.value -= 2;
-					}
-				}
-				yield game;
-			},
-		},
-	},
-	'triple-down-field': {
-		name: 'Triple Down Field',
-		type: 'field',
-		color: null,
-		description: 'Spells have their attack reduced by 3',
-		effects: {
-			beforeDamage: async function* ({ game }) {
-				for (const combatItem of game.turn.combatStack) {
-					if (combatItem.source?.type === 'spell') {
-						combatItem.value -= 3;
-					}
-				}
-				yield game;
-			},
-		},
-	},
+
 	'lucky-7': {
 		name: 'Lucky 7',
 		type: 'spell',
