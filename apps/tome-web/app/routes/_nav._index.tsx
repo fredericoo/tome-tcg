@@ -60,6 +60,7 @@ export default function Page() {
 											className="first-of-type:rounded-t-4 last-of-type:rounded-b-4 hover:bg-neutral-1 active:bg-neutral-2 [&:not(:last-of-type)]:border-b"
 										>
 											<Link
+												prefetch="render"
 												to={`/games/${game.id}`}
 												className="fr ease-expo-out pointer-fine:hover:px-6 flex items-center gap-4 rounded-[inherit] p-4 transition-all duration-300"
 											>

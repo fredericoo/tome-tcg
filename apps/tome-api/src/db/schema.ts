@@ -1,12 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-export const cards = sqliteTable('cards', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
-	name: text('name').notNull(),
-	description: text('description').notNull(),
-});
-
 export const users = sqliteTable('user', {
 	id: text('id', {
 		length: 255,
@@ -44,4 +38,21 @@ export const games = sqliteTable('games', {
 	spellTimeoutMs: integer('cast_timeout_ms').notNull().default(60000),
 	phaseDelayMs: integer('phase_delay_ms').notNull().default(1000),
 	startingCards: integer('starting_cards').notNull().default(2),
+});
+
+export const decks = sqliteTable('decks', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	userId: text('user_id', {
+		length: 255,
+	})
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	cards: text('cards').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
 });

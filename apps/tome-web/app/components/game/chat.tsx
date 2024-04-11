@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import reactStringReplace from 'react-string-replace';
 
 import type { Side } from '../../../../tome-api/src/features/engine/engine.game';
@@ -55,12 +56,18 @@ const formatter = new Intl.DateTimeFormat('en', { timeStyle: 'medium' });
 
 export const Chat = ({ sides }: { sides: ParseableSides }) => {
 	const chat = useGameStore(s => s.chat);
+	const chatRef = useRef<HTMLUListElement>(null);
+
+	useEffect(() => {
+		if (!chatRef.current) return;
+		chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });
+	}, [chat]);
 
 	return (
 		<div className="rounded-2 absolute bottom-[18vh] left-2 z-50 flex h-32 w-full max-w-md flex-shrink grow-0 flex-col bg-black/10">
-			<ul className="h-full flex-1 snap-both snap-proximity overflow-y-scroll p-4">
+			<ul ref={chatRef} className="hide-scrollbars h-full flex-1 scroll-my-4 overflow-y-scroll scroll-smooth p-4">
 				{chat.map((message, i) => (
-					<li key={`${i}-${message.timestamp}`} className="body-sm flex items-start gap-2 py-0.5 last-of-type:snap-end">
+					<li key={`${i}-${message.timestamp}`} className="body-sm flex items-start gap-2 py-0.5">
 						<time className="flex-none tabular-nums opacity-30">{formatter.format(message.timestamp)}</time>
 						<div>
 							<ChatMessage log={message} sides={sides} />

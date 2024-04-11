@@ -606,7 +606,7 @@ export const cardDb = createCardDb({
 		type: 'spell',
 		colors: ['red', 'blue'],
 		attack: {
-			label: 'X',
+			label: 'X+Y',
 			getValue({ game, ownerSide, opponentSide, thisCard }) {
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);
 				if (!thisStack) return 0;
@@ -625,7 +625,7 @@ export const cardDb = createCardDb({
 			},
 		},
 		description:
-			'X Attack, where X is the sum of the two other spell slots attacks. When this spell deals damage, discard it.',
+			'X+Y attack, where X and Y are the attack values of the other two stacks. When this spell deals damage, discard it.',
 		effects: {
 			onDealDamage: async function* ({ actions, game, thisCard, ownerSide }) {
 				const thisStack = COLORS.find(stack => topOf(game.board.players[ownerSide].stacks[stack]) === thisCard);

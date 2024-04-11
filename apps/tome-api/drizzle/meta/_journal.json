@@ -15,6 +15,20 @@
       "when": 1711826555695,
       "tag": "0001_safe_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1712602988235,
+      "tag": "0002_naive_scalphunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1712603419549,
+      "tag": "0003_next_thena",
+      "breakpoints": true
     }
   ]
 }

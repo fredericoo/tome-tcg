@@ -98,7 +98,7 @@ const OpponentHand = ({ progress }: { progress: MotionValue<number> }) => {
 				const y = Math.abs(rotate) * fanRatio * 5;
 				return (
 					<motion.div style={{ y, rotate }} key={i} className="-mx-4 h-32">
-						<Card card={{ key: 1 }} size="md" />
+						<Card face="front" pubsubCard={{ key: 1 }} size="md" />
 					</motion.div>
 				);
 			})}
@@ -145,7 +145,7 @@ const OwnerHand = ({ progress }: { progress: MotionValue<number> }) => {
 
 				return (
 					<motion.div style={{ y, rotateZ }} key={i} className="-mx-4 h-32">
-						<Card card={pubsubCard} size="md" />
+						<Card face="front" pubsubCard={pubsubCard} size="md" />
 					</motion.div>
 				);
 			})}

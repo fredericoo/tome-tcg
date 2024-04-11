@@ -4,7 +4,7 @@ import { CSSProperties, ComponentPropsWithoutRef } from 'react';
 
 import type { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { Badge } from '../badge';
-import { Card, CardProps, cardSizeToClass } from './card';
+import { CardProps, GameCard, cardSizeToClass } from './card';
 
 interface CardPileProps extends ComponentPropsWithoutRef<'div'> {
 	cards: PubSubCard[];
@@ -33,7 +33,7 @@ export const CardPile = ({ cards, last = 5, size = 'md', variant = 'stack' }: Ca
 							key={cardRef.key}
 							style={getVariantStyle[variant](i)}
 						>
-							<Card size={size} card={cardRef} />
+							<GameCard size={size} info={cardRef} />
 						</li>
 					))
 				}

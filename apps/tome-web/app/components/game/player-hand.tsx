@@ -6,7 +6,7 @@ import { flushSync } from 'react-dom';
 import type { SelectFromHandMessageSchema } from '../../../../tome-api/src/features/game/game.pubsub';
 import { useGameStore } from '../../lib/game.utils';
 import { Button } from '../button';
-import { Card } from './card';
+import { GameCard } from './card';
 import { opposingSide } from './player-side';
 
 interface PlayerHandProps {
@@ -21,7 +21,7 @@ export function PlayerHand({ relative, onSelectFromHand }: PlayerHandProps) {
 		s => s.state?.board[{ self: s.state.side, opponent: opposingSide(s.state.side) }[relative]].hand,
 	);
 
-	const [cardKeysSelectedFromHand, setCardKeysSelectedFromHand] = useState<Set<number>>(new Set());
+	const [cardKeysSelectedFromHand, setCardKeysSelectedFromHand] = useState(new Set<number>());
 	if (cardKeysSelectedFromHand.size > 0 && playerAction?.type !== 'select_from_hand')
 		setCardKeysSelectedFromHand(new Set());
 
@@ -47,14 +47,15 @@ export function PlayerHand({ relative, onSelectFromHand }: PlayerHandProps) {
 					const angle = (index + 0.5 - hand.length / 2) * fanRatio;
 					const selectedOffset = cardKeysSelectedFromHand.has(cardRef.key) ? -8 : 0;
 					const y = (Math.abs(angle) + selectedOffset) * fanRatio * 10;
+
 					return (
 						<li
 							className="-mx-2 transition-all duration-300 ease-in-out"
 							style={{ transform: `rotate(${angle}deg) translateY(${y}px)` }}
 							key={cardRef.key}
 						>
-							<Card
-								interactive={isSelectingFromHand}
+							<GameCard
+								className={isSelectingFromHand ? 'hover:ring-accent-9 hover:ring-2' : undefined}
 								onClick={
 									isSelectingFromHand ?
 										() => {
@@ -77,7 +78,7 @@ export function PlayerHand({ relative, onSelectFromHand }: PlayerHandProps) {
 									:	undefined
 								}
 								size="md"
-								card={cardRef}
+								info={cardRef}
 							/>
 						</li>
 					);

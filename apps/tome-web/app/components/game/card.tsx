@@ -1,15 +1,12 @@
-import { clsx } from 'clsx';
+import { Slot } from '@radix-ui/react-slot';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { VariantProps, cva } from 'cva';
 import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef } from 'react';
 import { create } from 'zustand';
 
 import type { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
-import type {
-	PubSubCard,
-	PubSubShownCard,
-	PubSubShownSpellCard,
-} from '../../../../tome-api/src/features/game/game.pubsub';
+import type { PubSubCard, PubSubShownCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
 import { CardData, useCardData } from '../../lib/card-data';
 import { Image } from '../image';
@@ -32,16 +29,12 @@ export const cardSizeToClass = {
 };
 
 export const cardClass = cva({
-	base: 'select-none transition-shadow overflow-hidden rounded-[1vh] ring-1 ring-[#4F3739]/20',
+	base: 'select-none relative [-webkit-user-drag:none] ease-expo-out transition-transform duration-500 rounded-[1vh] ring-1 ring-[#4F3739]/20 [transform-style:preserve-3d]',
 	variants: {
 		size: cardSizeToClass,
-		interactive: {
-			true: 'ring-0 ring-transparent hover:ring-8 hover:ring-teal-500/80 cursor-pointer',
-		},
-		highlight: {
-			effect: 'animate-card-effect',
-			negative: 'shadow-[0_0_32px_rgba(255,0,0)] z-20 bg-negative-9',
-			positive: 'shadow-[0_0_32px_rgba(0,255,0)] z-20 bg-positive-9',
+		face: {
+			front: '',
+			back: '[transform:rotateY(180deg)]',
 		},
 	},
 	defaultVariants: {
@@ -60,57 +53,64 @@ export const useHoveredCard = create<HoveredCardStore>(set => ({
 	setHoveredCard: cardKey => set({ hoveredCard: cardKey }),
 }));
 
-export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps> {
-	card: PubSubCard;
+export interface GameCardProps
+	extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps | 'id' | 'onMouseEnter' | 'onMouseLeave'> {
+	info: PubSubCard;
 	size: Variants['size'];
-	interactive?: boolean;
-	highlight?: Variants['highlight'];
 }
 
-export const Card = ({
-	card,
-	className,
-	size = 'sm',
-	interactive,
-	highlight: highlightOverride,
-	...props
-}: CardProps) => {
-	const isHovered = useHoveredCard(s => s.hoveredCard === card.key);
+/** in-game implementation of Card with hover events etc. */
+export const GameCard = ({ info, size, className, ...props }: GameCardProps) => {
 	const setHovered = useHoveredCard(s => s.setHoveredCard);
-	const highlight = highlightOverride;
+	const face = isShownCard(info) ? 'front' : 'back';
 
 	return (
-		<motion.div
-			id={getVfxId({ type: 'card', cardKey: card.key })}
-			layoutId={card.key.toString()}
-			key={card.key}
-			initial={false}
-			animate={{ rotateY: isShownCard(card) ? 0 : 180 }}
-			layout="preserve-aspect"
-			className={cardClass({ size, className, interactive, highlight })}
-			{...props}
-		>
-			{isShownCard(card) && isHovered && (
-				<div
-					className={cardClass({
-						size: 'lg',
-						className: 'animate-card-preview pointer-events-none absolute -top-2 left-1/2 z-50 shadow-xl',
-					})}
-				>
-					<CardFront card={card} size="lg" />
-				</div>
-			)}
-
-			{isShownCard(card) ?
-				<CardFront
-					card={card}
-					size={size}
-					className={clsx('relative', { 'z-50': isHovered })}
-					onMouseEnter={() => setHovered(card.key)}
+		<Tooltip.Root open={face === 'back' ? false : undefined}>
+			<Tooltip.Trigger asChild>
+				<motion.div
+					id={getVfxId({ type: 'card', cardKey: info.key })}
+					layoutId={info.key.toString()}
+					initial={false}
+					layout="preserve-aspect"
+					onMouseEnter={() => setHovered(info.key)}
 					onMouseLeave={() => setHovered(null)}
-				/>
-			:	<CardBack size={size} />}
-		</motion.div>
+					{...props}
+				>
+					<Card face={face} pubsubCard={info} size={size} className={className} />
+				</motion.div>
+			</Tooltip.Trigger>
+			<Tooltip.Portal>
+				<Tooltip.Content sideOffset={5} sticky="always" collisionPadding={16} side="top" style={{ zIndex: 60 }}>
+					<Card face="front" pubsubCard={info} size="lg" className={className} />
+				</Tooltip.Content>
+			</Tooltip.Portal>
+		</Tooltip.Root>
+	);
+};
+
+export type CardProps = {
+	size: Variants['size'];
+	pubsubCard: PubSubCard;
+	asChild?: boolean;
+	face: 'front' | 'back';
+	className?: string;
+};
+
+export const Card = ({ size = 'sm', asChild, face, pubsubCard, className, ...props }: CardProps) => {
+	const Component = asChild ? Slot : 'div';
+
+	return (
+		<Component className={cardClass({ size, face, className })} {...props}>
+			<div
+				data-side="front"
+				className="absolute inset-0 h-full w-full rounded-[1vh] bg-[#F6EFE8] p-[0.5vh] text-[#4F3739] [backface-visibility:hidden]"
+			>
+				{isShownCard(pubsubCard) ?
+					<CardFront pubsubCard={pubsubCard} size={size} />
+				:	null}
+			</div>
+			<CardBack size={size} />
+		</Component>
 	);
 };
 
@@ -122,23 +122,13 @@ export const CardBack = ({ size, ...props }: CardBackProps) => {
 	return (
 		<Image
 			srcWidth={sizeToRenderedWidth[size]}
-			className="aspect-[63/88] h-full rounded-[1vh]"
+			className="absolute inset-0 aspect-[63/88] h-full w-full overflow-hidden rounded-[1vh] [backface-visibility:hidden] [transform:rotateY(180deg)]"
 			src="/card-back.png"
 			alt="Card"
 			{...props}
 		/>
 	);
 };
-
-const cardFrontClass = cva({
-	base: 'p-[0.5vh] w-full h-full bg-[#F6EFE8] text-[#4F3739]',
-	variants: {
-		type: {
-			spell: '',
-			field: '',
-		},
-	},
-});
 
 const cardColorClass = cva({
 	base: 'w-6 aspect-[1/1.75]',
@@ -158,27 +148,27 @@ const CardColor = ({ color }: { color: SpellColor }) => {
 	);
 };
 
-interface CardFrontProps extends ComponentPropsWithoutRef<'div'> {
-	card: PubSubShownCard;
+interface CardFrontProps {
+	pubsubCard: PubSubShownCard;
 	size: NonNullable<Variants['size']>;
 }
-export const CardFront = ({ card, size, className, ...props }: CardFrontProps) => {
+export const CardFront = ({ pubsubCard, size }: CardFrontProps) => {
 	const cardData = useCardData();
-	const data = cardData[card.id];
-	invariant(data, `Card data not found for card ID ${card.id}`);
+	const data = cardData[pubsubCard.id];
+	invariant(data, `Card data not found for card ID ${pubsubCard.id}`);
 	const colors = data.type === 'field' ? [data.color].filter(Boolean) : data.colors;
 
 	return (
-		<div className={cardFrontClass({ type: data.type, className })} {...props}>
+		<>
 			<div className="absolute left-[0.5vh] right-[1vh] top-0 flex justify-end gap-1">
 				{colors.map(color => (
 					<CardColor key={color} color={color} />
 				))}
 			</div>
-			<CardImage slug={card.id} size={size} />
+			<CardImage slug={pubsubCard.id} size={size} />
 			<CardBody data={data} size={size} />
-			{card.type === 'spell' && <CardFooter card={card} />}
-		</div>
+			<CardFooter data={data} card={pubsubCard} />
+		</>
 	);
 };
 
@@ -245,11 +235,32 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 	}
 };
 
-const CardFooter = ({ card }: { card: PubSubShownSpellCard }) => {
+const CardFooter = ({ card, data }: { card: PubSubCard; data: CardData[keyof CardData] }) => {
+	if (data.type !== 'spell') return null;
+
+	const healValue =
+		isShownCard(card) && card.type === 'spell' ? card.heal
+		: 'heal' in data ?
+			typeof data.heal === 'object' ?
+				data.heal.label
+			:	data.heal
+		:	null;
+	const attackValue =
+		isShownCard(card) && card.type === 'spell' ? card.attack
+		: 'attack' in data ?
+			typeof data.attack === 'object' ?
+				data.attack.label
+			:	data.attack
+		:	null;
+
 	return (
 		<footer className="absolute bottom-[0.5vh] left-[0.5vh] right-[0.5vh] flex items-center justify-end gap-1">
-			{card.heal && <div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">{card.heal}</div>}
-			<div className="rounded-full bg-[#4F3739] px-2 py-0.5 text-xs text-white">{card.attack}</div>
+			{healValue ?
+				<div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">{healValue}</div>
+			:	null}
+			{attackValue ?
+				<div className="rounded-full bg-[#4F3739] px-2 py-0.5 text-xs text-white">{attackValue}</div>
+			:	null}
 		</footer>
 	);
 };

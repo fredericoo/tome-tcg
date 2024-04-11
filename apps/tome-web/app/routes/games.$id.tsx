@@ -1,3 +1,4 @@
+import * as Tooltip from '@radix-ui/react-tooltip';
 import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import { cva } from 'cva';
@@ -106,26 +107,28 @@ export default function Page() {
 	const { reconnect, status, sub } = useGameSub(game.id);
 	const boardRef = useRef<HTMLDivElement>(null);
 	return (
-		<CardDataProvider value={cardData}>
-			<div ref={boardRef} className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
-				<PlayerActionOverlay />
-				<Chat sides={game} />
+		<Tooltip.Provider delayDuration={100}>
+			<CardDataProvider value={cardData}>
+				<div ref={boardRef} className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
+					<PlayerActionOverlay />
+					<Chat sides={game} />
 
-				<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 z-50 flex items-center gap-2 bg-white p-2 ring-1">
-					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
-					<Ping />
-					{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
-				</nav>
+					<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 z-50 flex items-center gap-2 bg-white p-2 ring-1">
+						<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
+						<Ping />
+						{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
+					</nav>
 
-				<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="opponent" />
-				<PlayerSide onSelectStack={p => sub?.send(p)} relative="opponent" />
+					<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="opponent" />
+					<PlayerSide onSelectStack={p => sub?.send(p)} relative="opponent" />
 
-				<MiddleSection />
+					<MiddleSection />
 
-				<PlayerSide onSelectStack={p => sub?.send(p)} relative="self" />
-				<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="self" />
-			</div>
-			<VfxCanvas boardRef={boardRef.current} />
-		</CardDataProvider>
+					<PlayerSide onSelectStack={p => sub?.send(p)} relative="self" />
+					<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="self" />
+				</div>
+				<VfxCanvas boardRef={boardRef.current} />
+			</CardDataProvider>
+		</Tooltip.Provider>
 	);
 }

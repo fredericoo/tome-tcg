@@ -1,5 +1,13 @@
 import { Link, NavLink, Outlet, ShouldRevalidateFunction } from '@remix-run/react';
-import { IconBook, IconBookFilled, IconPlus } from '@tabler/icons-react';
+import {
+	IconBook,
+	IconBookFilled,
+	IconCards,
+	IconCardsFilled,
+	IconPlus,
+	IconStar,
+	IconStarFilled,
+} from '@tabler/icons-react';
 import { LoaderFunction, useLoaderData } from 'react-router-typesafe';
 
 import { Tabbar } from '../components/tabbar';
@@ -38,7 +46,7 @@ export default function Layout() {
 			</main>
 			<div className="fixed bottom-2 z-50 flex w-full justify-center px-2">
 				<Tabbar.Container>
-					<NavLink className="flex flex-1" to="/">
+					<NavLink prefetch="render" className="flex flex-1" to="/">
 						{({ isActive }) => {
 							return (
 								<Tabbar.Item isActive={isActive} icon={{ inactive: <IconBook />, active: <IconBookFilled /> }}>
@@ -48,8 +56,19 @@ export default function Layout() {
 						}}
 					</NavLink>
 
+					<NavLink className="flex flex-1" to="/decks">
+						{({ isActive }) => {
+							return (
+								<Tabbar.Item isActive={isActive} icon={{ inactive: <IconCards />, active: <IconCardsFilled /> }}>
+									Decks
+								</Tabbar.Item>
+							);
+						}}
+					</NavLink>
+
 					<div className="flex -translate-y-1/3 items-center">
 						<NavLink
+							prefetch="render"
 							className="bg-accent-9 fr hover:bg-accent-10 active:bg-accent-11 shadow-surface-md surface-accent ease-expo-out aspect-square flex-1 rounded-full px-4 py-2 text-white transition-all aria-[current=page]:scale-75 aria-[current=page]:opacity-0 "
 							to="/games/new"
 						>
@@ -59,6 +78,16 @@ export default function Layout() {
 							</div>
 						</NavLink>
 					</div>
+
+					<NavLink className="flex flex-1" to="/friends">
+						{({ isActive }) => {
+							return (
+								<Tabbar.Item isActive={isActive} icon={{ inactive: <IconStar />, active: <IconStarFilled /> }}>
+									Friends
+								</Tabbar.Item>
+							);
+						}}
+					</NavLink>
 
 					<NavLink className="flex flex-1" to="/me">
 						{({ isActive }) => {
