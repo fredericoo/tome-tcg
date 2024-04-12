@@ -2,7 +2,7 @@
 
 # If running the web server then migrate existing database
 if [ "${*}" == "bun start" ]; then
-  bun run db:migrate
+  bun run db:migrate:run
 fi
 
 exec "${@}"
