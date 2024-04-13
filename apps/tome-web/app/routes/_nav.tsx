@@ -5,8 +5,8 @@ import {
 	IconCards,
 	IconCardsFilled,
 	IconPlus,
-	IconStar,
-	IconStarFilled,
+	IconStars,
+	IconStarsFilled,
 } from '@tabler/icons-react';
 import { LoaderFunction, useLoaderData } from 'react-router-typesafe';
 
@@ -79,11 +79,11 @@ export default function Layout() {
 						</NavLink>
 					</div>
 
-					<NavLink className="flex flex-1" to="/friends">
+					<NavLink className="flex flex-1" to="/particles">
 						{({ isActive }) => {
 							return (
-								<Tabbar.Item isActive={isActive} icon={{ inactive: <IconStar />, active: <IconStarFilled /> }}>
-									Friends
+								<Tabbar.Item isActive={isActive} icon={{ inactive: <IconStars />, active: <IconStarsFilled /> }}>
+									Particles
 								</Tabbar.Item>
 							);
 						}}

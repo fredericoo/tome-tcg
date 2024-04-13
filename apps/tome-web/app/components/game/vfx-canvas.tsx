@@ -8,33 +8,26 @@ import { createParticle, particleEffect } from '../../lib/vfx';
 type VfxStore = {
 	app: Application | null;
 	defaultParticle: Texture | null;
-	setApp: (app: Application) => void;
-	setdefaultParticle: (particle: Texture) => void;
+	setApp: (canvas: HTMLCanvasElement, parent: HTMLElement | null) => void;
 };
-
-// FIRE EFFECT PARTICLE CONFIG
-// maxParticles: 50,
-// 							lifespan: 25,
-// 							lifespanVariance: 25,
-// 							minSpeed: 1,
-// 							maxSpeed: 4,
-// 							startOpacity: 0.5,
-// 							endOpacity: 1,
-// 							startScale: 1,
-// 							scaleVariance: 0.5,
-// 							xVariance: 2,
-// 							endScale: 0.1,
-// 							direction: Math.PI,
-// 							directionVariance: 0.1,
-// 							startTint: 0xff6633,
-// 							endTint: 0xffffff00,
-// 							filters: [new BlurFilter({ strength: 10 })],
 
 export const useVfxStore = create<VfxStore>(set => ({
 	app: null,
 	defaultParticle: null,
-	setApp: app => set({ app }),
-	setdefaultParticle: defaultParticle => set({ defaultParticle }),
+	setApp: async (canvas, parent) => {
+		if (!canvas) {
+			console.error('No canvas element found to render VFX');
+			return;
+		}
+		const app = new Application();
+		await app.init({
+			autoDensity: true,
+			backgroundAlpha: 0,
+			canvas,
+			resizeTo: parent ?? undefined,
+		});
+		set({ app, defaultParticle: createParticle(app) });
+	},
 }));
 
 export const getVfxId = (entity: VfxEntity) => {
@@ -230,22 +223,18 @@ export const handleVfx = (vfx: VfxIteration) => {
 	}
 };
 
-export const VfxCanvas = ({ boardRef }: { boardRef: HTMLElement | null }) => {
+export const VfxCanvas = () => {
+	const parentRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const setApp = useVfxStore(s => s.setApp);
-	const setDefaultParticle = useVfxStore(s => s.setdefaultParticle);
+	const app = useVfxStore(s => s.app);
 	useEffect(() => {
-		const initCanvas = async () => {
-			if (!boardRef) return;
-			if (!canvasRef.current) return;
-			const app = new Application();
-			setApp(app);
-			await app.init({ autoDensity: true, backgroundAlpha: 0, canvas: canvasRef.current, resizeTo: boardRef });
-			setDefaultParticle(createParticle(app));
-		};
-		initCanvas();
-		return () => {};
-	}, [boardRef, setApp, setDefaultParticle]);
+		if (!app && canvasRef.current) setApp(canvasRef.current, parentRef.current);
+	}, [app, setApp]);
 
-	return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-20"></canvas>;
+	return (
+		<div id="vfx" ref={parentRef} className="pointer-events-none absolute inset-0">
+			<canvas ref={canvasRef} />
+		</div>
+	);
 };

@@ -25,6 +25,7 @@
 		"@radix-ui/react-tooltip": "^1.0.7",
 		"@remix-run/node": "^2.8.1",
 		"@remix-run/react": "^2.8.1",
+		"@sinclair/typebox": "^0.32.14",
 		"@tabler/icons-react": "^3.1.0",
 		"@uidotdev/usehooks": "^2.4.1",
 		"clsx": "^2.1.0",

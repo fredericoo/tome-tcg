@@ -3,7 +3,6 @@ import type { MetaFunction } from '@remix-run/node';
 import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import { cva } from 'cva';
 import { motion } from 'framer-motion';
-import { useRef } from 'react';
 
 import { Badge } from '../components/badge';
 import { getCardImageSrc, isShownCard } from '../components/game/card';
@@ -105,11 +104,11 @@ const Ping = () => {
 export default function Page() {
 	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
 	const { reconnect, status, sub } = useGameSub(game.id);
-	const boardRef = useRef<HTMLDivElement>(null);
+
 	return (
 		<Tooltip.Provider delayDuration={100}>
 			<CardDataProvider value={cardData}>
-				<div ref={boardRef} className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
+				<div className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
 					<PlayerActionOverlay />
 					<Chat sides={game} />
 
@@ -126,8 +125,8 @@ export default function Page() {
 
 					<PlayerSide onSelectStack={p => sub?.send(p)} relative="self" />
 					<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="self" />
+					<VfxCanvas />
 				</div>
-				<VfxCanvas boardRef={boardRef.current} />
 			</CardDataProvider>
 		</Tooltip.Provider>
 	);
