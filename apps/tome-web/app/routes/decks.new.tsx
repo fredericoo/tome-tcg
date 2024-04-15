@@ -184,26 +184,24 @@ export default function Page() {
 						</>
 					</Form>
 				</section>
-				<footer className="bg-lowest rounded-t-8 sticky bottom-0 flex flex-col items-center pb-4 pt-2">
-					<CurrentDeck cardsList={cardsList} />
-					<div className="relative -mt-6 p-2">
-						<Button form="new-deck" formMethod="POST" type="submit">
-							Confirm
-						</Button>
-						{actionData?.error && (
-							<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
-								<IconExclamationCircle className="text-negative-9" />
-								<span>Invalid deck</span>
-							</p>
-						)}
-					</div>
-				</footer>
 			</div>
+			<footer className="bg-lowest rounded-t-8 sticky bottom-0 flex flex-col items-center pb-4 pt-2 shadow-lg">
+				<CurrentDeck cardsList={cardsList} />
+				<div className="relative -mt-4 p-2">
+					<Button form="new-deck" formMethod="POST" type="submit">
+						Confirm
+					</Button>
+					{actionData?.error && (
+						<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
+							<IconExclamationCircle className="text-negative-9" />
+							<span>Invalid deck</span>
+						</p>
+					)}
+				</div>
+			</footer>
 		</CardDataProvider>
 	);
 }
-
-const MotionCard = motion(Card);
 
 const CoverflowCard = ({
 	id,
@@ -225,14 +223,8 @@ const CoverflowCard = ({
 	const zIndex = useTransform(() => 30 - Math.abs(index - currentIndex.get()));
 
 	return (
-		<motion.li ref={ref} style={{ zIndex }} className="flex-none snap-center [perspective:100vw]">
-			<MotionCard
-				style={{ rotateY, x }}
-				face="front"
-				size="md"
-				pubsubCard={{ id, key: 0 }}
-				className="h-[15vh] shadow-md"
-			/>
+		<motion.li ref={ref} style={{ zIndex, rotateY, x }} className="flex-none snap-center">
+			<Card face="front" size="md" pubsubCard={{ id, key: 0 }} className="h-[15vh] shadow-md" />
 		</motion.li>
 	);
 };
@@ -245,7 +237,10 @@ const CurrentDeck = ({ cardsList }: { cardsList: string[] }) => {
 	});
 
 	return (
-		<ul ref={container} className="hide-scrollbars flex w-full snap-x snap-proximity items-center overflow-x-auto py-4">
+		<ul
+			ref={container}
+			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto py-4 [perspective:100vw]"
+		>
 			{cardsList.map((id, i) => (
 				<CoverflowCard index={i} viewportCentre={viewportCentre} id={id} key={i} />
 			))}
