@@ -1,36 +1,37 @@
-import { IconSettings } from '@tabler/icons-react';
-import { useState } from 'react';
-import { LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
-import { SWR } from 'swr-loader/react';
+import { Form, ShouldRevalidateFunction, useSearchParams, useSubmit } from '@remix-run/react';
+import { IconCards, IconSettings } from '@tabler/icons-react';
+import { Suspense } from 'react';
+import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
 
 import { CardSlug } from '../../../tome-api/src/features/card/card.db';
-import { COLORS, SpellColor } from '../../../tome-api/src/features/engine/engine.game';
+import { COLORS } from '../../../tome-api/src/features/engine/engine.game';
 import { Button } from '../components/button';
+import { ContentSwitcher } from '../components/content-switcher';
 import { Card } from '../components/game/card';
 import { GenericErrorBoundary } from '../components/generic-error-boundary';
 import { Input } from '../components/input';
 import { api } from '../lib/api';
-import { swr } from '../lib/cache';
 import { CardDataProvider } from '../lib/card-data';
+
+export const shouldRevalidate = (({ formMethod }) => {
+	return formMethod === 'POST';
+}) satisfies ShouldRevalidateFunction;
 
 export const clientLoader = (async () => {
 	return defer({
-		cards: await swr({
-			cacheKey: ['all-cards'],
-			maxAge: 1000 * 60 * 60 * 24,
-			onError: 'serve-stale',
-			fetchFn: () =>
-				api.cards.index.get().then(res => {
-					if (res.error) throw res.error;
-					return res.data;
-				}),
+		cards: api.cards.index.get().then(res => {
+			if (res.error) throw res.error;
+			return res.data;
 		}),
 	});
 }) satisfies LoaderFunction;
 
 export default function Page() {
 	const { cards } = useLoaderData<typeof clientLoader>();
-	const [filter, setFilter] = useState<SpellColor>();
+	const [search] = useSearchParams();
+	const filter = search.get('color');
+	const searchByName = search.get('q');
+	const submit = useSubmit();
 
 	return (
 		<div className="mx-auto flex w-full max-w-lg flex-col gap-4">
@@ -50,60 +51,66 @@ export default function Page() {
 				</fieldset>
 			</section>
 
-			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 p-2">
-				<header className="flex gap-2 p-2">
-					<IconSettings /> <h1 className="heading-sm">Card library</h1>
+			<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-lg flex-col gap-2 py-2">
+				<header className="flex gap-2 p-2 px-4">
+					<IconCards /> <h1 className="heading-sm">Card library</h1>
 				</header>
-				{COLORS.map(color => (
-					<label htmlFor={`color-${color}`} key={color}>
-						<input
-							onChange={() => {
-								setFilter(color);
-							}}
-							id={`color-${color}`}
-							type="radio"
-							name="color"
-							value={color}
-						/>
-						{color}
-					</label>
-				))}
 
-				<SWR data={cards} errorElement={<GenericErrorBoundary />} loadingElement={<div>loading…</div>}>
-					{res => {
-						if (!res?.data) throw new Error('No data stored locally and failed to load.');
-						const cardList = Object.keys(res.data) as CardSlug[];
-						const cardsToDisplay = cardList.filter(id => {
-							const card = res.data[id];
+				<Form
+					className="flex flex-col gap-2 px-2"
+					preventScrollReset
+					onChange={e => submit(e.currentTarget, { preventScrollReset: true })}
+				>
+					<div className="self-center">
+						<ContentSwitcher.Container name="color" defaultValue={filter ?? undefined}>
+							<ContentSwitcher.Item value="">All</ContentSwitcher.Item>
+							{COLORS.map(color => (
+								<ContentSwitcher.Item value={color} key={color}>
+									{color}
+								</ContentSwitcher.Item>
+							))}
+						</ContentSwitcher.Container>
+					</div>
+					<Input type="text" name="q" autoComplete="off" placeholder="Search" />
+				</Form>
+
+				<Suspense fallback={null}>
+					<Await resolve={cards} errorElement={<GenericErrorBoundary />}>
+						{cards => {
+							const cardList = Object.keys(cards) as CardSlug[];
+							const cardsToDisplay = cardList
+								.filter(id => {
+									const card = cards[id];
+									return (
+										!filter ||
+										(card.type === 'field' && card.color === filter) ||
+										(card.type === 'spell' && card.colors.includes(filter))
+									);
+								})
+								.filter(id => {
+									const card = cards[id];
+									return !searchByName || card.name.toLowerCase().includes(searchByName.toLowerCase());
+								});
+
 							return (
-								!filter ||
-								(card.type === 'field' && card.color === filter) ||
-								(card.type === 'spell' && card.colors.includes(filter))
+								<>
+									<ul key={filter} className="flex gap-4 overflow-x-auto p-4">
+										<CardDataProvider value={cards}>
+											{cardsToDisplay.map((id, i) => {
+												return (
+													<li className="flex items-center justify-center" key={id}>
+														<Card size="lg" pubsubCard={{ id, key: i }} face="front" />
+													</li>
+												);
+											})}
+										</CardDataProvider>
+									</ul>
+									<p className="body-xs text-neutral-11 text-center">Showing {cardsToDisplay.length} cards</p>
+								</>
 							);
-						});
-
-						return (
-							<>
-								<p>Showing {cardsToDisplay.length} cards</p>
-								<ul className="grid grid-cols-2 gap-4 ">
-									<CardDataProvider value={res.data}>
-										{cardList.map((id, i) => {
-											return (
-												<li className="flex items-center justify-center [perspective:1000px]" key={id}>
-													<Card
-														size="lg"
-														pubsubCard={{ id, key: i }}
-														face={cardsToDisplay.includes(id) ? 'front' : 'back'}
-													/>
-												</li>
-											);
-										})}
-									</CardDataProvider>
-								</ul>
-							</>
-						);
-					}}
-				</SWR>
+						}}
+					</Await>
+				</Suspense>
 			</section>
 			<div className="flex flex-col p-2">
 				<Button type="submit">Create</Button>

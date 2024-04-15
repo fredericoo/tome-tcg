@@ -103,7 +103,7 @@ export const Card = ({ size = 'sm', asChild, face, pubsubCard, className, ...pro
 		<Component className={cardClass({ size, face, className })} {...props}>
 			<div
 				data-side="front"
-				className="absolute inset-0 h-full w-full rounded-[1vh] bg-[#F6EFE8] p-[0.5vh] text-[#4F3739] [backface-visibility:hidden]"
+				className="absolute inset-0 flex h-full w-full flex-col rounded-[1vh] bg-[#F6EFE8] text-[#4F3739] [backface-visibility:hidden]"
 			>
 				{isShownCard(pubsubCard) ?
 					<CardFront pubsubCard={pubsubCard} size={size} />
@@ -179,24 +179,28 @@ const CardImage = ({ size, slug }: { slug: string; size: NonNullable<Variants['s
 		case 'lg':
 		case 'md':
 			return (
-				<div className="aspect-[696/644] w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
-					<Image
-						srcWidth={sizeToRenderedWidth[size]}
-						src={getCardImageSrc(slug)}
-						alt=""
-						className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
-					/>
+				<div className="w-full px-[0.5vh] pt-[0.5vh]">
+					<div className="aspect-[696/644] w-full flex-none rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
+						<Image
+							srcWidth={sizeToRenderedWidth[size]}
+							src={getCardImageSrc(slug)}
+							alt=""
+							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+						/>
+					</div>
 				</div>
 			);
 		case 'sm':
 			return (
-				<div className="h-full w-full rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
-					<Image
-						srcWidth={sizeToRenderedWidth[size]}
-						src={`/cards/${slug}.png`}
-						alt=""
-						className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
-					/>
+				<div className="w-full px-[0.5vh] pt-[0.5vh]">
+					<div className="h-full w-full flex-none rounded-[0.5vh] bg-[#B8A1A3] p-[0.5vh] shadow-md">
+						<Image
+							srcWidth={sizeToRenderedWidth[size]}
+							src={`/cards/${slug}.png`}
+							alt=""
+							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+						/>
+					</div>
 				</div>
 			);
 		default:
@@ -216,8 +220,8 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 			);
 		case 'lg':
 			return (
-				<div className="p-[0.5vh]">
-					<p className="text-md py-1 text-center font-bold leading-none">{data.name}</p>
+				<div className="hide-scrollbars shrink overflow-auto px-[0.5vh]">
+					<p className="label-sm py-1 text-center">{data.name}</p>
 					{data.description.length > 0 && (
 						<>
 							<div className="flex items-center gap-1 text-[#B8A1A3]">
@@ -225,7 +229,9 @@ const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNul
 								<span className="text-[1vh] font-bold tracking-widest">EFFECT</span>
 								<div className="h-px flex-1 bg-current" />
 							</div>
-							<p className="overflow-hidden px-1 text-left text-xs leading-tight opacity-80">{data.description}</p>
+							<p className="overflow-auto px-1 pb-[1vh] text-left text-xs leading-tight opacity-80">
+								{data.description}
+							</p>
 						</>
 					)}
 				</div>

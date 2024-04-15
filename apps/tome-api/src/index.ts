@@ -6,6 +6,7 @@ import { match } from 'ts-pattern';
 import { UnauthorisedError } from './features/auth/auth.errors';
 import { authRoutes } from './features/auth/auth.routes';
 import { cardRoutes } from './features/card/card.routes';
+import { deckRoutes } from './features/deck/deck.routes';
 import { gameRoutes } from './features/game/game.routes';
 import { userRoutes } from './features/user/user.routes';
 
@@ -25,6 +26,7 @@ const app = new Elysia()
 	.use(authRoutes)
 	.use(gameRoutes)
 	.use(cardRoutes)
+	.use(deckRoutes)
 
 	.listen({ port: process.env.PORT ?? 8080 });
 
