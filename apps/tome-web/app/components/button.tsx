@@ -4,21 +4,21 @@ import { VariantProps, cva } from 'cva';
 import * as React from 'react';
 
 const buttonVariants = cva({
-	base: 'button flex items-center justify-center fr gap-2 whitespace-nowrap rounded-2 text-md font-medium transition-all ease-expo-out duration-200 disabled:pointer-events-none disabled:opacity-50',
+	base: 'button flex items-center justify-center fr whitespace-nowrap font-medium transition-all ease-expo-out duration-200 disabled:pointer-events-none disabled:opacity-50',
 	variants: {
 		variant: {
 			accent: 'bg-accent-10 hover:bg-accent-11 active:bg-accent-12 text-white shadow-surface-md surface-accent',
 			destructive: 'bg-negative-10 hover:bg-negative-11 active:bg-negative-12 text-negative-1',
 			outline:
 				'border bg-lowest border-neutral-4 bg-transparent hover:bg-neutral-1 hover:border-neutral-5 active:border-neutral-6 text-neutral-12',
-			ghost: 'hover:bg-accent-3 hover:text-accent-11 active:bg-accent-4',
+			ghost: 'text-neutral-11 hover:bg-neutral-11/5 hover:text-neutral-12 active:bg-neutral-11/10',
 			link: 'text-accent-10 underline-offset-4 hover:underline active:text-accent-11',
 		},
 		size: {
-			sm: 'px-3',
-			md: 'px-5 py-2.5 has-[svg:first-child:not(:only-child)]:pl-3 has-[svg:last-child:not(:only-child)]:pr-3',
+			sm: 'rounded-4 text-sm gap-1 px-3 py-1.5 has-[svg:first-child:not(:only-child)]:pl-2 has-[svg:last-child:not(:only-child)]:pr-2',
+			md: 'rounded-2 text-md gap-2 px-5 py-2.5 has-[svg:first-child:not(:only-child)]:pl-3 has-[svg:last-child:not(:only-child)]:pr-3',
 			lg: 'px-8',
-			icon: 'h-10 w-10',
+			icon: 'rounded-1 h-8 w-8',
 		},
 	},
 	defaultVariants: {

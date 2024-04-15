@@ -1,8 +1,8 @@
-import { Slot } from '@radix-ui/react-slot';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { VariantProps, cva } from 'cva';
+import clsx from 'clsx';
+import { cva } from 'cva';
 import { MotionProps, motion } from 'framer-motion';
-import { ComponentPropsWithoutRef } from 'react';
+import { ComponentPropsWithoutRef, forwardRef } from 'react';
 import { create } from 'zustand';
 
 import type { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
@@ -17,32 +17,28 @@ export const isShownCard = (card: PubSubCard): card is PubSubShownCard => 'id' i
 const CARD_RATIO = 63 / 88;
 
 const sizeToRenderedWidth = {
-	sm: CARD_RATIO * 12 + 'vh',
-	md: CARD_RATIO * 15 + 'vh',
-	lg: CARD_RATIO * 33 + 'vh',
+	sm: CARD_RATIO * 12 + 'cqh',
+	md: CARD_RATIO * 15 + 'cqh',
+	lg: CARD_RATIO * 33 + 'cqh',
 };
 
+type CardSize = 'sm' | 'md' | 'lg';
+
 export const cardSizeToClass = {
-	sm: 'h-[12vh] aspect-[63/88]',
-	md: 'h-[15vh] aspect-[63/88]',
-	lg: 'h-[33vh] aspect-[63/88]',
+	sm: 'h-[12cqh]',
+	md: 'h-[15cqh]',
+	lg: 'h-[33cqh]',
 };
 
 export const cardClass = cva({
-	base: 'select-none relative [-webkit-user-drag:none] ease-expo-out transition-transform duration-500 rounded-[1vh] ring-1 ring-[#4F3739]/20 [transform-style:preserve-3d]',
+	base: '@container select-none aspect-[63/88] relative [-webkit-user-drag:none] ease-expo-out transition-transform duration-500 rounded-[1cqh] ring-1 ring-[#4F3739]/20 [transform-style:preserve-3d]',
 	variants: {
-		size: cardSizeToClass,
 		face: {
 			front: '',
 			back: '[transform:rotateY(180deg)]',
 		},
 	},
-	defaultVariants: {
-		size: 'sm',
-	},
 });
-
-type Variants = VariantProps<typeof cardClass>;
 
 type HoveredCardStore = {
 	hoveredCard: number | null;
@@ -56,7 +52,7 @@ export const useHoveredCard = create<HoveredCardStore>(set => ({
 export interface GameCardProps
 	extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps | 'id' | 'onMouseEnter' | 'onMouseLeave'> {
 	info: PubSubCard;
-	size: Variants['size'];
+	size: CardSize;
 }
 
 /** in-game implementation of Card with hover events etc. */
@@ -76,7 +72,7 @@ export const GameCard = ({ info, size, className, ...props }: GameCardProps) => 
 					onMouseLeave={() => setHovered(null)}
 					{...props}
 				>
-					<Card face={face} pubsubCard={info} size={size} className={className} />
+					<Card face={face} pubsubCard={info} size={size} className={clsx(className, cardSizeToClass[size])} />
 				</motion.div>
 			</Tooltip.Trigger>
 			<Tooltip.Portal>
@@ -89,40 +85,42 @@ export const GameCard = ({ info, size, className, ...props }: GameCardProps) => 
 };
 
 export type CardProps = {
-	size: Variants['size'];
+	size: CardSize;
 	pubsubCard: PubSubCard;
 	asChild?: boolean;
 	face: 'front' | 'back';
 	className?: string;
 };
 
-export const Card = ({ size = 'sm', asChild, face, pubsubCard, className, ...props }: CardProps) => {
-	const Component = asChild ? Slot : 'div';
-
-	return (
-		<Component className={cardClass({ size, face, className })} {...props}>
-			<div
-				data-side="front"
-				className="absolute inset-0 flex h-full w-full flex-col rounded-[1vh] bg-[#F6EFE8] text-[#4F3739] [backface-visibility:hidden]"
-			>
-				{isShownCard(pubsubCard) ?
-					<CardFront pubsubCard={pubsubCard} size={size} />
-				:	null}
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+	({ size = 'sm', face, pubsubCard, className, ...props }, ref) => {
+		return (
+			<div ref={ref} className={cardClass({ face, className })} {...props}>
+				<div
+					data-side="front"
+					className="absolute inset-0 flex h-full w-full flex-col rounded-[1cqh] bg-[#F6EFE8] text-[#4F3739] [backface-visibility:hidden]"
+				>
+					{isShownCard(pubsubCard) ?
+						<CardFront pubsubCard={pubsubCard} size={size} />
+					:	null}
+				</div>
+				<CardBack size={size} />
 			</div>
-			<CardBack size={size} />
-		</Component>
-	);
-};
+		);
+	},
+);
+
+Card.displayName = 'Card';
 
 interface CardBackProps extends ComponentPropsWithoutRef<'img'> {
-	size: NonNullable<Variants['size']>;
+	size: NonNullable<CardSize>;
 }
 
 export const CardBack = ({ size, ...props }: CardBackProps) => {
 	return (
 		<Image
 			srcWidth={sizeToRenderedWidth[size]}
-			className="absolute inset-0 aspect-[63/88] h-full w-full overflow-hidden rounded-[1vh] [backface-visibility:hidden] [transform:rotateY(180deg)]"
+			className="absolute inset-0 aspect-[63/88] h-full w-full overflow-hidden rounded-[1cqh] [backface-visibility:hidden] [transform:rotateY(180deg)]"
 			src="/card-back.png"
 			alt="Card"
 			{...props}
@@ -131,7 +129,7 @@ export const CardBack = ({ size, ...props }: CardBackProps) => {
 };
 
 const cardColorClass = cva({
-	base: 'w-6 aspect-[1/1.75]',
+	base: 'w-[12.5%] aspect-[1/1.75]',
 	variants: {
 		color: {
 			red: 'text-[#FE4D00]',
@@ -150,7 +148,7 @@ const CardColor = ({ color }: { color: SpellColor }) => {
 
 interface CardFrontProps {
 	pubsubCard: PubSubShownCard;
-	size: NonNullable<Variants['size']>;
+	size: NonNullable<CardSize>;
 }
 export const CardFront = ({ pubsubCard, size }: CardFrontProps) => {
 	const cardData = useCardData();
@@ -160,7 +158,7 @@ export const CardFront = ({ pubsubCard, size }: CardFrontProps) => {
 
 	return (
 		<>
-			<div className="absolute left-[0.5vh] right-[1vh] top-0 flex justify-end gap-1">
+			<div className="absolute left-[0.5cqh] right-[1cqh] top-0 flex justify-end gap-[0.5cqh]">
 				{colors.map(color => (
 					<CardColor key={color} color={color} />
 				))}
@@ -174,31 +172,31 @@ export const CardFront = ({ pubsubCard, size }: CardFrontProps) => {
 
 export const getCardImageSrc = (image: string) => `/cards/${image}.png`;
 
-const CardImage = ({ size, slug }: { slug: string; size: NonNullable<Variants['size']> }) => {
+const CardImage = ({ size, slug }: { slug: string; size: NonNullable<CardSize> }) => {
 	switch (size) {
 		case 'lg':
 		case 'md':
 			return (
-				<div className="w-full px-[0.5vh] pt-[0.5vh]">
-					<div className="aspect-[696/644] w-full flex-none rounded-[0.5vh] bg-[#B8A1A3] shadow-md">
+				<div className="w-full px-[0.5cqh] pt-[0.5cqh]">
+					<div className="aspect-[696/644] w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] shadow-md">
 						<Image
 							srcWidth={sizeToRenderedWidth[size]}
 							src={getCardImageSrc(slug)}
 							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+							className="h-full w-full overflow-hidden rounded-[0.5cqh] object-cover"
 						/>
 					</div>
 				</div>
 			);
 		case 'sm':
 			return (
-				<div className="w-full px-[0.5vh] pt-[0.5vh]">
-					<div className="h-full w-full flex-none rounded-[0.5vh] bg-[#B8A1A3] p-[0.5vh] shadow-md">
+				<div className="w-full px-[0.5cqh] pt-[0.5cqh]">
+					<div className="h-full w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] p-[0.5cqh] shadow-md">
 						<Image
 							srcWidth={sizeToRenderedWidth[size]}
 							src={`/cards/${slug}.png`}
 							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5vh] object-cover"
+							className="h-full w-full overflow-hidden rounded-[0.5cqh] object-cover"
 						/>
 					</div>
 				</div>
@@ -208,28 +206,28 @@ const CardImage = ({ size, slug }: { slug: string; size: NonNullable<Variants['s
 	}
 };
 
-const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<Variants['size']> }) => {
+const CardBody = ({ data, size }: { data: CardData[keyof CardData]; size: NonNullable<CardSize> }) => {
 	switch (size) {
 		case 'sm':
 			return null;
 		case 'md':
 			return (
-				<div className="p-[0.5vh]">
+				<div className="p-[0.5cqh]">
 					<p className="line-clamp-2 text-center text-xs font-bold leading-none">{data.name}</p>
 				</div>
 			);
 		case 'lg':
 			return (
-				<div className="hide-scrollbars shrink overflow-auto px-[0.5vh]">
+				<div className="hide-scrollbars shrink overflow-auto px-[0.5cqh]">
 					<p className="label-sm py-1 text-center">{data.name}</p>
 					{data.description.length > 0 && (
 						<>
 							<div className="flex items-center gap-1 text-[#B8A1A3]">
 								<div className="h-px flex-1 bg-current" />
-								<span className="text-[1vh] font-bold tracking-widest">EFFECT</span>
+								<span className="text-[1cqh] font-bold tracking-widest">EFFECT</span>
 								<div className="h-px flex-1 bg-current" />
 							</div>
-							<p className="overflow-auto px-1 pb-[1vh] text-left text-xs leading-tight opacity-80">
+							<p className="overflow-auto px-1 pb-[1cqh] text-left text-xs leading-tight opacity-80">
 								{data.description}
 							</p>
 						</>
@@ -260,7 +258,7 @@ const CardFooter = ({ card, data }: { card: PubSubCard; data: CardData[keyof Car
 		:	null;
 
 	return (
-		<footer className="absolute bottom-[0.5vh] left-[0.5vh] right-[0.5vh] flex items-center justify-end gap-1">
+		<footer className="absolute bottom-[0.5cqh] left-[0.5cqh] right-[0.5cqh] flex items-center justify-end gap-1">
 			{healValue ?
 				<div className="rounded-full bg-[#C0D8AE] px-2 py-0.5 text-xs text-[#414C38]">{healValue}</div>
 			:	null}

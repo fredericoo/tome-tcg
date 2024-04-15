@@ -14,7 +14,7 @@ export const getValidCards = (tentative: string[]) =>
 const getValidCardsOrThrow = (tentative: string[]) =>
 	tentative.map(card => {
 		if (card in cardDb) return card as CardSlug;
-		throw new TypeBoxError("Card doesn't exist in the database");
+		throw new TypeBoxError(`Card ${card} doesn't exist in the database`);
 	});
 
 const assertAllowedRepeats = (cards: CardSlug[], maxRepeated = 2) => {

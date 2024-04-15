@@ -26,6 +26,7 @@ test('errors if over 30 cards', () => {
 
 test('errors if under 30 cards', () => {
 	const deck = cardKeys.slice(0, 29);
+
 	try {
 		const res = Value.Decode(DeckSchema, deck);
 		expect(res).toBeInstanceOf(TypeBoxError);
@@ -45,7 +46,7 @@ test('errors if not all cards exist on db', () => {
 	} catch (e) {
 		expect(e).toBeInstanceOf(TypeBoxError);
 		invariant(e instanceof TypeBoxError, 'Expected TypeBoxError');
-		expect(e.message).toBe("Card doesn't exist in the database");
+		expect(e.message).toBe("Card non-existing-card doesn't exist in the database");
 	}
 });
 
