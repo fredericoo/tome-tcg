@@ -62,7 +62,7 @@ export default function Page() {
 					onChange={e => submit(e.currentTarget, { preventScrollReset: true })}
 				>
 					<div className="self-center">
-						<ContentSwitcher.Container name="color" defaultValue={filter ?? undefined}>
+						<ContentSwitcher.Container name="color" defaultValue={filter ?? ''}>
 							<ContentSwitcher.Item value="">All</ContentSwitcher.Item>
 							{COLORS.map(color => (
 								<ContentSwitcher.Item value={color} key={color}>

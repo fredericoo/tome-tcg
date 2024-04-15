@@ -133,7 +133,7 @@ export default function Page() {
 			}
 		};
 
-		const { stop } = particleEffect({
+		const { stop, destroy } = particleEffect({
 			app,
 			rect: {
 				width: app.canvas.width,
@@ -172,15 +172,18 @@ export default function Page() {
 				}),
 			},
 		});
-		return stop;
+		return () => {
+			stop();
+			destroy();
+		};
 	}, [app, defaultParticle, search, state]);
 
 	const submit = useSubmit();
 
 	return (
-		<div className="flex gap-2 py-4">
-			<section className="sticky top-20 flex flex-1 flex-col gap-2 self-start">
-				<div className="bg-neutral-3 rounded-4  aspect-video w-full max-w-screen-lg">
+		<div className="flex flex-col gap-2 py-4 md:flex-row">
+			<section className="sticky top-20 flex w-full flex-1 flex-col gap-2 self-start">
+				<div className="bg-neutral-3 rounded-4 aspect-video w-full max-w-screen-lg">
 					<VfxCanvas />
 				</div>
 				<nav className="flex gap-2">
