@@ -128,8 +128,7 @@ export const CardBack = ({ size, ...props }: CardBackProps) => {
 	);
 };
 
-const cardColorClass = cva({
-	base: 'w-[12.5%] aspect-[1/1.75]',
+export const cardColorClass = cva({
 	variants: {
 		color: {
 			red: 'text-[#FE4D00]',
@@ -140,7 +139,7 @@ const cardColorClass = cva({
 });
 const CardColor = ({ color }: { color: SpellColor }) => {
 	return (
-		<svg className={cardColorClass({ color })}>
+		<svg className={cardColorClass({ color, className: 'aspect-[1/1.75] w-[12.5%]' })}>
 			<use xlinkHref={`#bookmark-${color}`} />
 		</svg>
 	);
@@ -190,8 +189,8 @@ const CardImage = ({ size, slug }: { slug: string; size: NonNullable<CardSize> }
 			);
 		case 'sm':
 			return (
-				<div className="w-full px-[0.5cqh] pt-[0.5cqh]">
-					<div className="h-full w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] p-[0.5cqh] shadow-md">
+				<div className="h-full w-full p-[0.5cqh]">
+					<div className="h-full w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] shadow-md">
 						<Image
 							srcWidth={sizeToRenderedWidth[size]}
 							src={`/cards/${slug}.png`}

@@ -2,24 +2,28 @@ import { Form, Link, ShouldRevalidateFunction, useSearchParams, useSubmit } from
 import {
 	IconArrowLeft,
 	IconCards,
+	IconChevronCompactDown,
+	IconChevronCompactUp,
 	IconExclamationCircle,
 	IconMinus,
 	IconPlus,
 	IconSettings,
 	IconX,
 } from '@tabler/icons-react';
+import clsx from 'clsx';
 import { MotionValue, motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useState } from 'react';
 import { ActionFunction, LoaderFunction, defer, redirect, useActionData, useLoaderData } from 'react-router-typesafe';
 
 import { CardSlug } from '../../../tome-api/src/features/card/card.db';
 import { COLORS } from '../../../tome-api/src/features/engine/engine.game';
 import { Button } from '../components/button';
 import { ContentSwitcher } from '../components/content-switcher';
-import { Card } from '../components/game/card';
+import { Card, cardColorClass } from '../components/game/card';
 import { Input } from '../components/input';
 import { api } from '../lib/api';
-import { CardDataProvider } from '../lib/card-data';
+import { CardDataProvider, useCardData } from '../lib/card-data';
+import { useMeasure } from '../lib/hooks';
 
 export const shouldRevalidate = (({ formMethod }) => {
 	return formMethod === 'POST';
@@ -185,64 +189,148 @@ export default function Page() {
 					</Form>
 				</section>
 			</div>
-			<footer className="bg-lowest rounded-t-8 sticky bottom-0 flex flex-col items-center pb-4 pt-2 shadow-lg">
+
+			<DeckFloatingMenu cardsList={cardsList} error={Boolean(actionData?.error)} />
+		</CardDataProvider>
+	);
+}
+
+const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: boolean }) => {
+	const [state, setState] = useState<'open' | 'closed'>('open');
+	const cardData = useCardData();
+
+	const { red, green, blue, neutral } = cardsList.reduce(
+		(acc, cardId) => {
+			const card = cardData[cardId];
+			if (!card) return acc;
+			if (card.type === 'field') {
+				acc[card.color ?? 'neutral']++;
+			} else {
+				if (card.colors.length === 0) acc.neutral++;
+				acc.red += card.colors.includes('red') ? 1 : 0;
+				acc.green += card.colors.includes('green') ? 1 : 0;
+				acc.blue += card.colors.includes('blue') ? 1 : 0;
+			}
+			return acc;
+		},
+		{ red: 0, green: 0, blue: 0, neutral: 0 },
+	);
+
+	return (
+		<footer className="bg-neutral-12 ring-neutral-11/10 rounded-4 fixed bottom-2 left-2 right-2 mx-auto flex max-w-screen-md flex-col shadow-lg ring-2">
+			<button
+				onClick={() => setState(s => (s === 'closed' ? 'open' : 'closed'))}
+				className="text-neutral-1 fr rounded-t-4 -mb-2 flex items-center justify-center py-2"
+			>
+				{state === 'open' ?
+					<IconChevronCompactDown />
+				:	<IconChevronCompactUp />}
+			</button>
+			{state === 'open' ?
 				<CurrentDeck cardsList={cardsList} />
-				<div className="relative -mt-4 p-2">
-					<Button form="new-deck" formMethod="POST" type="submit">
+			:	null}
+
+			<div className="flex gap-2 p-2 pb-3">
+				<div className="text-neutral-4 flex flex-1 items-end px-2">
+					<div className="flex items-center gap-1">
+						<IconCards />
+						<p>
+							<span className={clsx('label-md', { 'text-negative-9': cardsList.length > 30 })}>{cardsList.length}</span>
+							<span className="label-xs opacity-50">/30</span>
+						</p>
+					</div>
+				</div>
+				<div>
+					<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
 						Confirm
 					</Button>
-					{actionData?.error && (
+					{error && (
 						<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
 							<IconExclamationCircle className="text-negative-9" />
 							<span>Invalid deck</span>
 						</p>
 					)}
 				</div>
-			</footer>
-		</CardDataProvider>
+				<ul className="label-sm text-neutral-1 flex flex-1 flex-wrap items-end justify-end gap-3 px-2">
+					<li className="flex items-center gap-1">
+						<div className={cardColorClass({ color: 'red', className: 'h-2 w-2 rounded-full bg-current' })} />
+						<span>{red}</span>
+					</li>
+					<li className="flex items-center gap-1">
+						<div className={cardColorClass({ color: 'green', className: 'h-2 w-2 rounded-full bg-current' })} />
+						<span>{green}</span>
+					</li>
+					<li className="flex items-center gap-1">
+						<div className={cardColorClass({ color: 'blue', className: 'h-2 w-2 rounded-full bg-current' })} />
+						<span>{blue}</span>
+					</li>
+					<li className="flex items-center gap-1">
+						<div className="bg-neutral-9 h-2 w-2 rounded-full" />
+						<span>{neutral}</span>
+					</li>
+				</ul>
+			</div>
+		</footer>
 	);
-}
-
+};
 const CoverflowCard = ({
 	id,
 	index,
 	viewportCentre,
+	viewportWidth,
 }: {
 	id: string;
 	index: number;
+	viewportWidth: number;
 	viewportCentre: MotionValue<number>;
 }) => {
-	const ref = useRef<HTMLLIElement>(null);
-	const cardWidth = ref.current?.clientWidth ?? 0;
-	const currentIndex = useTransform(() => viewportCentre.get() / cardWidth - 0.5);
-	const rotateY = useTransform(() => Math.max(-60, Math.min(60, (currentIndex.get() - index) * 30)));
+	const [ref, rect] = useMeasure<HTMLLIElement>();
+	const cardsPerViewport = viewportWidth / (rect?.clientWidth || 1);
+	const currentIndex = useTransform(() => viewportCentre.get() / (rect?.clientWidth || 1) - 0.5);
+	const scale = useTransform(() => {
+		const diff = Math.abs(currentIndex.get() - index);
+		return 1 - diff / 30;
+	});
+	const rotateY = useTransform(() => {
+		const diff = currentIndex.get() - index;
+
+		return Math.tanh(diff) * 60;
+	});
 	const x = useTransform(() => {
 		const diff = currentIndex.get() - index;
-		return diff * Math.abs(diff * 2);
+		return diff * Math.abs(diff / 4) * cardsPerViewport;
 	});
 	const zIndex = useTransform(() => 30 - Math.abs(index - currentIndex.get()));
 
 	return (
-		<motion.li ref={ref} style={{ zIndex, rotateY, x }} className="flex-none snap-center">
-			<Card face="front" size="md" pubsubCard={{ id, key: 0 }} className="h-[15vh] shadow-md" />
+		<motion.li ref={ref} style={{ zIndex, rotateY, x, scale }} className="flex-none snap-center">
+			<Card face="front" size="sm" pubsubCard={{ id, key: 0 }} className="h-[10vh] shadow-md" />
 		</motion.li>
 	);
 };
+
 const CurrentDeck = ({ cardsList }: { cardsList: string[] }) => {
-	const container = useRef<HTMLUListElement>(null);
-	const { scrollX } = useScroll({ container, axis: 'x' });
+	const [ref, rect] = useMeasure<HTMLUListElement>();
+
+	const { scrollX } = useScroll({ container: ref, axis: 'x' });
 	const viewportCentre = useTransform(() => {
-		const viewportWidth = container.current?.clientWidth ?? 0;
+		const viewportWidth = rect?.clientWidth || 0;
 		return scrollX.get() + viewportWidth / 2;
 	});
 
 	return (
 		<ul
-			ref={container}
-			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto py-4 [perspective:100vw]"
+			ref={ref}
+			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto py-2 [perspective:768px]"
 		>
 			{cardsList.map((id, i) => (
-				<CoverflowCard index={i} viewportCentre={viewportCentre} id={id} key={i} />
+				<CoverflowCard
+					viewportWidth={rect?.clientWidth || 0}
+					index={i}
+					viewportCentre={viewportCentre}
+					id={id}
+					key={i}
+				/>
 			))}
 		</ul>
 	);
