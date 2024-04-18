@@ -3,7 +3,6 @@ import {
 	IconArrowLeft,
 	IconCards,
 	IconChevronCompactDown,
-	IconChevronCompactUp,
 	IconExclamationCircle,
 	IconMinus,
 	IconPlus,
@@ -34,7 +33,12 @@ type CardBuilderStore = {
 
 const useCardBuilderStore = create<CardBuilderStore>(set => ({
 	cards: {},
-	addCard: id => set(state => ({ cards: { ...state.cards, [id]: (state.cards[id] ?? 0) + 1 } })),
+	addCard: id =>
+		set(state => {
+			const qty = state.cards[id];
+			if (qty && qty >= 2) return state;
+			return { cards: { ...state.cards, [id]: (qty ?? 0) + 1 } };
+		}),
 	removeCard: id =>
 		set(state => {
 			const newCards = { ...state.cards };
@@ -160,13 +164,12 @@ export default function Page() {
 					<>
 						<p className="body-xs text-neutral-11 text-center">Showing {cardsToDisplay.length} cards</p>
 						<ul key={filter} className="grid grid-cols-2 gap-1 p-4 md:grid-cols-3 lg:grid-cols-4">
-							{cardsToDisplay.map((id, i) => {
+							{cardsToDisplay.map(id => {
 								return (
 									<li
 										className="bg-neutral-11/5 rounded-2 flex flex-col items-center justify-center gap-2 p-1"
 										key={id}
 									>
-										<Card className="w-full" size="lg" pubsubCard={{ id, key: i }} face="front" />
 										<CardActionList id={id} />
 									</li>
 								);
@@ -187,25 +190,30 @@ const CardActionList = ({ id }: { id: CardSlug }) => {
 	const removeCard = useCardBuilderStore(state => state.removeCard);
 
 	return (
-		<div className="flex items-center gap-2">
-			<Button disabled={qty >= 2} onClick={() => addCard(id)} variant="ghost" size="icon">
-				<IconPlus />
-			</Button>
+		<>
+			<button
+				className={clsx('fr ease-expo-out w-full transition-opacity duration-300', { 'opacity-50': qty >= 2 })}
+				onClick={() => addCard(id)}
+				disabled={qty >= 2}
+			>
+				<Card className="w-full" size="lg" pubsubCard={{ id, key: 0 }} face="front" />
+			</button>
+			<div className="flex items-center gap-2">
+				<Button disabled={qty >= 2} onClick={() => addCard(id)} variant="ghost" size="icon">
+					<IconPlus />
+				</Button>
 
-			<span>{qty}</span>
+				<span>{qty}</span>
 
-			<Button disabled={qty === 0} onClick={() => removeCard(id)} variant="ghost" size="icon">
-				<IconMinus />
-			</Button>
-		</div>
+				<Button disabled={qty === 0} onClick={() => removeCard(id)} variant="ghost" size="icon">
+					<IconMinus />
+				</Button>
+			</div>
+		</>
 	);
 };
 
 const DeckFloatingMenu = () => {
-	const actionData = useActionData<typeof clientAction>();
-	// todo: actually get the error messages.
-	const isError = Boolean(actionData?.error);
-
 	const [state, setState] = useState<'open' | 'closed'>('open');
 	const cardData = useCardData();
 	const cardsList = useCardBuilderStore(state => state.cards);
@@ -230,63 +238,60 @@ const DeckFloatingMenu = () => {
 	const cardsLength = Object.values(cardsList).reduce((acc, qty) => acc + qty, 0);
 
 	return (
-		<footer className="bg-neutral-12 ring-neutral-11/10 rounded-4 fixed bottom-2 left-2 right-2 mx-auto flex max-w-screen-md flex-col shadow-lg ring-2">
-			<button
-				onClick={() => setState(s => (s === 'closed' ? 'open' : 'closed'))}
-				className="fr rounded-t-4 flex  gap-2 p-2 pb-3"
-			>
-				<div className="text-neutral-4 flex flex-1 items-end px-2">
-					<div className="flex items-center gap-1">
-						<IconCards />
-						<p>
-							<span className={clsx('label-md', { 'text-negative-9': cardsLength > 30 })}>{cardsLength}</span>
-							<span className="label-xs opacity-50">/30</span>
-						</p>
-					</div>
-				</div>
-
-				<div className="text-neutral-1">
-					{state === 'open' ?
-						<IconChevronCompactDown />
-					:	<IconChevronCompactUp />}
-				</div>
-
-				<ul className="label-sm text-neutral-1 flex flex-1 flex-wrap items-end justify-end gap-3 px-2">
-					<li className="flex items-center gap-1">
-						<div className={cardColorClass({ color: 'red', className: 'h-2 w-2 rounded-full bg-current' })} />
-						<span>{red}</span>
-					</li>
-					<li className="flex items-center gap-1">
-						<div className={cardColorClass({ color: 'green', className: 'h-2 w-2 rounded-full bg-current' })} />
-						<span>{green}</span>
-					</li>
-					<li className="flex items-center gap-1">
-						<div className={cardColorClass({ color: 'blue', className: 'h-2 w-2 rounded-full bg-current' })} />
-						<span>{blue}</span>
-					</li>
-					<li className="flex items-center gap-1">
-						<div className="bg-neutral-9 h-2 w-2 rounded-full" />
-						<span>{neutral}</span>
-					</li>
-				</ul>
-			</button>
-
-			<div className={clsx('[content:paint]', { hidden: state !== 'open' })}>
-				<CurrentDeck />
-			</div>
-
-			<Form method="POST" className="flex flex-col items-center pb-2">
-				<input name="cards" type="hidden" defaultValue={cardsToString(cardsList)} />
-				<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
-					Confirm
-				</Button>
-				{isError && (
-					<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
-						<IconExclamationCircle className="text-negative-9" />
-						<span>Invalid deck</span>
-					</p>
+		<footer
+			className={clsx('sticky bottom-0 p-2 transition-transform duration-500', {
+				'translate-y-full': cardsLength === 0,
+			})}
+		>
+			<div
+				className={clsx(
+					'bg-neutral-12 ring-neutral-11/10 rounded-4 ease-expo-out mx-auto flex max-w-screen-md flex-col shadow-lg ring-2 ',
 				)}
-			</Form>
+			>
+				<button
+					onClick={() => setState(s => (s === 'closed' ? 'open' : 'closed'))}
+					className="fr rounded-t-4 flex gap-2 px-2 py-3"
+				>
+					<div className="text-neutral-4 flex flex-1 items-center px-2">
+						<div className="flex items-center gap-1">
+							<IconCards />
+							<p>
+								<span className={clsx('label-md', { 'text-negative-9': cardsLength > 30 })}>{cardsLength}</span>
+								<span className="label-xs opacity-50">/30</span>
+							</p>
+						</div>
+					</div>
+
+					<div className="text-neutral-1">
+						{state === 'open' ?
+							<IconChevronCompactDown />
+						:	<span>View deck</span>}
+					</div>
+
+					<ul className="label-sm text-neutral-1 flex flex-1 flex-wrap items-end justify-end gap-3 px-2">
+						<li className="flex items-center gap-1">
+							<div className={cardColorClass({ color: 'red', className: 'h-2 w-2 rounded-full bg-current' })} />
+							<span>{red}</span>
+						</li>
+						<li className="flex items-center gap-1">
+							<div className={cardColorClass({ color: 'green', className: 'h-2 w-2 rounded-full bg-current' })} />
+							<span>{green}</span>
+						</li>
+						<li className="flex items-center gap-1">
+							<div className={cardColorClass({ color: 'blue', className: 'h-2 w-2 rounded-full bg-current' })} />
+							<span>{blue}</span>
+						</li>
+						<li className="flex items-center gap-1">
+							<div className="bg-neutral-9 h-2 w-2 rounded-full" />
+							<span>{neutral}</span>
+						</li>
+					</ul>
+				</button>
+
+				<div className={clsx('[content:paint]', { hidden: state !== 'open' })}>
+					<CurrentDeck />
+				</div>
+			</div>
 		</footer>
 	);
 };
@@ -340,17 +345,39 @@ const CurrentDeck = () => {
 	}, [lastCard]);
 
 	return (
-		<ul
-			ref={ref}
-			className="hide-scrollbars flex w-full items-center overflow-x-auto scroll-smooth px-[50%] py-2 [perspective:768px]"
-		>
-			<AnimatePresence mode="sync">
-				{cardsList.map((id, i) => {
-					const key = id + cardsList.slice(0, i).filter(c => c === id).length;
-					return <CoverflowCard id={id} key={key} parentRef={ref} />;
-				})}
-			</AnimatePresence>
-		</ul>
+		<>
+			<ul
+				ref={ref}
+				className="hide-scrollbars flex w-full items-center overflow-x-auto scroll-smooth px-[50%] py-2 [perspective:768px]"
+			>
+				<AnimatePresence mode="sync">
+					{cardsList.map((id, i) => {
+						const key = id + cardsList.slice(0, i).filter(c => c === id).length;
+						return <CoverflowCard id={id} key={key} parentRef={ref} />;
+					})}
+				</AnimatePresence>
+			</ul>
+			<Form method="POST" className="flex flex-col items-center pb-2">
+				<input name="cards" type="hidden" defaultValue={cardsToString(cards)} />
+				<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
+					Confirm
+				</Button>
+				<ErrorMessage />
+			</Form>
+		</>
+	);
+};
+
+const ErrorMessage = () => {
+	const actiondata = useActionData<typeof clientAction>();
+	const isError = Boolean(actiondata?.error);
+	if (!isError) return null;
+
+	return (
+		<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
+			<IconExclamationCircle className="text-negative-9" />
+			<span>Invalid deck</span>
+		</p>
 	);
 };
 
