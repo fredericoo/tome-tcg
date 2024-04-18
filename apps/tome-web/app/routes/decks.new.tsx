@@ -220,17 +220,8 @@ const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: bo
 		<footer className="bg-neutral-12 ring-neutral-11/10 rounded-4 fixed bottom-2 left-2 right-2 mx-auto flex max-w-screen-md flex-col shadow-lg ring-2">
 			<button
 				onClick={() => setState(s => (s === 'closed' ? 'open' : 'closed'))}
-				className="text-neutral-1 fr rounded-t-4 -mb-2 flex items-center justify-center py-2"
+				className="fr rounded-t-4 flex  gap-2 p-2 pb-3"
 			>
-				{state === 'open' ?
-					<IconChevronCompactDown />
-				:	<IconChevronCompactUp />}
-			</button>
-			{state === 'open' ?
-				<CurrentDeck cardsList={cardsList} />
-			:	null}
-
-			<div className="flex gap-2 p-2 pb-3">
 				<div className="text-neutral-4 flex flex-1 items-end px-2">
 					<div className="flex items-center gap-1">
 						<IconCards />
@@ -240,17 +231,13 @@ const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: bo
 						</p>
 					</div>
 				</div>
-				<div>
-					<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
-						Confirm
-					</Button>
-					{error && (
-						<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
-							<IconExclamationCircle className="text-negative-9" />
-							<span>Invalid deck</span>
-						</p>
-					)}
+
+				<div className="text-neutral-1">
+					{state === 'open' ?
+						<IconChevronCompactDown />
+					:	<IconChevronCompactUp />}
 				</div>
+
 				<ul className="label-sm text-neutral-1 flex flex-1 flex-wrap items-end justify-end gap-3 px-2">
 					<li className="flex items-center gap-1">
 						<div className={cardColorClass({ color: 'red', className: 'h-2 w-2 rounded-full bg-current' })} />
@@ -269,10 +256,27 @@ const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: bo
 						<span>{neutral}</span>
 					</li>
 				</ul>
+			</button>
+
+			<div className={clsx('[content:paint]', { hidden: state !== 'open' })}>
+				<CurrentDeck cardsList={cardsList} />
+			</div>
+
+			<div className="flex flex-col items-center pb-2">
+				<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
+					Confirm
+				</Button>
+				{error && (
+					<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
+						<IconExclamationCircle className="text-negative-9" />
+						<span>Invalid deck</span>
+					</p>
+				)}
 			</div>
 		</footer>
 	);
 };
+
 const CoverflowCard = ({
 	id,
 	index,
@@ -286,10 +290,9 @@ const CoverflowCard = ({
 }) => {
 	const [ref, rect] = useMeasure<HTMLLIElement>();
 	const cardsPerViewport = viewportWidth / (rect?.clientWidth || 1);
-	const currentIndex = useTransform(() => viewportCentre.get() / (rect?.clientWidth || 1) - 0.5);
-	const scale = useTransform(() => {
-		const diff = Math.abs(currentIndex.get() - index);
-		return 1 - diff / 30;
+	const currentIndex = useTransform(() => {
+		const cardWidth = rect?.clientWidth || 1;
+		return (viewportCentre.get() - viewportWidth / 2) / cardWidth - 0.5;
 	});
 	const rotateY = useTransform(() => {
 		const diff = currentIndex.get() - index;
@@ -303,7 +306,7 @@ const CoverflowCard = ({
 	const zIndex = useTransform(() => 30 - Math.abs(index - currentIndex.get()));
 
 	return (
-		<motion.li ref={ref} style={{ zIndex, rotateY, x, scale }} className="flex-none snap-center">
+		<motion.li ref={ref} style={{ zIndex, rotateY, x }} className="flex-none snap-center">
 			<Card face="front" size="sm" pubsubCard={{ id, key: 0 }} className="h-[10vh] shadow-md" />
 		</motion.li>
 	);
@@ -311,7 +314,6 @@ const CoverflowCard = ({
 
 const CurrentDeck = ({ cardsList }: { cardsList: string[] }) => {
 	const [ref, rect] = useMeasure<HTMLUListElement>();
-
 	const { scrollX } = useScroll({ container: ref, axis: 'x' });
 	const viewportCentre = useTransform(() => {
 		const viewportWidth = rect?.clientWidth || 0;
@@ -321,7 +323,7 @@ const CurrentDeck = ({ cardsList }: { cardsList: string[] }) => {
 	return (
 		<ul
 			ref={ref}
-			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto py-2 [perspective:768px]"
+			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto px-[50%] py-2 [perspective:768px]"
 		>
 			{cardsList.map((id, i) => (
 				<CoverflowCard
