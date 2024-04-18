@@ -11,9 +11,10 @@ import {
 	IconX,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
-import { MotionValue, motion, useScroll, useTransform } from 'framer-motion';
-import { useState } from 'react';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { ActionFunction, LoaderFunction, defer, redirect, useActionData, useLoaderData } from 'react-router-typesafe';
+import { create } from 'zustand';
 
 import { CardSlug } from '../../../tome-api/src/features/card/card.db';
 import { COLORS } from '../../../tome-api/src/features/engine/engine.game';
@@ -23,7 +24,35 @@ import { Card, cardColorClass } from '../components/game/card';
 import { Input } from '../components/input';
 import { api } from '../lib/api';
 import { CardDataProvider, useCardData } from '../lib/card-data';
-import { useMeasure } from '../lib/hooks';
+
+type CardBuilderStore = {
+	/** {card_id: quantity} */
+	cards: Partial<Record<CardSlug, number>>;
+	addCard: (id: CardSlug) => void;
+	removeCard: (id: CardSlug) => void;
+};
+
+const useCardBuilderStore = create<CardBuilderStore>(set => ({
+	cards: {},
+	addCard: id => set(state => ({ cards: { ...state.cards, [id]: (state.cards[id] ?? 0) + 1 } })),
+	removeCard: id =>
+		set(state => {
+			const newCards = { ...state.cards };
+			if (!newCards[id]) return state;
+			if (newCards[id]! > 1) {
+				newCards[id]!--;
+			} else {
+				delete newCards[id];
+			}
+			return { cards: newCards };
+		}),
+}));
+
+const cardsToString = (cards: Record<string, number>) => {
+	return Object.entries(cards)
+		.flatMap(([id, count]) => Array(count).fill(id))
+		.join(',');
+};
 
 export const shouldRevalidate = (({ formMethod }) => {
 	return formMethod === 'POST';
@@ -44,12 +73,8 @@ export default function Page() {
 	const filter = search.get('color');
 	const searchByName = search.get('q');
 	const submit = useSubmit();
-	const cardsString = search.get('cards') ?? '';
-	const cardsList = cardsString.split(',').filter(Boolean);
-	const actionData = useActionData<typeof clientAction>();
-
-	const cardList = Object.keys(cards) as CardSlug[];
-	const cardsToDisplay = cardList
+	const allCards = Object.keys(cards) as CardSlug[];
+	const cardsToDisplay = allCards
 		.filter(id => {
 			const card = cards[id];
 			return (
@@ -130,91 +155,79 @@ export default function Page() {
 								</Button>
 							</div>
 						</div>
-						<input name="cards" type="hidden" defaultValue={cardsString} />
-
-						<>
-							<p className="body-xs text-neutral-11 text-center">Showing {cardsToDisplay.length} cards</p>
-							<ul key={filter} className="grid grid-cols-2 gap-1 p-4 md:grid-cols-3 lg:grid-cols-4">
-								{cardsToDisplay.map((id, i) => {
-									const count = cardsList.filter(cardId => cardId === id).length;
-
-									return (
-										<li
-											className="bg-neutral-11/5 rounded-2 flex flex-col items-center justify-center gap-2 p-1"
-											key={id}
-										>
-											<Card className="w-full" size="lg" pubsubCard={{ id, key: i }} face="front" />
-
-											<div className="flex items-center gap-2">
-												<Button
-													disabled={count >= 2}
-													onClick={e => {
-														const form = e.currentTarget.form;
-														if (!form) return;
-														const input = form.cards;
-														if (!input) return;
-														const value = input.value.split(',');
-														value.push(id);
-														input.value = value.join(',');
-													}}
-													variant="ghost"
-													size="icon"
-												>
-													<IconPlus />
-												</Button>
-
-												<span>{count}</span>
-												<Button
-													disabled={count === 0}
-													onClick={e => {
-														const form = e.currentTarget.form;
-														if (!form) return;
-														const input = form.cards;
-														if (!input) return;
-														const value = input.value.split(',');
-														value.splice(value.indexOf(id), 1);
-														input.value = value.join(',');
-													}}
-													variant="ghost"
-													size="icon"
-												>
-													<IconMinus />
-												</Button>
-											</div>
-										</li>
-									);
-								})}
-							</ul>
-						</>
 					</Form>
+
+					<>
+						<p className="body-xs text-neutral-11 text-center">Showing {cardsToDisplay.length} cards</p>
+						<ul key={filter} className="grid grid-cols-2 gap-1 p-4 md:grid-cols-3 lg:grid-cols-4">
+							{cardsToDisplay.map((id, i) => {
+								return (
+									<li
+										className="bg-neutral-11/5 rounded-2 flex flex-col items-center justify-center gap-2 p-1"
+										key={id}
+									>
+										<Card className="w-full" size="lg" pubsubCard={{ id, key: i }} face="front" />
+										<CardActionList id={id} />
+									</li>
+								);
+							})}
+						</ul>
+					</>
 				</section>
 			</div>
 
-			<DeckFloatingMenu cardsList={cardsList} error={Boolean(actionData?.error)} />
+			<DeckFloatingMenu />
 		</CardDataProvider>
 	);
 }
 
-const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: boolean }) => {
+const CardActionList = ({ id }: { id: CardSlug }) => {
+	const qty = useCardBuilderStore(state => state.cards[id] ?? 0);
+	const addCard = useCardBuilderStore(state => state.addCard);
+	const removeCard = useCardBuilderStore(state => state.removeCard);
+
+	return (
+		<div className="flex items-center gap-2">
+			<Button disabled={qty >= 2} onClick={() => addCard(id)} variant="ghost" size="icon">
+				<IconPlus />
+			</Button>
+
+			<span>{qty}</span>
+
+			<Button disabled={qty === 0} onClick={() => removeCard(id)} variant="ghost" size="icon">
+				<IconMinus />
+			</Button>
+		</div>
+	);
+};
+
+const DeckFloatingMenu = () => {
+	const actionData = useActionData<typeof clientAction>();
+	// todo: actually get the error messages.
+	const isError = Boolean(actionData?.error);
+
 	const [state, setState] = useState<'open' | 'closed'>('open');
 	const cardData = useCardData();
+	const cardsList = useCardBuilderStore(state => state.cards);
 
-	const { red, green, blue, neutral } = cardsList.reduce(
-		(acc, cardId) => {
-			const card = cardData[cardId];
+	const { red, green, blue, neutral } = Object.entries(cardsList).reduce(
+		(acc, [id, qty]) => {
+			const card = cardData[id];
 			if (!card) return acc;
+
 			if (card.type === 'field') {
 				acc[card.color ?? 'neutral']++;
 			} else {
 				if (card.colors.length === 0) acc.neutral++;
-				acc.red += card.colors.includes('red') ? 1 : 0;
-				acc.green += card.colors.includes('green') ? 1 : 0;
-				acc.blue += card.colors.includes('blue') ? 1 : 0;
+				COLORS.forEach(color => {
+					if (card.colors.includes(color)) acc[color] += qty;
+				});
 			}
 			return acc;
 		},
 		{ red: 0, green: 0, blue: 0, neutral: 0 },
 	);
+	const cardsLength = Object.values(cardsList).reduce((acc, qty) => acc + qty, 0);
 
 	return (
 		<footer className="bg-neutral-12 ring-neutral-11/10 rounded-4 fixed bottom-2 left-2 right-2 mx-auto flex max-w-screen-md flex-col shadow-lg ring-2">
@@ -226,7 +239,7 @@ const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: bo
 					<div className="flex items-center gap-1">
 						<IconCards />
 						<p>
-							<span className={clsx('label-md', { 'text-negative-9': cardsList.length > 30 })}>{cardsList.length}</span>
+							<span className={clsx('label-md', { 'text-negative-9': cardsLength > 30 })}>{cardsLength}</span>
 							<span className="label-xs opacity-50">/30</span>
 						</p>
 					</div>
@@ -259,81 +272,84 @@ const DeckFloatingMenu = ({ cardsList, error }: { cardsList: string[]; error: bo
 			</button>
 
 			<div className={clsx('[content:paint]', { hidden: state !== 'open' })}>
-				<CurrentDeck cardsList={cardsList} />
+				<CurrentDeck />
 			</div>
 
-			<div className="flex flex-col items-center pb-2">
+			<Form method="POST" className="flex flex-col items-center pb-2">
+				<input name="cards" type="hidden" defaultValue={cardsToString(cardsList)} />
 				<Button variant="outline" form="new-deck" formMethod="POST" type="submit" className="rounded-full">
 					Confirm
 				</Button>
-				{error && (
+				{isError && (
 					<p className="label-sm text-negative-10 flex items-center gap-2 px-2 py-1">
 						<IconExclamationCircle className="text-negative-9" />
 						<span>Invalid deck</span>
 					</p>
 				)}
-			</div>
+			</Form>
 		</footer>
 	);
 };
 
-const CoverflowCard = ({
-	id,
-	index,
-	viewportCentre,
-	viewportWidth,
-}: {
-	id: string;
-	index: number;
-	viewportWidth: number;
-	viewportCentre: MotionValue<number>;
-}) => {
-	const [ref, rect] = useMeasure<HTMLLIElement>();
-	const cardsPerViewport = viewportWidth / (rect?.clientWidth || 1);
-	const currentIndex = useTransform(() => {
-		const cardWidth = rect?.clientWidth || 1;
-		return (viewportCentre.get() - viewportWidth / 2) / cardWidth - 0.5;
+const CoverflowCard = ({ id, parentRef }: { id: string; parentRef: React.RefObject<HTMLUListElement> }) => {
+	const ref = useRef<HTMLLIElement>(null);
+	const { scrollXProgress } = useScroll({
+		container: parentRef,
+		target: ref,
+		axis: 'x',
+		offset: ['start end', 'end start'],
+		layoutEffect: false,
 	});
-	const rotateY = useTransform(() => {
-		const diff = currentIndex.get() - index;
 
-		return Math.tanh(diff) * 60;
+	const rotateY = useTransform(() => {
+		const diff = scrollXProgress.get() - 0.5;
+		return Math.tanh(diff * 8) * 60;
 	});
 	const x = useTransform(() => {
-		const diff = currentIndex.get() - index;
-		return diff * Math.abs(diff / 4) * cardsPerViewport;
+		const diff = scrollXProgress.get() - 0.5;
+		return diff * Math.abs(diff * 128);
 	});
-	const zIndex = useTransform(() => 30 - Math.abs(index - currentIndex.get()));
+	const zIndex = useTransform(() => {
+		const diff = scrollXProgress.get() - 0.5;
+		return 30 - Math.abs(diff);
+	});
 
 	return (
-		<motion.li ref={ref} style={{ zIndex, rotateY, x }} className="flex-none snap-center">
+		<motion.li
+			initial={{ opacity: 0, y: -100 }}
+			animate={{ y: 0, opacity: 1 }}
+			exit={{ y: -100, opacity: 0, width: 0 }}
+			ref={ref}
+			style={{ zIndex, rotateY, x }}
+			className="flex-none"
+		>
 			<Card face="front" size="sm" pubsubCard={{ id, key: 0 }} className="h-[10vh] shadow-md" />
 		</motion.li>
 	);
 };
 
-const CurrentDeck = ({ cardsList }: { cardsList: string[] }) => {
-	const [ref, rect] = useMeasure<HTMLUListElement>();
-	const { scrollX } = useScroll({ container: ref, axis: 'x' });
-	const viewportCentre = useTransform(() => {
-		const viewportWidth = rect?.clientWidth || 0;
-		return scrollX.get() + viewportWidth / 2;
-	});
+const CurrentDeck = () => {
+	const cards = useCardBuilderStore(state => state.cards);
+	const ref = useRef<HTMLUListElement>(null);
+	const cardsList = Object.entries(cards).flatMap(([id, qty]) => new Array<string>(qty).fill(id));
+	const lastCard = cardsList.at(-1);
+	// every time the last card changes, we scroll to the right of the list
+	useEffect(() => {
+		if (ref.current)
+			ref.current.scrollTo({ left: ref.current.scrollWidth - ref.current.clientWidth, behavior: 'smooth' });
+	}, [lastCard]);
 
 	return (
 		<ul
 			ref={ref}
-			className="hide-scrollbars flex w-full snap-x snap-mandatory items-center overflow-x-auto px-[50%] py-2 [perspective:768px]"
+			className="hide-scrollbars flex w-full items-center overflow-x-auto scroll-smooth px-[50%] py-2 [perspective:768px]"
 		>
-			{cardsList.map((id, i) => (
-				<CoverflowCard
-					viewportWidth={rect?.clientWidth || 0}
-					index={i}
-					viewportCentre={viewportCentre}
-					id={id}
-					key={i}
-				/>
-			))}
+			<AnimatePresence mode="sync">
+				{cardsList.map((id, i) => {
+					const key = id + cardsList.slice(0, i).filter(c => c === id).length;
+					return <CoverflowCard id={id} key={key} parentRef={ref} />;
+				})}
+			</AnimatePresence>
 		</ul>
 	);
 };
