@@ -7,7 +7,7 @@ import { SWR } from 'swr-loader/react';
 import { Button } from '../components/button';
 import { Input } from '../components/input';
 import { UserAvatar } from '../components/user-avatar';
-import { api } from '../lib/api';
+import { api, getDataOrThrow } from '../lib/api';
 import { swr } from '../lib/cache';
 
 export const clientLoader = (async ({ request }) => {
@@ -19,11 +19,7 @@ export const clientLoader = (async ({ request }) => {
 			cacheKey: ['users', q],
 			maxAge: 1000 * 60 * 60,
 			onError: 'serve-stale',
-			fetchFn: () =>
-				api.users.get({ query: { q } }).then(res => {
-					if (res.error) throw res.error;
-					return res.data;
-				}),
+			fetchFn: () => api.users.get({ query: { q } }).then(getDataOrThrow),
 		}),
 	});
 }) satisfies LoaderFunction;

@@ -4,6 +4,7 @@ import { Elysia, error, t } from 'elysia';
 
 import { db } from '../../db';
 import { decks } from '../../db/schema';
+import { takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
 import { DeckSchema, SafeDeckSchema, getValidCards } from './deck.schemas';
 
@@ -22,6 +23,10 @@ export const deckRoutes = new Elysia()
 		if (!user) return error('Unauthorized', 'You must be logged in to view your decks.');
 		const userDecks = await db.select().from(decks).where(eq(decks.userId, user.id));
 		return userDecks.map(deck => ({ ...deck, cards: safeParseCards(deck.cards) }));
+	})
+	.get('/decks/:deckId', async ({ params }) => {
+		const deck = await db.select().from(decks).where(eq(decks.id, +params.deckId)).then(takeFirstOrThrow);
+		return { ...deck, cards: safeParseCards(deck.cards) };
 	})
 	.post(
 		'/me/decks',
@@ -42,8 +47,8 @@ export const deckRoutes = new Elysia()
 			}),
 		},
 	)
-	.patch(
-		'/me/decks/:deckId',
+	.post(
+		'decks/:deckId',
 		async ({ body, user, params }) => {
 			if (!user) return error('Unauthorized', 'You must be logged in to update a deck.');
 			const { name, cards } = body;

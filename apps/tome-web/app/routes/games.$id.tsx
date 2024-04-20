@@ -14,7 +14,7 @@ import { PlayerSide } from '../components/game/player-side';
 import { TurnPhaseMeter } from '../components/game/turn-phase-meter';
 import { VfxCanvas } from '../components/game/vfx-canvas';
 import { Image } from '../components/image';
-import { api } from '../lib/api';
+import { api, getDataOrThrow } from '../lib/api';
 import { CardDataProvider, useCardData } from '../lib/card-data';
 import { useGameStore, useGameSub } from '../lib/game.utils';
 
@@ -26,8 +26,7 @@ export const clientLoader = (async ({ params }) => {
 	const gameId = params.id;
 	if (!gameId) return redirect('/games');
 
-	const { data, error } = await api.games({ id: gameId }).get();
-	if (error) throw error;
+	const data = await api.games({ id: gameId }).get().then(getDataOrThrow);
 
 	return data;
 }) satisfies ClientLoaderFunction;

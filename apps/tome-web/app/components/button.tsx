@@ -15,9 +15,9 @@ const buttonVariants = cva({
 			link: 'text-accent-10 underline-offset-4 hover:underline active:text-accent-11',
 		},
 		size: {
-			sm: 'rounded-4 text-sm gap-1 px-3 py-1.5 has-[svg:first-child:not(:only-child)]:pl-2 has-[svg:last-child:not(:only-child)]:pr-2',
-			md: 'rounded-2 text-md gap-2 px-5 py-2.5 has-[svg:first-child:not(:only-child)]:pl-3 has-[svg:last-child:not(:only-child)]:pr-3',
-			lg: 'px-8',
+			sm: 'rounded-full text-sm gap-1 px-3 py-1.5 has-[svg:first-child:not(:only-child)]:pl-2 has-[svg:last-child:not(:only-child)]:pr-2',
+			md: 'rounded-full text-md gap-2 px-5 py-2.5 has-[svg:first-child:not(:only-child)]:pl-3 has-[svg:last-child:not(:only-child)]:pr-3',
+			lg: 'rounded-full px-8',
 			icon: 'rounded-1 h-8 w-8',
 		},
 	},

@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/alt-text */
-import { ComponentPropsWithoutRef } from 'react';
+import { ComponentPropsWithoutRef, useState } from 'react';
 
 import { IMAGE_COMPRESS_EXTENSIONS, IMAGE_COMPRESS_FORMATS, IMAGE_SIZE_VARIANTS } from '../lib/image';
 
@@ -39,8 +39,17 @@ const endsWithOneOf = (str: string, suffixes: string[]) => {
 };
 
 export const Image = ({ alt, src, srcWidth, ...props }: ImageProps) => {
+	const [isError, setIsError] = useState(false);
+
+	if (isError) return null;
+
 	return (
-		<picture {...props}>
+		<picture
+			{...props}
+			onError={() => {
+				setIsError(true);
+			}}
+		>
 			{import.meta.env.MODE !== 'development' && src && endsWithOneOf(src, IMAGE_COMPRESS_EXTENSIONS) && (
 				<Sources srcWidth={srcWidth} src={src} />
 			)}

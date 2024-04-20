@@ -8,15 +8,12 @@ import { Button } from '../components/button';
 import { GenericErrorBoundary } from '../components/generic-error-boundary';
 import { Guide } from '../components/onboarding/guide';
 import { UserAvatar } from '../components/user-avatar';
-import { api } from '../lib/api';
+import { api, getDataOrThrow } from '../lib/api';
 import { useNavLoaderData } from '../lib/user.utils';
 
 export const clientLoader = (async () => {
 	return defer({
-		games: api.me.games.get().then(res => {
-			if (res.error) throw res.error;
-			return res.data;
-		}),
+		games: api.me.games.get().then(getDataOrThrow),
 	});
 }) satisfies LoaderFunction;
 

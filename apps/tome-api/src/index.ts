@@ -19,6 +19,7 @@ const app = new Elysia()
 				.with('production', () => [process.env.ALLOWED_ORIGIN].filter(Boolean))
 				.otherwise(() => []),
 			credentials: true,
+			methods: ['GET', 'POST', 'PATCH', 'DELETE'],
 			allowedHeaders: ['Content-Type'],
 		}),
 	)

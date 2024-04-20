@@ -12,7 +12,7 @@ import { LoaderFunction, useLoaderData } from 'react-router-typesafe';
 
 import { Tabbar } from '../components/tabbar';
 import { UserAvatar } from '../components/user-avatar';
-import { api } from '../lib/api';
+import { api, getDataOrThrow } from '../lib/api';
 
 export const shouldRevalidate = (({ formMethod, defaultShouldRevalidate }) => {
 	if (formMethod !== 'POST') return false;
@@ -20,9 +20,8 @@ export const shouldRevalidate = (({ formMethod, defaultShouldRevalidate }) => {
 }) satisfies ShouldRevalidateFunction;
 
 export const clientLoader = (async () => {
-	const { data, error } = await api.me.get();
-	if (error) throw error;
-	return { user: data };
+	const user = await api.me.get().then(getDataOrThrow);
+	return { user };
 }) satisfies LoaderFunction;
 
 export type NavLoader = typeof clientLoader;
