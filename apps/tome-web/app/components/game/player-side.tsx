@@ -1,15 +1,14 @@
-import { IconHeart, IconHeartBroken } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { cva } from 'cva';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { COLORS, GameAction, Side, SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
+import { COLORS, Side, SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
 import type { SelectStackMessageSchema } from '../../../../tome-api/src/features/game/game.pubsub';
 import { invariant } from '../../../../tome-api/src/lib/utils';
 import { useGameStore } from '../../lib/game.utils';
-import { Badge } from '../badge';
-import { AnimatedNumber } from './animated-number';
+import { ActionTimer } from './action-timer';
+import { cardClass, cardSizeToClass } from './card';
 import { CardPile } from './card-pile';
 import { getVfxId } from './vfx-canvas';
 
@@ -27,23 +26,6 @@ const stackClass = cva({
 	},
 });
 
-const ActionProgressBar = ({ action }: { action?: GameAction }) => {
-	if (!action) return <div className="bg-accent-12/10 relative h-1 w-full"></div>;
-	const currentTime = Date.now();
-	const totalDuration = action.timesOutAt - action.requestedAt;
-	const elapsedTime = currentTime - action.requestedAt;
-	const progress = (elapsedTime / totalDuration) * 100;
-	const remainingTime = action.timesOutAt - currentTime;
-
-	return (
-		<div className="bg-accent-12/10 relative h-1 w-full">
-			<div
-				style={{ animationDuration: `${remainingTime}ms`, width: `${100 - progress}%` }}
-				className="animate-to-zero-width shadow-accent-9/50 bg-accent-9 absolute h-full rounded-r-full shadow-[0_0_6px]"
-			/>
-		</div>
-	);
-};
 interface PlayerSideProps {
 	relative: 'opponent' | 'self';
 	onSelectStack: ((params: SelectStackMessageSchema) => void) | undefined;
@@ -60,14 +42,13 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 	const boardSide = useGameStore(
 		s => s.state?.board[{ self: s.state.side, opponent: opposingSide(s.state.side) }[relative]],
 	);
-	const hp = boardSide?.hp ?? 0;
 
 	const [selectedStacks, setSelectedStacks] = useState<Set<SpellColor>>(new Set());
 	if (selectedStacks.size > 0 && playerAction?.type !== 'select_spell_stack') setSelectedStacks(new Set());
 
 	return (
-		<div className={clsx('flex flex-col items-center gap-2', { 'flex-col-reverse': relative === 'opponent' })}>
-			<ActionProgressBar action={boardSide?.action} />
+		<div className={clsx('flex flex-col items-center gap-2 ', { 'flex-col-reverse': relative === 'opponent' })}>
+			<ActionTimer relative={relative} />
 
 			<ol aria-label="Spell stacks" className={clsx('flex gap-4 px-4')}>
 				{COLORS.map(stack => {
@@ -80,67 +61,50 @@ export const PlayerSide = ({ relative, onSelectStack }: PlayerSideProps) => {
 								id={`stack-${topOfStack?.key || stack}`}
 								disabled={!canSelectStack}
 								aria-label={stack}
-								onClick={
-									canSelectStack ?
-										() => {
-											flushSync(() =>
-												setSelectedStacks(set => {
-													if (set.has(stack)) {
-														set.delete(stack);
-														return set;
-													}
-													return set.add(stack);
-												}),
-											);
-											invariant(playerAction?.type === 'select_spell_stack', 'Invalid action type');
-											if (
-												selectedStacks.size >= playerAction.config.min &&
-												selectedStacks.size <= playerAction.config.max
-											) {
-												onSelectStack?.({ type: 'select_spell_stack', stacks: Array.from(selectedStacks) });
+								onClick={() => {
+									if (!canSelectStack) return;
+									flushSync(() => {
+										setSelectedStacks(set => {
+											if (set.has(stack)) {
+												set.delete(stack);
+												return set;
 											}
-										}
-									:	undefined
-								}
+											return set.add(stack);
+										});
+									});
+									invariant(playerAction?.type === 'select_spell_stack', 'Invalid action type');
+									if (
+										selectedStacks.size >= playerAction.config.min &&
+										selectedStacks.size <= playerAction.config.max
+									) {
+										console.log('selected' + Array.from(selectedStacks));
+										onSelectStack?.({ type: 'select_spell_stack', stacks: Array.from(selectedStacks) });
+									}
+								}}
 								className={stackClass({
 									stack,
 									interactive: canSelectStack,
 									className: clsx('relative', { 'z-20': canSelectStack }),
 								})}
 							>
-								<div className="absolute bottom-3 right-3 rounded-full border border-white/25 px-2 py-0.5 text-xs text-white">
-									10
-								</div>
 								{casting && (
 									<div className="pointer-events-none absolute z-10 translate-y-1/2">
 										<CardPile size="sm" cards={casting} last={casting.length} />
 									</div>
 								)}
-								<CardPile cards={boardSide?.stacks[stack] ?? []} last={2} size="sm" />
+								{boardSide?.stacks[stack] && boardSide?.stacks[stack].length > 0 ?
+									<CardPile cards={boardSide?.stacks[stack]} last={30} size="sm" variant="pile" />
+								:	<div className={cardClass({ className: cardSizeToClass['sm'] })}>
+										<div className="absolute bottom-3 right-3 rounded-full border border-white/25 px-2 py-0.5 text-xs text-white">
+											10
+										</div>
+									</div>
+								}
 							</button>
 						</li>
 					);
 				})}
 			</ol>
-
-			<Badge
-				id={absoluteSide ? getVfxId({ type: 'player', side: absoluteSide }) : undefined}
-				className="flex items-center gap-2"
-			>
-				{hp > 0 ?
-					<IconHeart />
-				:	<IconHeartBroken />}
-				<AnimatedNumber className="text-md font-bold tracking-tight">{hp}</AnimatedNumber>
-			</Badge>
-
-			<div
-				className={clsx('flex w-full justify-between p-4', {
-					'flex-row-reverse items-start': relative === 'opponent',
-					'items-end': relative === 'self',
-				})}
-			>
-				<CardPile aria-label="Draw pile" cards={boardSide?.drawPile ?? []} last={2} size="sm" />
-			</div>
 		</div>
 	);
 };

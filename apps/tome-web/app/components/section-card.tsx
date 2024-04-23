@@ -34,9 +34,12 @@ const Content = ({ children, className, ...props }: SectionCardContentProps) => 
 	</div>
 );
 
-const Root = ({ children }: { children?: ReactNode }) => {
+interface SectionCardContentProps extends ComponentPropsWithoutRef<'div'> {
+	children?: ReactNode;
+}
+const Root = ({ children, className, ...props }: SectionCardContentProps) => {
 	return (
-		<section className="bg-neutral-2 rounded-6 mx-auto flex w-full max-w-screen-lg flex-col gap-2 p-2">
+		<section className={clsx('bg-neutral-2 rounded-6 flex w-full flex-col gap-2 p-2', className)} {...props}>
 			{children}
 		</section>
 	);

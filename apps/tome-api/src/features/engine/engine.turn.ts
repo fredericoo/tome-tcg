@@ -68,6 +68,10 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	}
 
 	yield game;
+	yield log({
+		type: 'log',
+		text: `TURN ${game.finishedTurns.length + 1}`,
+	});
 
 	// if first turn, draw cards
 	if (game.finishedTurns.length === 0) {
@@ -191,7 +195,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	for (const { card, side, stack } of preparedSpellCards) {
 		yield log({
 			type: 'log',
-			text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
+			text: `{{player}} reveals they’ll prepare {{card}} to the ${stack} stack.`,
 			dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
 		});
 		if (card.effects.onReveal) {
@@ -209,7 +213,7 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 	for (const { card, side, stack } of preparedFieldCards) {
 		yield log({
 			type: 'log',
-			text: `{{player}} reveals they’ll will prepare {{card}} to the ${stack} stack.`,
+			text: `{{player}} reveals they’ll prepare {{card}} to the ${stack} stack.`,
 			dynamic: { player: { type: 'player', side }, card: { type: 'card', card } },
 		});
 		if (card.effects.onReveal) {
@@ -444,10 +448,6 @@ export async function* handleTurn(params: HandleTurnParmas): AsyncGenerator<Game
 
 	// end of turn
 	game.finishedTurns.push(game.turn);
-	yield log({
-		type: 'log',
-		text: `End of turn ${game.finishedTurns.length}`,
-	});
 	game.turn = initialiseTurn();
 	yield* handleTurn(params);
 }

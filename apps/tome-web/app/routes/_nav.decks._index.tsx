@@ -1,5 +1,5 @@
 import { Link } from '@remix-run/react';
-import { IconCards, IconCirclePlus } from '@tabler/icons-react';
+import { IconCards, IconCardsFilled, IconCirclePlus } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
 
@@ -20,7 +20,7 @@ export default function Page() {
 	const { decks, cardData } = useLoaderData<typeof clientLoader>();
 
 	return (
-		<SectionCard.Root>
+		<SectionCard.Root className="mx-auto max-w-lg">
 			<SectionCard.Header>
 				<SectionCard.TitleBar Icon={IconCards}>
 					<div>
@@ -30,28 +30,37 @@ export default function Page() {
 				</SectionCard.TitleBar>
 				<aside>
 					<Button asChild>
-						<Link to="/decks/new">
+						<Link to="/decks/new" prefetch="intent">
 							<IconCirclePlus /> <span>Create</span>
 						</Link>
 					</Button>
 				</aside>
 			</SectionCard.Header>
-			<SectionCard.Content className="p-3">
+			<SectionCard.Content>
 				<Suspense fallback={<div>Loading…</div>}>
 					<Await resolve={decks} errorElement={<GenericErrorBoundary />}>
 						{decks => {
 							if (decks.length === 0)
 								return <p className="body-sm text-neutral-11 p-4 text-center">We’re ready for your first deck!</p>;
 							return (
-								<ul className="flex flex-col gap-2">
+								<ul>
 									{decks.map(deck => (
-										<li key={deck.id}>
+										<li
+											key={deck.id}
+											className="first-of-type:rounded-t-4 last-of-type:rounded-b-4 hover:bg-neutral-1 active:bg-neutral-2 [&:not(:last-of-type)]:border-b"
+										>
 											<Link
-												className="bg-neutral-1 hover:bg-accent-2 hover:text-accent-11 active:bg-accent-3 rounded-2 fr ease-expo-out block px-4 py-2 transition-all duration-100"
+												prefetch="render"
 												to={`/decks/${deck.id}`}
+												className="fr ease-expo-out pointer-fine:hover:px-6 flex items-center gap-4 rounded-[inherit] p-4 transition-all duration-300"
 											>
-												<p className="heading-sm truncate">{deck.name || 'Untitled deck'}</p>
-												<DeckColorCounts className="text-accent-12" cardData={cardData} cardsList={deck.cards} />
+												<div className="flex flex-shrink flex-grow items-center gap-4 overflow-hidden">
+													<IconCardsFilled /> <span className="truncate">{deck.name || 'Untitled deck'}</span>
+												</div>
+
+												<div className="flex-none">
+													<DeckColorCounts className="text-accent-12" cardData={cardData} cardsList={deck.cards} />
+												</div>
 											</Link>
 										</li>
 									))}

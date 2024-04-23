@@ -1,35 +1,42 @@
-import * as Tooltip from '@radix-ui/react-tooltip';
 import type { MetaFunction } from '@remix-run/node';
-import { ClientLoaderFunction, redirect, useLoaderData } from '@remix-run/react';
 import { cva } from 'cva';
-import { motion } from 'framer-motion';
+import { Suspense } from 'react';
+import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesafe';
 
+import { invariant } from '../../../tome-api/src/lib/utils';
 import { Badge } from '../components/badge';
-import { getCardImageSrc, isShownCard } from '../components/game/card';
+import { Button } from '../components/button';
+import { ActiveFieldBg } from '../components/game/active-field-bg';
+import { isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
 import { Chat } from '../components/game/chat';
+import { Ping } from '../components/game/ping';
 import { PlayerActionOverlay } from '../components/game/player-action-overlay';
 import { PlayerHand } from '../components/game/player-hand';
 import { PlayerSide } from '../components/game/player-side';
 import { TurnPhaseMeter } from '../components/game/turn-phase-meter';
 import { VfxCanvas } from '../components/game/vfx-canvas';
-import { Image } from '../components/image';
+import { GenericErrorBoundary } from '../components/generic-error-boundary';
 import { api, getDataOrThrow } from '../lib/api';
 import { CardDataProvider, useCardData } from '../lib/card-data';
-import { useGameStore, useGameSub } from '../lib/game.utils';
+import { GameProvider, useGameStore, useGameSub } from '../lib/game.utils';
 
 export const meta: MetaFunction = () => {
 	return [{ title: 'Games' }, { name: 'description', content: ':)' }];
 };
 
+const getGameById = (id: string) => api.games({ id }).get().then(getDataOrThrow);
+type GameData = Awaited<ReturnType<typeof getGameById>>;
+
 export const clientLoader = (async ({ params }) => {
 	const gameId = params.id;
-	if (!gameId) return redirect('/games');
+	invariant(typeof gameId === 'string', 'Game ID must be a string');
 
-	const data = await api.games({ id: gameId }).get().then(getDataOrThrow);
-
-	return data;
-}) satisfies ClientLoaderFunction;
+	return defer({
+		game: getGameById(gameId),
+		cardData: api.cards.index.get().then(getDataOrThrow),
+	});
+}) satisfies LoaderFunction;
 
 const middleSectionClass = cva({
 	base: 'flex flex-grow items-center justify-center relative',
@@ -48,9 +55,9 @@ const middleSectionClass = cva({
 
 const MiddleSection = () => {
 	const cardData = useCardData();
-	const field = useGameStore(s => s.state?.board.field);
 	const sideACastingField = useGameStore(s => s.state?.board.sideA.casting.field);
 	const sideBCastingField = useGameStore(s => s.state?.board.sideB.casting.field);
+	const field = useGameStore(s => s.state?.board.field);
 	const activeFieldCard = field?.at(-1);
 	const activeFieldCardData =
 		activeFieldCard && isShownCard(activeFieldCard) ? cardData[activeFieldCard.id] : undefined;
@@ -58,21 +65,6 @@ const MiddleSection = () => {
 
 	return (
 		<section className={middleSectionClass({ active: activeColor })}>
-			{activeFieldCard && isShownCard(activeFieldCard) && (
-				<motion.div
-					key={activeFieldCard.id}
-					initial={{ opacity: 0, scale: 0 }}
-					animate={{ opacity: 0.3, scale: 1 }}
-					className="pointer-events-none absolute inset-0 z-0"
-				>
-					<Image
-						src={getCardImageSrc(activeFieldCard.id)}
-						className=" h-full w-full scale-125 object-cover blur-xl"
-						srcWidth="100vw"
-					/>
-				</motion.div>
-			)}
-
 			<div className="flex flex-1"></div>
 
 			<CardPile cards={field ?? []} last={2} size="sm" />
@@ -91,42 +83,59 @@ const MiddleSection = () => {
 	);
 };
 
-const Ping = () => {
-	const sentAt = useGameStore(s => s.state?.sentAt);
-	if (!sentAt) return null;
-	const now = Date.now();
-	const ping = sentAt ? now - sentAt : undefined;
-	if (!ping) return null;
-	return <div className="label-xs text-neutral-10 px-2">{Math.abs(ping)}ms</div>;
-};
-
-export default function Page() {
-	const { game, cards: cardData } = useLoaderData<typeof clientLoader>();
+const Game = ({ game }: { game: GameData }) => {
 	const { reconnect, status, sub } = useGameSub(game.id);
 
 	return (
-		<Tooltip.Provider delayDuration={100}>
-			<CardDataProvider value={cardData}>
-				<div className="bg-accent-1 relative flex h-screen w-full flex-col overflow-hidden">
-					<PlayerActionOverlay />
-					<Chat sides={game} />
+		<div className="flex h-screen">
+			<div className="bg-accent-1 relative flex h-full w-full flex-shrink flex-grow flex-col gap-2 overflow-hidden">
+				<ActiveFieldBg />
+				<PlayerActionOverlay />
 
-					<nav className="rounded-2 ring-accent-11/5 shadow-surface-md surface-neutral absolute left-2 top-2 z-50 flex items-center gap-2 bg-white p-2 ring-1">
-						<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
-						<Ping />
-						{status === 'disconnected' && <button onClick={reconnect}>Reconnect</button>}
-					</nav>
+				<PlayerHand onSelectFromHand={m => sub?.send(m)} relative="opponent" />
+				<PlayerSide onSelectStack={m => sub?.send(m)} relative="opponent" />
 
-					<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="opponent" />
-					<PlayerSide onSelectStack={p => sub?.send(p)} relative="opponent" />
+				<MiddleSection />
 
-					<MiddleSection />
+				<PlayerSide onSelectStack={m => sub?.send(m)} relative="self" />
+				<PlayerHand onSelectFromHand={m => sub?.send(m)} relative="self" />
 
-					<PlayerSide onSelectStack={p => sub?.send(p)} relative="self" />
-					<PlayerHand onSelectFromHand={p => sub?.send(p)} relative="self" />
-					<VfxCanvas />
-				</div>
-			</CardDataProvider>
-		</Tooltip.Provider>
+				<VfxCanvas />
+			</div>
+			<div className="relative hidden h-full w-full max-w-md flex-grow flex-col md:flex">
+				<nav className="bg-neutral-11 flex h-16 items-center justify-end gap-2 px-4">
+					<Ping />
+					{status === 'disconnected' && (
+						<Button variant="outline" size="sm" onClick={reconnect}>
+							Reconnect
+						</Button>
+					)}
+					<Badge colorScheme={status === 'connected' ? 'positive' : 'negative'}>{status}</Badge>
+				</nav>
+				<Chat sides={game} />
+			</div>
+		</div>
+	);
+};
+
+export default function Page() {
+	const { game, cardData } = useLoaderData<typeof clientLoader>();
+
+	return (
+		<Suspense fallback={<div>Loading...</div>}>
+			<Await resolve={cardData} errorElement={<GenericErrorBoundary />}>
+				{cardData => (
+					<Await resolve={game} errorElement={<GenericErrorBoundary />}>
+						{game => (
+							<CardDataProvider value={cardData}>
+								<GameProvider initialValue={undefined}>
+									<Game game={game} />
+								</GameProvider>
+							</CardDataProvider>
+						)}
+					</Await>
+				)}
+			</Await>
+		</Suspense>
 	);
 }

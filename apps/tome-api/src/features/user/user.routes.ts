@@ -1,4 +1,4 @@
-import { and, eq, like, or } from 'drizzle-orm';
+import { and, eq, like, not, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { Elysia, error, t } from 'elysia';
 
@@ -37,7 +37,7 @@ export const userRoutes = new Elysia()
 				sideB: sideB,
 			})
 			.from(games)
-			.where(and(gameIncludesUser, eq(games.status, 'CREATED')))
+			.where(and(gameIncludesUser, not(eq(games.status, 'FINISHED'))))
 			.innerJoin(sideA, eq(games.sideA, sideA.id))
 			.innerJoin(sideB, eq(games.sideB, sideB.id));
 	});

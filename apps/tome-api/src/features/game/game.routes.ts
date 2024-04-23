@@ -6,7 +6,6 @@ import { db } from '../../db';
 import { games, users } from '../../db/schema';
 import { takeFirst, takeFirstOrThrow } from '../../lib/utils';
 import { withUser } from '../auth/auth.plugin';
-import { cardDb } from '../card/card.db';
 import { gamePubSub } from './game.pubsub';
 
 export const gameRoutes = new Elysia({ prefix: '/games' })
@@ -33,7 +32,7 @@ export const gameRoutes = new Elysia({ prefix: '/games' })
 
 		if (!game) return error('Not Found', 'Game not found');
 
-		return { game, cards: cardDb };
+		return game;
 	})
 	.post(
 		'/',

@@ -39,7 +39,7 @@ export default function Layout() {
 					</Link>
 					<div className="flex flex-1 items-center justify-end gap-2"></div>
 				</nav>
-				<div className="flex flex-col gap-8 py-4 pb-24">
+				<div className="pb-24">
 					<Outlet />
 				</div>
 			</main>

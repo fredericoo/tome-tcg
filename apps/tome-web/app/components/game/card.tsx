@@ -1,4 +1,3 @@
-import * as Tooltip from '@radix-ui/react-tooltip';
 import clsx from 'clsx';
 import { cva } from 'cva';
 import { MotionProps, motion } from 'framer-motion';
@@ -61,26 +60,17 @@ export const GameCard = ({ info, size, className, ...props }: GameCardProps) => 
 	const face = isShownCard(info) ? 'front' : 'back';
 
 	return (
-		<Tooltip.Root open={face === 'back' ? false : undefined}>
-			<Tooltip.Trigger asChild>
-				<motion.div
-					id={getVfxId({ type: 'card', cardKey: info.key })}
-					layoutId={info.key.toString()}
-					initial={false}
-					layout="preserve-aspect"
-					onMouseEnter={() => setHovered(info.key)}
-					onMouseLeave={() => setHovered(null)}
-					{...props}
-				>
-					<Card face={face} pubsubCard={info} size={size} className={clsx(className, cardSizeToClass[size])} />
-				</motion.div>
-			</Tooltip.Trigger>
-			<Tooltip.Portal>
-				<Tooltip.Content sideOffset={5} sticky="always" collisionPadding={16} side="top" style={{ zIndex: 60 }}>
-					<Card face="front" pubsubCard={info} size="lg" className={className} />
-				</Tooltip.Content>
-			</Tooltip.Portal>
-		</Tooltip.Root>
+		<motion.div
+			id={getVfxId({ type: 'card', cardKey: info.key })}
+			layoutId={info.key.toString()}
+			initial={false}
+			layout="preserve-aspect"
+			onMouseEnter={() => setHovered(info.key)}
+			onMouseLeave={() => setHovered(null)}
+			{...props}
+		>
+			<Card face={face} pubsubCard={info} size={size} className={clsx(className, cardSizeToClass[size])} />
+		</motion.div>
 	);
 };
 

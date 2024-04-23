@@ -17,7 +17,11 @@ export const clientLoader = (async ({ params }) => {
 	invariant(typeof params.id === 'string', 'Deck ID must be a string');
 
 	return defer({
-		deck: api.decks({ deckId: params.id }).get().then(getDataOrThrow),
+		deck: api
+			.decks({ deckId: params.id })
+			.get()
+			.then(getDataOrThrow)
+			.then(deck => ({ ...deck, cards: cardsListToMap(deck.cards) })),
 		cardData: api.cards.index.get().then(getDataOrThrow),
 	});
 }) satisfies LoaderFunction;
@@ -41,24 +45,21 @@ export default function Page() {
 			</header>
 			<Suspense fallback={<div>Loading...</div>}>
 				<Await resolve={deck} errorElement={<GenericErrorBoundary />}>
-					{deck => {
-						const cardsMap = cardsListToMap(deck.cards);
-						return (
-							<>
-								<DeckSettings defaultValues={{ name: deck.name }} />
-								<Await resolve={cardData} errorElement={<GenericErrorBoundary />}>
-									{cardData => (
-										<CardBuilderProvider initialValue={{ cards: cardsMap }}>
-											<CardDataProvider value={cardData}>
-												<CardLibrary />
-												<DeckFloatingMenu />
-											</CardDataProvider>
-										</CardBuilderProvider>
-									)}
-								</Await>
-							</>
-						);
-					}}
+					{deck => (
+						<>
+							<DeckSettings defaultValues={{ name: deck.name }} />
+							<Await resolve={cardData} errorElement={<GenericErrorBoundary />}>
+								{cardData => (
+									<CardBuilderProvider initialValue={{ cards: deck.cards }}>
+										<CardDataProvider value={cardData}>
+											<CardLibrary />
+											<DeckFloatingMenu />
+										</CardDataProvider>
+									</CardBuilderProvider>
+								)}
+							</Await>
+						</>
+					)}
 				</Await>
 			</Suspense>
 		</div>

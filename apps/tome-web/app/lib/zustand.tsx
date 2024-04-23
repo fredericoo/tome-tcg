@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { createContext } from 'react';
 import { StoreApi, UseBoundStore } from 'zustand';
 
 export const createZustandContext = <TInitial, TStore extends UseBoundStore<StoreApi<any>>>(
 	getStore: (initial: TInitial) => TStore,
 ) => {
-	const Context = React.createContext<TStore | null>(null);
+	const Context = createContext<TStore | null>(null);
 
 	const Provider = (props: { children?: React.ReactNode; initialValue: TInitial }) => {
 		const [store] = React.useState(() => getStore(props.initialValue));
@@ -20,7 +20,6 @@ export const createZustandContext = <TInitial, TStore extends UseBoundStore<Stor
 			}
 			return store(selector);
 		}) as TStore,
-		Context,
 		Provider,
 	};
 };

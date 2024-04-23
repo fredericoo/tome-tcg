@@ -180,7 +180,7 @@ export const Guide = () => {
 					{steps.map((step, i) => (
 						<li
 							data-step={i}
-							className="flex w-full shrink-0 flex-col gap-4 p-4 [scroll-snap-align:start]"
+							className="flex w-full shrink-0 flex-col gap-4 p-6 [scroll-snap-align:start]"
 							key={step.id}
 						>
 							<div className="aspect-video"></div>
