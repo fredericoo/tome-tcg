@@ -42,6 +42,7 @@
 		"react-dom": "^18.2.0",
 		"react-router-typesafe": "^1.4.4",
 		"react-string-replace": "^1.1.1",
+		"remix-utils": "^7.6.0",
 		"swr-loader": "^0.3.2",
 		"tailwindcss-animate": "^1.0.7",
 		"ts-pattern": "^5.0.8",

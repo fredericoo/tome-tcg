@@ -184,6 +184,9 @@ importers:
       react-string-replace:
         specifier: ^1.1.1
         version: 1.1.1
+      remix-utils:
+        specifier: ^7.6.0
+        version: 7.6.0(@remix-run/node@2.8.1)(@remix-run/react@2.8.1)(react@18.2.0)
       swr-loader:
         specifier: ^0.3.2
         version: 0.3.2(react-router-dom@6.22.3)(react@18.2.0)(typescript@5.3.3)(zustand@4.5.2)
@@ -199,7 +202,7 @@ importers:
     devDependencies:
       '@remix-run/dev':
         specifier: ^2.8.1
-        version: 2.8.1(typescript@5.3.3)(vite@5.1.6)
+        version: 2.8.1(@types/node@20.11.21)(typescript@5.3.3)(vite@5.1.6)
       '@total-typescript/ts-reset':
         specifier: ^0.5.1
         version: 0.5.1
@@ -259,7 +262,7 @@ importers:
         version: 5.3.3
       vite:
         specifier: ^5.1.0
-        version: 5.1.6
+        version: 5.1.6(@types/node@20.11.21)
       vite-plugin-image-optimizer:
         specifier: ^1.1.7
         version: 1.1.7(vite@5.1.6)
@@ -3204,7 +3207,7 @@ packages:
       '@babel/runtime': 7.23.2
     dev: false
 
-  /@remix-run/dev@2.8.1(typescript@5.3.3)(vite@5.1.6):
+  /@remix-run/dev@2.8.1(@types/node@20.11.21)(typescript@5.3.3)(vite@5.1.6):
     resolution: {integrity: sha512-qFt4jAsAJeIOyg6ngeSnTG/9Z5N9QJfeThP/8wRHc1crqYgTiEtcI3DZ8WlAXjVSF5emgn/ZZKqzLAI02OgMfQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -3237,7 +3240,7 @@ packages:
       '@remix-run/router': 1.15.3-pre.0
       '@remix-run/server-runtime': 2.8.1(typescript@5.3.3)
       '@types/mdx': 2.0.11
-      '@vanilla-extract/integration': 6.5.0
+      '@vanilla-extract/integration': 6.5.0(@types/node@20.11.21)
       arg: 5.0.2
       cacache: 17.1.4
       chalk: 4.1.2
@@ -3276,7 +3279,7 @@ packages:
       tar-fs: 2.1.1
       tsconfig-paths: 4.2.0
       typescript: 5.3.3
-      vite: 5.1.6
+      vite: 5.1.6(@types/node@20.11.21)
       ws: 7.5.9
     transitivePeerDependencies:
       - '@types/node'
@@ -3888,7 +3891,7 @@ packages:
       outdent: 0.8.0
     dev: true
 
-  /@vanilla-extract/integration@6.5.0:
+  /@vanilla-extract/integration@6.5.0(@types/node@20.11.21):
     resolution: {integrity: sha512-E2YcfO8vA+vs+ua+gpvy1HRqvgWbI+MTlUpxA8FvatOvybuNcWAY0CKwQ/Gpj7rswYKtC6C7+xw33emM6/ImdQ==}
     dependencies:
       '@babel/core': 7.24.0
@@ -3902,8 +3905,8 @@ packages:
       lodash: 4.17.21
       mlly: 1.6.1
       outdent: 0.8.0
-      vite: 5.1.6
-      vite-node: 1.4.0
+      vite: 5.1.6(@types/node@20.11.21)
+      vite-node: 1.4.0(@types/node@20.11.21)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -9634,6 +9637,48 @@ packages:
     resolution: {integrity: sha512-rJGaZ0AddKSidfCTRBoRjyLTgEQpElxLxxd8lFIs2T+AnfbKrzyVeYvsHzQzmHFw7xThvBXSFvfofj5mS9B34A==}
     dev: false
 
+  /remix-utils@7.6.0(@remix-run/node@2.8.1)(@remix-run/react@2.8.1)(react@18.2.0):
+    resolution: {integrity: sha512-BPhCUEy+nwrhDDDg2v3+LFSszV6tluMbeSkbffj2o4tqZxt5Kn69Y9sNpGxYLAj8gjqeYDuxjv55of+gYnnykA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@remix-run/cloudflare': ^2.0.0
+      '@remix-run/deno': ^2.0.0
+      '@remix-run/node': ^2.0.0
+      '@remix-run/react': ^2.0.0
+      '@remix-run/router': ^1.7.2
+      crypto-js: ^4.1.1
+      intl-parse-accept-language: ^1.0.0
+      is-ip: ^5.0.1
+      react: ^18.0.0
+      zod: ^3.22.4
+    peerDependenciesMeta:
+      '@remix-run/cloudflare':
+        optional: true
+      '@remix-run/deno':
+        optional: true
+      '@remix-run/node':
+        optional: true
+      '@remix-run/react':
+        optional: true
+      '@remix-run/router':
+        optional: true
+      crypto-js:
+        optional: true
+      intl-parse-accept-language:
+        optional: true
+      is-ip:
+        optional: true
+      react:
+        optional: true
+      zod:
+        optional: true
+    dependencies:
+      '@remix-run/node': 2.8.1(typescript@5.3.3)
+      '@remix-run/react': 2.8.1(react-dom@18.2.0)(react@18.2.0)(typescript@5.3.3)
+      react: 18.2.0
+      type-fest: 4.17.0
+    dev: false
+
   /require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -10705,6 +10750,11 @@ packages:
     engines: {node: '>=8'}
     dev: false
 
+  /type-fest@4.17.0:
+    resolution: {integrity: sha512-9flrz1zkfLRH3jO3bLflmTxryzKMxVa7841VeMgBaNQGY6vH4RCcpN/sQLB7mQQYh1GZ5utT2deypMuCy4yicw==}
+    engines: {node: '>=16'}
+    dev: false
+
   /type-is@1.6.18:
     resolution: {integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==}
     engines: {node: '>= 0.6'}
@@ -11056,7 +11106,7 @@ packages:
       vfile-message: 3.1.4
     dev: true
 
-  /vite-node@1.4.0:
+  /vite-node@1.4.0(@types/node@20.11.21):
     resolution: {integrity: sha512-VZDAseqjrHgNd4Kh8icYHWzTKSCZMhia7GyHfhtzLW33fZlG9SwsB6CEhgyVOWkJfJ2pFLrp/Gj1FSfAiqH9Lw==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -11065,7 +11115,7 @@ packages:
       debug: 4.3.4
       pathe: 1.1.2
       picocolors: 1.0.0
-      vite: 5.1.6
+      vite: 5.1.6(@types/node@20.11.21)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -11085,7 +11135,7 @@ packages:
     dependencies:
       ansi-colors: 4.1.3
       pathe: 1.1.2
-      vite: 5.1.6
+      vite: 5.1.6(@types/node@20.11.21)
     dev: true
 
   /vite-tsconfig-paths@4.3.2(typescript@5.3.3)(vite@5.1.6):
@@ -11099,13 +11149,13 @@ packages:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 3.0.3(typescript@5.3.3)
-      vite: 5.1.6
+      vite: 5.1.6(@types/node@20.11.21)
     transitivePeerDependencies:
       - supports-color
       - typescript
     dev: true
 
-  /vite@5.1.6:
+  /vite@5.1.6(@types/node@20.11.21):
     resolution: {integrity: sha512-yYIAZs9nVfRJ/AiOLCA91zzhjsHUgMjB+EigzFb6W2XTLO8JixBCKCjvhKZaye+NKYHCrkv3Oh50dH9EdLU2RA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -11133,6 +11183,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.11.21
       esbuild: 0.19.12
       postcss: 8.4.36
       rollup: 4.13.0
