@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PubSubCard, SelectFromHandMessageSchema } from '../../../../tome-api/src/features/game/game.pubsub';
 import { useGameStore } from '../../lib/game.utils';
 import { Button } from '../button';
+import { useCardHoverEvents } from '../card-details-overlay';
 import { GameCard } from './card';
 import { opposingSide } from './player-side';
 import { PlayerStats } from './player-stats';
@@ -48,16 +49,17 @@ const HandCard = ({
 			return diff * diff * 128 * multiplier;
 		}),
 	};
+	const handlers = useCardHoverEvents(pubsubCard);
 
 	if (!interactive)
 		return (
-			<motion.li ref={ref} style={style}>
+			<motion.li ref={ref} style={style} {...handlers}>
 				<GameCard size="md" info={pubsubCard} />
 			</motion.li>
 		);
 
 	return (
-		<motion.li style={style} ref={ref}>
+		<motion.li style={style} ref={ref} {...handlers}>
 			<button className="m-0 block p-0" onClick={() => onSelect(pubsubCard)}>
 				<GameCard
 					className={interactive ? 'hover:ring-accent-9/80 hover:ring-4' : undefined}

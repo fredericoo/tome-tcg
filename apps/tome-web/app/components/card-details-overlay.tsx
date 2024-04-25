@@ -40,10 +40,6 @@ export function useLongPress(
 	const timerId = useRef<Timer | undefined>();
 
 	return useMemo(() => {
-		if (typeof callback !== 'function') {
-			return {};
-		}
-
 		const start = (event: React.MouseEvent | React.TouchEvent) => {
 			if (!isMouseEvent(event) && !isTouchEvent(event)) return;
 
@@ -97,7 +93,7 @@ export function useLongPress(
 		return {
 			...mouseHandlers,
 			...touchHandlers,
-		};
+		} as const;
 	}, [callback, threshold, onCancel, onFinish, onStart]);
 }
 
@@ -126,9 +122,6 @@ export const CardDetailsOverlay = () => {
 
 	return (
 		<motion.div
-			initial={{ backdropFilter: 'blur(0px)' }}
-			animate={{ backdropFilter: 'blur(8px)' }}
-			exit={{ backdropFilter: 'blur(0px)' }}
 			onClick={e => {
 				e.preventDefault();
 				e.stopPropagation();

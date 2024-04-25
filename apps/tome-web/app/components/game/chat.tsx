@@ -3,35 +3,24 @@ import reactStringReplace from 'react-string-replace';
 
 import type { Side } from '../../../../tome-api/src/features/engine/engine.game';
 import type { SanitisedLogIteration } from '../../../../tome-api/src/features/engine/engine.log';
+import { PubSubCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { useCardData } from '../../lib/card-data';
 import { useGameStore } from '../../lib/game.utils';
+import { useCardHoverEvents } from '../card-details-overlay';
+import { isShownCard } from './card';
 
 const handlebarsRegex = /{{([^{}]+)}}/g;
 
 type ParseableSides = Record<Side, { username: string | null }>;
 
-export const CardPreview = ({ pubsubCard }: { pubsubCard: { id: string } }) => {
+export const CardPreview = ({ pubsubCard }: { pubsubCard: PubSubCard }) => {
 	const cardData = useCardData();
-	// const [isHovered, setIsHovered] = useState(false);
-	const card = cardData[pubsubCard.id];
+	const handlers = useCardHoverEvents(pubsubCard);
+	const card = isShownCard(pubsubCard) ? cardData[pubsubCard.id] : undefined;
 
 	return (
-		<span
-			className="relative font-bold"
-			// onMouseEnter={() => setIsHovered(true)}
-			// onMouseLeave={() => setIsHovered(false)}
-		>
-			{/* {isHovered && card && (
-				<div
-					className={cardClass({
-						size: 'lg',
-						className: 'animate-card-preview pointer-events-none absolute -top-2 left-1/2 z-50 shadow-xl',
-					})}
-				>
-					<CardFront card={pubsubCard} size="lg" />
-				</div>
-			)} */}
-			{card?.name ?? 'Unkown card'}
+		<span className="relative font-bold" {...handlers}>
+			{card?.name ?? 'Unknown card'}
 		</span>
 	);
 };

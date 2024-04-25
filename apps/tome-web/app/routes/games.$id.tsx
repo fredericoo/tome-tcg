@@ -6,6 +6,7 @@ import { Await, LoaderFunction, defer, useLoaderData } from 'react-router-typesa
 import { invariant } from '../../../tome-api/src/lib/utils';
 import { Badge } from '../components/badge';
 import { Button } from '../components/button';
+import { CardDetailsOverlay } from '../components/card-details-overlay';
 import { ActiveFieldBg } from '../components/game/active-field-bg';
 import { isShownCard } from '../components/game/card';
 import { CardPile } from '../components/game/card-pile';
@@ -87,7 +88,7 @@ const Game = ({ game }: { game: GameData }) => {
 	const { reconnect, status, sub } = useGameSub(game.id);
 
 	return (
-		<div className="flex h-screen">
+		<div className="flex h-[100lvh] h-screen">
 			<div className="bg-accent-1 relative flex h-full w-full flex-shrink flex-grow flex-col gap-2 overflow-hidden">
 				<ActiveFieldBg />
 				<PlayerActionOverlay />
@@ -130,6 +131,7 @@ export default function Page() {
 							<CardDataProvider value={cardData}>
 								<GameProvider initialValue={undefined}>
 									<Game game={game} />
+									<CardDetailsOverlay />
 								</GameProvider>
 							</CardDataProvider>
 						)}
