@@ -2,12 +2,12 @@ import clsx from 'clsx';
 import { cva } from 'cva';
 import { MotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef, forwardRef } from 'react';
-import { create } from 'zustand';
 
 import type { SpellColor } from '../../../../tome-api/src/features/engine/engine.game';
 import type { PubSubCard, PubSubShownCard } from '../../../../tome-api/src/features/game/game.pubsub';
 import { exhaustive, invariant } from '../../../../tome-api/src/lib/utils';
 import { CardData, useCardData } from '../../lib/card-data';
+import { useHoveredCard } from '../card-details-overlay';
 import { Image } from '../image';
 import { getVfxId } from './vfx-canvas';
 
@@ -38,15 +38,6 @@ export const cardClass = cva({
 		},
 	},
 });
-
-type HoveredCardStore = {
-	hoveredCard: PubSubCard | null;
-	setHoveredCard: (card: PubSubCard | null) => void;
-};
-export const useHoveredCard = create<HoveredCardStore>(set => ({
-	hoveredCard: null,
-	setHoveredCard: hoveredCard => set({ hoveredCard }),
-}));
 
 export interface GameCardProps
 	extends Omit<ComponentPropsWithoutRef<'div'>, keyof MotionProps | 'id' | 'onMouseEnter' | 'onMouseLeave'> {

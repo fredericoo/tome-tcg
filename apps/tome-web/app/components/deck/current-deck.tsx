@@ -5,7 +5,8 @@ import { useEffect, useRef } from 'react';
 import { useActionData } from 'react-router-typesafe';
 
 import { Button } from '../button';
-import { Card, useHoveredCard } from '../game/card';
+import { useCardHoverEvents } from '../card-details-overlay';
+import { Card } from '../game/card';
 import { cardsMapToArray, useCardBuilderStore } from './card-builder-store';
 
 const ErrorMessage = () => {
@@ -23,7 +24,6 @@ const ErrorMessage = () => {
 
 const CoverflowCard = ({ id, parentRef }: { id: string; parentRef: React.RefObject<HTMLUListElement> }) => {
 	const ref = useRef<HTMLLIElement>(null);
-	const setHovered = useHoveredCard(s => s.setHoveredCard);
 	const { scrollXProgress } = useScroll({
 		container: parentRef,
 		target: ref,
@@ -45,6 +45,8 @@ const CoverflowCard = ({ id, parentRef }: { id: string; parentRef: React.RefObje
 		return 30 - Math.abs(diff);
 	});
 
+	const handlers = useCardHoverEvents({ id, key: 0 });
+
 	return (
 		<motion.li
 			initial={{ opacity: 0, y: -100 }}
@@ -53,12 +55,7 @@ const CoverflowCard = ({ id, parentRef }: { id: string; parentRef: React.RefObje
 			ref={ref}
 			style={{ zIndex, rotateY, x }}
 			className="flex-none snap-center"
-			onContextMenu={e => {
-				e.preventDefault();
-				setHovered({ id, key: 0 });
-			}}
-			onMouseEnter={() => setHovered({ id, key: 0 })}
-			onMouseLeave={() => setHovered(null)}
+			{...handlers}
 		>
 			<Card face="front" size="sm" pubsubCard={{ id, key: 0 }} className="h-[10vh] shadow-md" />
 		</motion.li>
