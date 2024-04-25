@@ -3,6 +3,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { ActionFunction, LoaderFunction, defer, redirect, useLoaderData } from 'react-router-typesafe';
 
 import { Button } from '../components/button';
+import { CardDetailsOverlay } from '../components/card-details-overlay';
 import { CardBuilderProvider } from '../components/deck/card-builder-store';
 import { CardLibrary } from '../components/deck/card-library';
 import { DeckFloatingMenu } from '../components/deck/deck-floating-menu';
@@ -48,6 +49,8 @@ export default function Page() {
 					<DeckFloatingMenu />
 				</CardBuilderProvider>
 			</div>
+
+			<CardDetailsOverlay />
 		</CardDataProvider>
 	);
 }

@@ -5,7 +5,7 @@ import { cva } from 'cva';
 import * as React from 'react';
 
 const avatarVariants = cva({
-	base: 'relative flex shrink-0 overflow-hidden ring-2 text-neutral-12 ring-neutral-1 rounded-full fr',
+	base: '@container relative flex shrink-0 overflow-hidden border text-neutral-11  border-neutral-4 rounded-full fr',
 	variants: {
 		size: {
 			xl: 'h-16 w-16',
@@ -42,7 +42,10 @@ const AvatarFallback = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.
 	({ className, ...props }, ref) => (
 		<AvatarPrimitive.Fallback
 			ref={ref}
-			className={clsx('bg-muted flex h-full w-full items-center justify-center rounded-full', className)}
+			className={clsx(
+				'bg-neutral-2 flex h-full w-full items-center justify-center rounded-full text-[50cqi]',
+				className,
+			)}
 			{...props}
 		/>
 	),

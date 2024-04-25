@@ -40,12 +40,12 @@ export const cardClass = cva({
 });
 
 type HoveredCardStore = {
-	hoveredCard: number | null;
-	setHoveredCard: (cardKey: number | null) => void;
+	hoveredCard: PubSubCard | null;
+	setHoveredCard: (card: PubSubCard | null) => void;
 };
 export const useHoveredCard = create<HoveredCardStore>(set => ({
 	hoveredCard: null,
-	setHoveredCard: cardKey => set({ hoveredCard: cardKey }),
+	setHoveredCard: hoveredCard => set({ hoveredCard }),
 }));
 
 export interface GameCardProps
@@ -65,7 +65,7 @@ export const GameCard = ({ info, size, className, ...props }: GameCardProps) => 
 			layoutId={info.key.toString()}
 			initial={false}
 			layout="preserve-aspect"
-			onMouseEnter={() => setHovered(info.key)}
+			onMouseEnter={() => setHovered(info)}
 			onMouseLeave={() => setHovered(null)}
 			{...props}
 		>
@@ -169,10 +169,12 @@ const CardImage = ({ size, slug }: { slug: string; size: NonNullable<CardSize> }
 				<div className="w-full px-[0.5cqh] pt-[0.5cqh]">
 					<div className="aspect-[696/644] w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] shadow-md">
 						<Image
+							draggable="false"
 							srcWidth={sizeToRenderedWidth[size]}
 							src={getCardImageSrc(slug)}
 							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5cqh] object-cover"
+							onMouseDown={() => void 0}
+							className="pointer-events-none h-full w-full overflow-hidden rounded-[0.5cqh] object-cover"
 						/>
 					</div>
 				</div>
@@ -182,10 +184,12 @@ const CardImage = ({ size, slug }: { slug: string; size: NonNullable<CardSize> }
 				<div className="h-full w-full p-[0.5cqh]">
 					<div className="h-full w-full flex-none rounded-[0.5cqh] bg-[#B8A1A3] shadow-md">
 						<Image
+							draggable="false"
 							srcWidth={sizeToRenderedWidth[size]}
 							src={`/cards/${slug}.png`}
+							onMouseDown={() => void 0}
 							alt=""
-							className="h-full w-full overflow-hidden rounded-[0.5cqh] object-cover"
+							className="pointer-events-none h-full w-full select-none overflow-hidden rounded-[0.5cqh] object-cover"
 						/>
 					</div>
 				</div>
